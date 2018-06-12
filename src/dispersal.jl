@@ -1,24 +1,23 @@
-abstract type AbstractShortDispersal end
-@with_kw struct ShortDispersal{N,Float64} <: AbstractShortDispersal
+
+abstract type AbstractLocalDispersal <: AbstractCellular end
+@with_kw struct LocalDispersal{N,L,S} <: AbstractLocalDispersal
     neighborhood::N = DispersalNeighborhood()
     prob::Float64 = 0.9
+    layers::L
+    cellsize::S = 1.0
 end
 
-abstract type AbstractJumpDispersal end
-@with_kw struct JumpDispersal <: AbstractJumpDispersal
+abstract type AbstractJumpDispersal <: AbstractInPlaceCellular end
+@with_kw struct JumpDispersal{L,S} <: AbstractJumpDispersal
     prob::Float64 = 0.01
     spotrange::Int = 30.0
+    layers::L
+    cellsize::S = 1.0
 end
 
-abstract type AbstractHumanDispersal <: AbstractJumpDispersal end
-@with_kw struct HumanDispersal <: AbstractHumanDispersal
+abstract type AbstractHumanDispersal <: AbstractInPlaceCellular end
+@with_kw struct HumanDispersal{L,S} <: AbstractHumanDispersal
     human::Float64
-end
-
-abstract type AbstractDispersal <: AbstractCellular end
-@with_kw struct StratifiedDispersal{A,B,L,S} <: AbstractDispersal
-    short::A = ShortDispersal()
-    long::B = JumpDispersal()
     layers::L
     cellsize::S = 1.0
 end
@@ -50,30 +49,27 @@ exponential(d, a) = e^-d * a
 
 # more dipersal kernel functions here
 
-" Runs the short range rules"
-kernel(model::AbstractDispersal, args...) = rule(model.short, model, args...)
 
-" Runs the long range rules before the main kernel"
-prekernel(model::AbstractDispersal, args...) = rule(model.long, model, args...)
+pressure(::AbstractLocalDispersal, cc) = rand() > (1 - cc) / 1
 
 """
 Short range rule for dispersal kernels. Cells are invaded if there is pressure and 
 suitable habitat, otherwise left as-is.
 """
-rule(f::AbstractShortDispersal, model, state, index, t, args...) = begin
-    cc = neighbors(f.neighborhood, state, index, t, args...)
-    pressure = rand() > (8 - cc) / 8 
+rule(model::LocalDispersal, state, index, t, args...) = begin
+    cc = neighbors(model.neighborhood, state, index, t, args...)
+    press = pressure(model, cc) 
     suitable = suitability(model.layers, index..., t) > 0.1
-    pressure && suitable ? oneunit(state) : state
+    press && suitable ? oneunit(state) : state
 end
 
 """
 Long range rule for dispersal kernels. Cells are invaded if there is pressure and 
 suitable habitat, otherwise left as-is.
 """
-rule(f::AbstractJumpDispersal, model, state, index, t, source, args...) = begin
-    if state > zero(state) && rand() < f.prob
-        range = -f.spotrange:f.spotrange ./ model.cellsize
+rule(model::AbstractJumpDispersal, state, index, t, source, args...) = begin
+    if state > zero(state) && rand() < model.prob
+        range = -model.spotrange:model.spotrange ./ model.cellsize
         spot = tuple(round.(Int, rand(range, 2) .+ index)...)
         row, col, ok = inbounds(spot, size(source), Skip())
         if ok && suitability(model.layers, row, col, t) > 0.1

@@ -38,8 +38,7 @@ suitability(layer::AbstractSuitabilitySequence, row::Int, col::Int, t) = begin
     frac = tf - tr
     pos1 = cyclic(tr, frames(layer.data))
     pos2 = cyclic(tr + 1, frames(layer.data))
-    layer_coord(layer.data, row, col, pos1) * (1 - frac) +
-        layer_coord(layer.data, row, col, pos2) * frac
+    layer_coord(layer.data, row, col, pos1) * (1.0 - frac) + layer_coord(layer.data, row, col, pos2) * frac
 end
 suitability(layers, row::Int, col::Int, t) = 1.0
 
@@ -47,16 +46,15 @@ frames(data::AbstractArray{A,1}) where A <: AbstractArray = length(data)
 frames(data::AbstractArray{T,3}) where T = size(data, 3)
 
 layer_coord(data::AbstractArray{A,1}, row::Int, col::Int, pos) where A <: AbstractArray = data[pos][row, col]
-layer_coord(data::AbstractArray{T,3}, row::Int, col::Int, pos) where T = data[row, col, pos]
 layer_coord(data::AbstractArray{T,2}, row::Int, col::Int, pos) where T = data[row, col]
+layer_coord(data::AbstractArray{T,3}, row::Int, col::Int, pos) where T = data[row, col, pos]
 
-cyclic(t, len) = begin
+cyclic(t::Int, len::Int) = 
     if t > len
-        t - len
+        1
     elseif t <= 0
-        t + len
+        len
     else
         t
     end
-end
 

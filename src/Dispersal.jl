@@ -2,16 +2,17 @@ module Dispersal
 
 using Cellular
 using Parameters
+import Cellular: rule, neighbors
 
 include("dispersal.jl")
 include("layers.jl")
 
 export AbstractDispersal,
-       StratifiedDispersal,
-       AbstractShortDispersal, 
-       ShortDispersal,
-       AbstractLongDispersal, 
+       AbstractLocalDispersal, 
+       LocalDispersal,
+       AbstractJumpDispersal, 
        JumpDispersal,
+       AbstractHumanDispersal, 
        HumanDispersal,
        AbstractDispersalNeighborhood, 
        DispersalNeighborhood,

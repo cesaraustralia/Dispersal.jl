@@ -37,3 +37,8 @@ end
     @test dk[1,1] == dk[3,3] == dk[3,1] == dk[1,3]
     @test dk[2,1] == dk[1,2] == dk[3,2] == dk[2,3]
 end
+
+@testset "dispersal kernel neighbors" begin
+    dk = Dispersal.build_dispersal_kernel(d->e^-d, 1)
+end
+
