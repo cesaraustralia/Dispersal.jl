@@ -5,7 +5,7 @@
 [![codecov.io](http://codecov.io/github/rafaqz/Dispersal.jl/coverage.svg?branch=master)](http://codecov.io/github/rafaqz/Dispersal.jl?branch=master)
 
 
-This package builds on [Cellular.jl](https://github/rafaqz/Cellular.jl) to
+This package builds on [Cellular.jl](https://github.com/rafaqz/Cellular.jl) to
 provide a framework for cellular dispersal simulations.
 
 To run a simulation:
