@@ -4,7 +4,7 @@ using Cellular
 using Parameters
 import Cellular: rule, neighbors
 
-include("dispersal.jl")
+include("disperse.jl")
 include("layers.jl")
 
 export AbstractDispersal,
