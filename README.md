@@ -12,19 +12,36 @@ To run a simulation:
 
 ```julia
 using Cellular
+using Dispersal
+using Tk
 
 # add a 0.0-1.0 scaled raster array that represents habitat suitability
-suitability = your_2d_array
+suit = your_2d_array
 
-# define the model
-model = Dispersal(layers=SuitabilityLayer(suitability))
+# Define a dispersal kernel. This can be any function accepts one argument: 
+# distance from the central cell, and returns a value from 0.0 to 1.0.
+f = d -> exponential(d, 1)
 
-# define the source array
-source = zeros(Int8, size(suitability))
+# Define the neighborhood as our dispersal kernel
+hood = DispersalNeighborhood(; f=f, radius=3)
 
-# seed it
+# Define additional raster layers
+layers = SuitabilityLayer(suit)
+
+# Define disersal modules
+localdisp = LocalDispersal(layers=layers, neighborhood=hood)
+jumpdisp = JumpDispersal(layers=layers)
+
+# Build the complete model
+model = (localdisp, jumpdisp)
+
+# Create the source array and seed it
+source = zeros(Int8, size(suit))
 source[24, 354] = 1
 
-# run the simulation
-sim!(source, model) 
+# Set the output type
+output = TkOutput(source)
+
+# Run the simulation
+sim!(source, model, output) 
 ```
