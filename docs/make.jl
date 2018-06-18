@@ -1,4 +1,4 @@
-using Documenter, Tk, Dispersal
+using Documenter, Dispersal
 using Dispersal: rule, neighbors, build_dispersal_kernel, pressure
 
 makedocs(
