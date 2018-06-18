@@ -35,13 +35,13 @@ jumpdisp = JumpDispersal(layers=layers)
 # Build the complete model
 model = (localdisp, jumpdisp)
 
-# Create the source array and seed it
-source = zeros(Int8, size(suit))
-source[24, 354] = 1
+# Create the init array and seed it
+init = zeros(Int8, size(suit))
+init[24, 354] = 1
 
 # Set the output type
-output = TkOutput(source)
+output = TkOutput(init)
 
 # Run the simulation
-sim!(source, model, output) 
+sim!(init, model, output) 
 ```

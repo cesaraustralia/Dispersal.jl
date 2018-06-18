@@ -1,21 +1,60 @@
+"""
+$(TYPEDEF)
+Extend to modify [`LocalDispersal`](@ref)
+"""
+abstract type AbstractLocalDispersal <: AbstractModel end
 
-abstract type AbstractLocalDispersal <: AbstractCellular end
-@with_kw struct LocalDispersal{N,L,S} <: AbstractLocalDispersal
+"""
+$(TYPEDEF)
+
+Local dispersal within a [`DispersalNeighborhood`](@ref)] or other [AbstractNeighborhood](@ref)
+
+### Keyword Arguments
+- neighborhood: = DispersalNeighborhood()
+- prob: A real number between one and zero.
+- layers: [AbstractLayers](@ref) or a single [`AbstractLayer`](@ref). The default is `nothing`.
+- cellsize::S = A number or Unitful.jl distance.
+"""
+@with_kw struct LocalDispersal{N,L,P,S} <: AbstractLocalDispersal
     neighborhood::N = DispersalNeighborhood()
-    prob::Float64 = 0.9
-    layers::L
+    prob::P = 0.1
+    layers::L = nothing
     cellsize::S = 1.0
 end
 
-abstract type AbstractJumpDispersal <: AbstractInPlaceCellular end
+"""
+$(TYPEDEF)
+Extend to modify [`JumpDispersal`](@ref)
+"""
+
+abstract type AbstractJumpDispersal <: AbstractInPlaceModel end
+"""
+$(TYPEDEF)
+Local dispersal within a [`DispersalNeighborhood`](@ref)] or other [AbstractNeighborhood](@ref)
+
+### Keyword Arguments
+- spotrange: A number or Unitful.jl distance.
+- prob: A real number between one and zero.
+- layers: [`AbstractLayers`](@ref) or a single [AbstractLayer](@ref). The default is `nothing`.
+- cellsize::S = A number or Unitful.jl distance.
+"""
 @with_kw struct JumpDispersal{L,S} <: AbstractJumpDispersal
-    prob::Float64 = 0.01
     spotrange::Int = 30.0
-    layers::L
+    prob::Float64 = 0.01
+    layers::L = nothing
     cellsize::S = 1.0
 end
 
-abstract type AbstractHumanDispersal <: AbstractInPlaceCellular end
+"""
+$(TYPEDEF)
+Inherit to exten human dispersal
+"""
+abstract type AbstractHumanDispersal <: AbstractInPlaceModel end
+"""
+$(TYPEDEF)
+Human dispersal model.
+$(FIELDS)
+"""
 @with_kw struct HumanDispersal{L,S} <: AbstractHumanDispersal
     human::Float64
     layers::L
@@ -23,18 +62,43 @@ abstract type AbstractHumanDispersal <: AbstractInPlaceCellular end
 end
 
 
+"""
+$(TYPEDEF)
+Neighborhoods for dispersal
+"""
 abstract type AbstractDispersalNeighborhood <: AbstractNeighborhood end
+
+"""
+$(TYPEDEF)
+A neighborhood built from a dispersal kernel function and a cell radius.
+
+### Arguments:
+- `dispkernel::AbstractArray{T,2}`
+- `overflow::AbstractOverflow`
+"""
 struct DispersalNeighborhood{K,S} <: AbstractDispersalNeighborhood
     dispkernel::K
     overflow::S
 end
 
+"""
+Build a neighborhood from a dispersal kernel function and a cell radius.
+
+### Keyword Arguments:
+- `f::Function`: any function that accepts a Number argument and returns a propbability between 0.0 and 1.0
+- `radius::Integer`: a positive integer 
+"""
 DispersalNeighborhood(; f = d -> exponential(d, 1), radius = 3, 
                       overflow = Skip()) = begin
     dispkernel = build_dispersal_kernel(f, radius) 
     DispersalNeighborhood(dispkernel, overflow)
 end
 
+"""
+$(SIGNATURES)
+Accepts a dispersal kernel function and integer radius,
+and returns an array of probabilities, of size  2r + 1 * 2r + 1.
+"""
 build_dispersal_kernel(f, r) = begin
     size = 2r + 1
     grid = zeros(Float64, size, size)
@@ -49,23 +113,29 @@ exponential(d, a) = e^-d * a
 
 # more dipersal kernel functions here
 
+"""
+$(METHODLIST)
+Calculates the propagule pressure from the output of a neighborhood.
+"""
+function pressure end
 
-pressure(::AbstractLocalDispersal, cc) = rand() > (1 - cc) / 1
+pressure(model::AbstractLocalDispersal, cc) = rand()^model.prob > (1 - cc) / 1
 
 """
-Short range rule for dispersal kernels. Cells are invaded if there is pressure and 
-suitable habitat, otherwise left as-is.
+$(SIGNATURES)
+Short range rule for [`AbstractLocalDispersal`](@ref) dispersal. Cells are invaded 
+if there is pressure and suitable habitat, otherwise left as-is.
 """
-rule(model::LocalDispersal, state, index, t, args...) = begin
+rule(model::AbstractLocalDispersal, state, index, t, args...) = begin
     cc = neighbors(model.neighborhood, state, index, t, args...)
-    press = pressure(model, cc) 
     suitable = suitability(model.layers, index..., t) > 0.1
-    press && suitable ? oneunit(state) : state
+    suitable && pressure(model, cc) ? oneunit(state) : state
 end
 
 """
-Long range rule for dispersal kernels. Cells are invaded if there is pressure and 
-suitable habitat, otherwise left as-is.
+$(SIGNATURES)
+Long range rule for [`AbstractJumpDispersal`](@ref). A random cell
+within the spotrange is invaded if it is suitable.
 """
 rule(model::AbstractJumpDispersal, state, index, t, source, args...) = begin
     if state > zero(state) && rand() < model.prob
@@ -86,6 +156,11 @@ rule(f::AbstractHumanDispersal, model, state, index, t, source, args...) = begin
     end
 end
 
+"""
+$(SIGNATURES)
+Returns nieghbors for a [`DispersalNeighborhood`](@ref), looping over
+the array of dispersal propabilities.
+"""
 neighbors(h::DispersalNeighborhood, state, index, t, source, args...) = begin
     height, width = size(source)
     row, col = index
@@ -103,4 +178,3 @@ neighbors(h::DispersalNeighborhood, state, index, t, source, args...) = begin
     end
     return cc
 end
-

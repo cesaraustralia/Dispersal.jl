@@ -1,4 +1,7 @@
+using Revise
 using Dispersal
+using Cellular
+using FileIO
 
 @static if VERSION < v"0.7.0-DEV.2005"
     using Base.Test
@@ -42,3 +45,41 @@ end
     dk = Dispersal.build_dispersal_kernel(d->e^-d, 1)
 end
 
+@testset "dispersal simulation" begin
+    suitability = ones(Int,5, 5)
+    init = zeros(Int, size(suitability))
+    init[3, 3] = 1
+
+    test1 = [0 0 0 0 0;
+             0 0 0 0 0;
+             0 0 1 0 0;
+             0 0 0 0 0;
+             0 0 0 0 0]
+
+    test2 = [0 0 0 0 0;
+             0 1 1 1 0;
+             0 1 1 1 0;
+             0 1 1 1 0;
+             0 0 0 0 0]
+
+    test3 = [1 1 1 1 1;
+             1 1 1 1 1;
+             1 1 1 1 1;
+             1 1 1 1 1;
+             1 1 1 1 1]
+
+    # Dispersal in radius 1 neighborhood
+    hood = DispersalNeighborhood(; radius=1)
+    layers = SuitabilityLayer(suitability)
+
+    # remove randomness - any neighborhood > 0 sets the cell to 1 
+    localdisp = LocalDispersal(layers=layers, neighborhood=hood, prob=0.0)
+
+    model = (localdisp,)
+    output = ArrayOutput(init)
+    sim!(output, localdisp, init; time = 1:3)
+    @test output.frames[1] == test1
+    @test output.frames[2] == test2
+    @test output.frames[3] == test3
+
+end
