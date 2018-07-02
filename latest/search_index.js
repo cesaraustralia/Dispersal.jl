@@ -29,7 +29,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Dispersal",
     "title": "Example",
     "category": "section",
-    "text": "This is the general pattern of running model in Dispersal.jl. We declare a suitability layer and initial conditions. Then we run a dispersal simulation that combines local and jump dispersal, for three timesteps.using Cellular\nusing Dispersal\n\n# add a 0.0-1.0 scaled raster array that represents habitat suitability\nsuitability = [0.5 0.0 0.3 0.0 0.0 0.3 0.0;\n               0.0 0.2 0.8 0.0 0.9 0.6 0.0;\n               0.0 0.5 1.0 1.0 1.0 0.0 0.0;\n               0.0 0.0 1.0 1.0 0.7 0.0 0.0;\n               0.0 0.0 0.6 1.0 0.0 0.0 0.0;\n               0.0 0.1 0.6 0.0 0.0 0.0 0.0;\n               0.0 0.0 0.0 0.0 0.0 0.0 0.7]\n\n# Make an init array the same size as your suitability layer, and seed it\ninit = [0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  1  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0]\n\n# You also could do this with:\n# init = zeros(suitability); init[5, 3] = 1\n\n\n# Define a dispersal kernel function\n\nf = d -> e^-d\n\n# Define the neighborhood, using the dispersal kernel and a radius\nhood = DispersalNeighborhood(; f=f, radius=2)\n\n# Define additional raster layers\nlayers = SuitabilityLayer(suitability)\n\n# Define disersal modules\nlocaldisp = LocalDispersal(layers=layers, neighborhood=hood)\njumpdisp = JumpDispersal(layers=layers)\n\n# Set the output type\noutput = ArrayOutput(init)\n\n# Run the simulation\nsim!(output, (localdisp, jumpdisp), init; time=1:3) \n\noutput.frames[3]"
+    "text": "This is the general pattern of running model in Dispersal.jl. We declare a suitability layer and initial conditions. Then we run a dispersal simulation that combines local and jump dispersal, for three timesteps.using Cellular\nusing Dispersal\n\n# add a 0.0-1.0 scaled raster array that represents habitat suitability\nsuitability = [0.5 0.0 0.3 0.0 0.0 0.3 0.0;\n               0.0 0.2 0.8 0.0 0.9 0.6 0.0;\n               0.0 0.5 1.0 1.0 1.0 0.0 0.0;\n               0.0 0.0 1.0 1.0 0.7 0.0 0.0;\n               0.0 0.0 0.6 1.0 0.0 0.0 0.0;\n               0.0 0.1 0.6 0.0 0.0 0.0 0.0;\n               0.0 0.0 0.0 0.0 0.0 0.0 0.7]\n\n# Make an init array the same size as your suitability layer, and seed it\ninit = [0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  1  0  0  0  0;\n        0  0  0  0  0  0  0;\n        0  0  0  0  0  0  0]\n\n# You also could do this with:\n# init = zeros(suitability); init[5, 3] = 1\n\n\n# Define a dispersal kernel function\n\nf = d -> e^-d\n\n# Define the neighborhood, using the dispersal kernel and a radius\nhood = DispersalNeighborhood(; f=f, radius=2)\n\n# Define additional raster layers\nlayers = SuitabilityLayer(suitability)\n\n# Define disersal modules\nlocaldisp = InwardsLocalDispersal(layers=layers, neighborhood=hood)\njumpdisp = JumpDispersal(layers=layers)\n\n# Set the output type\noutput = ArrayOutput(init)\n\n# Run the simulation\nsim!(output, (localdisp, jumpdisp), init; time=1:3) \n\noutput.frames[3]"
 },
 
 {
@@ -53,7 +53,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Dispersal",
     "title": "Dispersal.InwardsLocalDispersal",
     "category": "type",
-    "text": "Local dispersal within a DispersalNeighborhood or other AbstractNeighborhood. Inwards dispersal calculates dispersal to the current cell from cells in the neighborhood.\n\n\n\n"
+    "text": "Local dispersal within a DispersalNeighborhood or other neighborhoods. Inwards dispersal calculates dispersal to the current cell from cells in the neighborhood.\n\n\n\n"
 },
 
 {
@@ -93,7 +93,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Dispersal",
     "title": "Dispersal.JumpDispersal",
     "category": "type",
-    "text": "Jump dispersal within a DispersalNeighborhood] or other AbstractNeighborhood\n\n\n\n"
+    "text": "Jump dispersal within a DispersalNeighborhood] or other neighborhoods.\n\n\n\n"
 },
 
 {
@@ -117,7 +117,7 @@ var documenterSearchIndex = {"docs": [
     "page": "Dispersal",
     "title": "Cellular.rule",
     "category": "function",
-    "text": "rule(model::AbstractInwardsLocalDispersal, state, index, t, args...)\n\nRuns rule for of AbstractLocalInwardsDispersal dispersal. \n\nThe current cell is invaded if there is pressure from surrounding cells and  suitable habitat. Otherwise it keeps its current state.\n\n\n\nrule(model::AbstractOutwardsLocalDispersal, state, index, t, source, dest, args...)\n\nRuns rule for of AbstractLocalOutwardsDispersal dispersal. \n\nSurrounding cells are invaded if the current cell is occupied and they have  suitable habitat. Otherwise they keeps their current state.\n\n\n\nrule(model::AbstractJumpDispersal, state, index, t, source, dest, args...)\n\nLong range rule for AbstractJumpDispersal. A random cell within the spotrange is invaded if it is suitable.\n\n\n\nrule(model::AbstractHumanDispersal, state, index, t, source, dest, args...)\n\nSimulates human dispersal, weighting dispersal probability based on human population in the source cell.\n\n\n\n"
+    "text": "rule(model::AbstractInwardsLocalDispersal, state, index, t, args...)\n\nRuns rule for of AbstractInwardsLocalDispersal dispersal. \n\nThe current cell is invaded if there is pressure from surrounding cells and  suitable habitat. Otherwise it keeps its current state.\n\n\n\nrule(model::AbstractOutwardsLocalDispersal, state, index, t, source, dest, args...)\n\nRuns rule for of AbstractOutwardsLocalDispersal dispersal. \n\nSurrounding cells are invaded if the current cell is occupied and they have  suitable habitat. Otherwise they keeps their current state.\n\n\n\nrule(model::AbstractJumpDispersal, state, index, t, source, dest, args...)\n\nLong range rule for AbstractJumpDispersal. A random cell within the spotrange is invaded if it is suitable.\n\n\n\nrule(model::AbstractHumanDispersal, state, index, t, source, dest, args...)\n\nSimulates human dispersal, weighting dispersal probability based on human population in the source cell.\n\n\n\n"
 },
 
 {
