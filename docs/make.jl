@@ -1,5 +1,5 @@
 using Documenter, Dispersal
-using Dispersal: rule, neighbors, build_dispersal_kernel, pressure
+using Dispersal: rule, neighbors, build_dispersal_kernel, pressure, suitability, human_impact, cyclic
 
 makedocs(
     modules = [Dispersal],
@@ -8,7 +8,7 @@ makedocs(
     sitename = "Dispersal.jl",
     format = :html,
     pages = Any[
-        "Introduction" => "index.md",
+        "Dispersal" => "index.md",
     ]
 )
 

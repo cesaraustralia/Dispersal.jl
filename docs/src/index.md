@@ -8,6 +8,9 @@ CurrentModule = Dispersal
 Dispersal
 ```
 
+```@contents
+```
+
 ## Example
 
 This is the general pattern of running model in Dispersal.jl. 
@@ -66,16 +69,29 @@ output.frames[3]
 
 ## Models
 
+### Extending AbstractModel
+
 ```@docs
-AbstractLocalDispersal
-LocalDispersal
+AbstractInwardsLocalDispersal
+InwardsLocalDispersal
+```
+
+### Extending AbstractPartialModel
+
+These models trigger rules that only partially update the grid.
+Many dispersal functions only operate on cells that are currently occupied.
+
+```@docs
+AbstractOutwardsLocalDispersal
+OutwardsLocalDispersal
 AbstractJumpDispersal
 JumpDispersal
 AbstractHumanDispersal
 HumanDispersal
 ```
 
-These modules all trigger methods of `rule`:
+Models trigger methods of [`rule`](@ref). 
+Custom models you create will in most cases need a custom `rule` method.
 
 ```@docs
 rule
@@ -84,18 +100,21 @@ rule
 
 ## Neighborhoods
 
-Extend Cellular.AbstractNeighborhood
+Extend Cellular.AbstractNeighborhood, and add `neighbors()` methods.
+
+### Types and Constructors
 
 ```@docs
 AbstractDispersalNeighborhood
 DispersalNeighborhood
+DispersalNeighborhood(; f=d -> exponential(d, 1), radius=3, overflow=Skip())
 ```
 
-### Customisation
+### Methods
 
 ```@docs
 neighbors
-build_dispersal_kernel
+neighbors(hood::DispersalNeighborhood, state, index, t, source, args...)
 pressure
 ```
 
@@ -103,7 +122,11 @@ pressure
 
 Layers are a concept not present in Cellular.jl. They provide 
 overlay grids of additional information about dispersal potential.
-Raw arrays are wrapped in a type that determines how they will be used.
+
+Like models, than can be combined arbitrarily in tuples. Methods loop through
+all relevant layers to return a scalar that is the product of their outputs.
+
+### Types
 
 ```@docs
 AbstractLayer 
@@ -112,14 +135,13 @@ SuitabilityLayer
 AbstractSuitabilitySequence 
 SuitabilitySequence
 HumanLayer
-AbstractLayers
-Layers
 ```
 
-### Customisation
+### Methods 
 
 ```@docs
 suitability
-seq_interpolate
-get_cell
+human_impact
+sequence_interpolate
+cyclic
 ```
