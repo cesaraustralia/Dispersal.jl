@@ -1,11 +1,11 @@
 
 @mix @with_kw struct MixLocalDispersal{N,L,P,S} 
     neighborhood::N = DispersalNeighborhood()
-    "A real number between one and zero."
+    # "A real number between one and zero."
     prob::P = 0.1
-    "[AbstractLayers](@ref) or a single [`AbstractLayer`](@ref)."
+    # "[AbstractLayers](@ref) or a single [`AbstractLayer`](@ref)."
     layers::L = nothing
-    "A number or Unitful.jl distance."
+    # "A number or Unitful.jl distance."
     cellsize::S = 1.0
 end
 
@@ -45,13 +45,13 @@ Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other [AbstractNeigh
 
 """
 @with_kw struct JumpDispersal{L,S} <: AbstractJumpDispersal
-    "A number or Unitful.jl distance."
+    # "A number or Unitful.jl distance."
     spotrange::Int = 30.0
-    "A real number between one and zero."
+    # "A real number between one and zero."
     prob::Float64 = 0.01
-    "[`AbstractLayers`](@ref) or a single [AbstractLayer](@ref). The default is `nothing`."
+    # "[`AbstractLayers`](@ref) or a single [AbstractLayer](@ref). The default is `nothing`."
     layers::L = nothing
-    "A number or Unitful.jl distance."
+    # "A number or Unitful.jl distance."
     cellsize::S = 1.0
 end
 
