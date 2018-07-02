@@ -55,7 +55,7 @@ hood = DispersalNeighborhood(; f=f, radius=2)
 layers = SuitabilityLayer(suitability)
 
 # Define disersal modules
-localdisp = LocalDispersal(layers=layers, neighborhood=hood)
+localdisp = InwardsLocalDispersal(layers=layers, neighborhood=hood)
 jumpdisp = JumpDispersal(layers=layers)
 
 # Set the output type

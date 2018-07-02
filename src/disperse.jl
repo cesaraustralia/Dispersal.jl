@@ -10,18 +10,18 @@
 end
 
 """
-Extend to modify [`LocalInwardsDispersal`](@ref)
+Extend to modify [`InwardsLocalDispersal`](@ref)
 """
 abstract type AbstractInwardsLocalDispersal <: AbstractModel end
 
 """
-Local dispersal within a [`DispersalNeighborhood`](@ref) or other [AbstractNeighborhood](@ref).
+Local dispersal within a [`DispersalNeighborhood`](@ref) or other neighborhoods.
 Inwards dispersal calculates dispersal *to* the current cell from cells in the neighborhood.
 """
 @MixLocalDispersal struct InwardsLocalDispersal{} <: AbstractInwardsLocalDispersal end
 
 """
-Extend to modify [`LocalOutwardsDispersal`](@ref)
+Extend to modify [`OutwardsLocalDispersal`](@ref)
 """
 abstract type AbstractOutwardsLocalDispersal <: AbstractPartialModel end
 
@@ -41,7 +41,7 @@ Extend to modify [`JumpDispersal`](@ref)
 abstract type AbstractJumpDispersal <: AbstractPartialModel end
 
 """
-Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other [AbstractNeighborhood](@ref)
+Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other neighborhoods.
 
 """
 @with_kw struct JumpDispersal{L,S} <: AbstractJumpDispersal
@@ -130,7 +130,7 @@ pressure(model, cc) = rand()^model.prob > (1 - cc) / 1
 
 """
     rule(model::AbstractInwardsLocalDispersal, state, index, t, args...)
-Runs rule for of [`AbstractLocalInwardsDispersal`](@ref) dispersal. 
+Runs rule for of [`AbstractInwardsLocalDispersal`](@ref) dispersal. 
 
 The current cell is invaded if there is pressure from surrounding cells and 
 suitable habitat. Otherwise it keeps its current state.
@@ -148,7 +148,7 @@ end
 
 """
     rule(model::AbstractOutwardsLocalDispersal, state, index, t, source, dest, args...)
-Runs rule for of [`AbstractLocalOutwardsDispersal`](@ref) dispersal. 
+Runs rule for of [`AbstractOutwardsLocalDispersal`](@ref) dispersal. 
 
 Surrounding cells are invaded if the current cell is occupied and they have 
 suitable habitat. Otherwise they keeps their current state.
@@ -224,7 +224,7 @@ end
 
 
 """
-    neighbors(hood::DispersalNeighborhood, state, index, t, source, dest, args...) = begin
+    neighbors(hood::DispersalNeighborhood, state, index, t, source, dest, args...)
 Returns nieghbors for a [`DispersalNeighborhood`](@ref), looping over
 the array of dispersal propabilities.
 """

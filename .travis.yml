@@ -1,5 +1,6 @@
 ## Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
+sudo: required
 os:
   - linux
   - osx
@@ -11,24 +12,24 @@ notifications:
 git:
   depth: 99999999
 
-## uncomment the following lines to allow failures on nightly julia
-## (tests will run but not make your overall status red)
 matrix:
   allow_failures:
   - julia: nightly
 
-## uncomment and modify the following lines to manually install system packages
-#addons:
-#  apt: # apt-get for linux
-#    packages:
-#    - gfortran
-#before_script: # homebrew for mac
-#  - if [ $TRAVIS_OS_NAME = osx ]; then brew install gcc; fi
+addons:
+  apt:
+    packages:
+      - xvfb
+      - xauth
+      - libgtk-3-0
 
-## uncomment the following lines to override the default test script
 script:
-- julia --color=yes -e 'Pkg.clone("https://github.com/rafaqz/Cellular.jl.git"); Pkg.build("Cellular")'
-- julia -e 'Pkg.clone(pwd()); Pkg.build("Dispersal"); Pkg.test("Dispersal"; coverage=true)'
+- if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+- if [[ `uname` = "Linux" ]]; then TESTCMD="xvfb-run julia"; else TESTCMD="julia"; fi
+- julia -e 'Pkg.clone("https://github.com/rafaqz/Cellular.jl.git"); Pkg.build("Cellular")'
+- $TESTCMD -e 'Pkg.clone(pwd()); 
+               Pkg.build("Dispersal"); 
+               Pkg.test("Dispersal"; coverage=true)'
 after_success:
   # push coverage results to Coveralls
   - julia -e 'cd(Pkg.dir("Dispersal")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
@@ -36,4 +37,4 @@ after_success:
   - julia -e 'cd(Pkg.dir("Dispersal")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
   # update docs
   - julia -e 'Pkg.add("Documenter"); Pkg.checkout("Documenter")'
-  - julia -e 'cd(Pkg.dir("Dispersal")); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'
+  - $TESTCMD -e 'cd(Pkg.dir("Dispersal")); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'
