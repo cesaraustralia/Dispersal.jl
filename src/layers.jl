@@ -101,7 +101,7 @@ human_impact(layer::AbstractHumanLayer, row::Int, col::Int, t) =
     get_cell(layer, row::Int, col::Int, pos::Number)
 Return a particular cell from a layer, given row, column and timestep)
 """
-get_cell(layer, row::Int, col::Int, pos::Number) = get_cell(layer.data, row::Int, col::Int, t)
+get_cell(layer, row::Int, col::Int, t::Number) = get_cell(layer.data, row::Int, col::Int, t)
 get_cell(data::AbstractArray{A,1}, row::Int, col::Int, t::Number) where A <: AbstractArray = data[t][row, col]
 get_cell(data::AbstractArray{T,2}, row::Int, col::Int, t::Number) where T = data[row, col]
 get_cell(data::AbstractArray{T,3}, row::Int, col::Int, t::Number) where T = data[row, col, t]
