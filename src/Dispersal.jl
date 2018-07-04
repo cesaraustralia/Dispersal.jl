@@ -15,7 +15,8 @@ module Dispersal
 
 using Cellular, DocStringExtensions, Parameters, Mixers
 
-import Cellular: rule, neighbors
+import Cellular: rule, neighbors, inbounds
+import Base: getindex, setindex!, endof, size, length
 
 # Documentation templates
 @template TYPES =
@@ -28,16 +29,18 @@ include("disperse.jl")
 include("layers.jl")
 
 export AbstractDispersal,
-       AbstractInwardsLocalDispersal, 
+       AbstractInwardsDispersal, 
        InwardsLocalDispersal,
-       AbstractOutwardsLocalDispersal, 
+       AbstractOutwardsDispersal, 
        OutwardsLocalDispersal,
+       HudginsDispersal,
        AbstractJumpDispersal, 
        JumpDispersal,
        AbstractHumanDispersal, 
        HumanDispersal,
        AbstractDispersalNeighborhood, 
        DispersalNeighborhood,
+       DispersalGrid,
        AbstractLayers,
        Layers,
        AbstractLayer, 

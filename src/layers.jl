@@ -10,6 +10,12 @@ method dispatch to utilise them.
 """
 abstract type AbstractLayer end
 
+length(l::AbstractLayer) = length(l.data)
+size(l::AbstractLayer) = size(l.data)
+endof(l::AbstractLayer) = endof(l.data)
+getindex(v::AbstractLayer, i) = getindex(l.data)
+setindex!(v::AbstractLayer, i) = setindex!(l.data)
+
 abstract type AbstractHumanLayer <: AbstractLayer end
 """
 A wrapper for arrays that provide human dispersal scalars for the grid.
@@ -35,7 +41,7 @@ end
 """
 An abstract type for layers that provide sequences of suitability scalars.
 """
-abstract type AbstractSuitabilitySequence <: AbstractSuitabilityLayer end
+abstract type AbstractSuitabilitySequence <: AbstractLayer end
 
 """
 A wrapper for a sequence of arrays that provide suitability scalar
@@ -53,7 +59,7 @@ end
 
 
 """
-    suitability(layers, row::Int, col::Int, t::Number)
+    suitability(layers, index, t::Number)
 Returns a scalar representing cell suitability from one or multiple layers.
 
 For multiple layers the product of each individual scalar is returned.
@@ -62,22 +68,21 @@ Layers of type other than AbstractSuitabilityLayer return 1.0.
 
 ### Arguments
 - `layers` : a single layer or tuple of layers of any type
-- `row::Int`
-- `col::Int`
+- `index` : a tuple containing 2 grid coordinates
 - `t::Number` : current timestep for interploating layere sequences.
 """
 function suitability end
-suitability(layers, row::Int, col::Int, t::Number) = 1.0
-suitability(layers::Tuple, row::Int, col::Int, t::Number) =
-    mapreduce(l -> suitability(l, row, col, t), *, 1.0, layers)
-suitability(layer::AbstractSuitabilityLayer, row::Int, col::Int, t::Number) =
-    get_cell(layer, row, col, round(Int,t))
-suitability(layer::AbstractSuitabilitySequence, row::Int, col::Int, t::Number) =
-    sequence_interpolate(layer, row, col, t)
+suitability(layers, index, t::Number) = 1.0
+suitability(layers::Tuple, index, t::Number) =
+    mapreduce(l -> suitability(l, index, t), *, 1.0, layers)
+suitability(layer::AbstractSuitabilityLayer, index, t::Number) =
+    get_cell(layer, index, round(Int,t))
+suitability(layer::AbstractSuitabilitySequence, index, t::Number) =
+    sequence_interpolate(layer, index, t)
 
 
 """
-    human_impact(layers, row::Int, col::Int, t)
+    human_impact(layers, index, t)
 Returns a scalar indicating human impact from one or multiple layers.
 
 For multiple layers the product of each individual scalar is returned.
@@ -86,33 +91,33 @@ Layers of type other than AbstractHumanLayer return 1.0.
 
 ### Arguments
 - `layers` : a single layer or tuple of layers of any type
-- `row::Int`
-- `col::Int`
+- `index` : a tuple containing 2 grid coordinates
 - `t::Number` : current timestep for interploating layere sequences.
 """
 function human_impact end
-human_impact(layers, row::Int, col::Int, t) = 1.0
-human_impact(layers::Tuple, row::Int, col::Int, t) =
-    mapreduce(f -> human_impact(getfield(layers, f), row, col, t), *, 1.0, fieldnames(L))
-human_impact(layer::AbstractHumanLayer, row::Int, col::Int, t) =
-    get_cell(layer, row, col, round(Int,t))
+human_impact(layers, index, t) = 1.0
+human_impact(layers::Tuple, index, t) =
+    mapreduce(f -> human_impact(getfield(layers, f), index, t), *, 1.0, fieldnames(L))
+human_impact(layer::AbstractHumanLayer, index, t) =
+    get_cell(layer, index, round(Int,t))
 
 """
-    get_cell(layer, row::Int, col::Int, pos::Number)
-Return a particular cell from a layer, given row, column and timestep)
+    get_cell(layer, index, pos::Number)
+Return a particular cell from a layer, given index and timestep)
 """
-get_cell(layer, row::Int, col::Int, t::Number) = get_cell(layer.data, row::Int, col::Int, t)
-get_cell(data::AbstractArray{A,1}, row::Int, col::Int, t::Number) where A <: AbstractArray = data[t][row, col]
-get_cell(data::AbstractArray{T,2}, row::Int, col::Int, t::Number) where T = data[row, col]
-get_cell(data::AbstractArray{T,3}, row::Int, col::Int, t::Number) where T = data[row, col, t]
+get_cell(layer, index, t::Number) = get_cell(layer.data, index, t)
+get_cell(data::AbstractArray{A,1}, index, t::Number) where A <: AbstractArray = 
+    data[t][index...]
+get_cell(data::AbstractArray{T,2}, index, t::Number) where T = data[index...]
+get_cell(data::AbstractArray{T,3}, index, t::Number) where T = data[index..., t]
 
 timespan(layer) = layer.timespan
 
 """
-    sequence_interpolate(layer, row, col, t)
+    sequence_interpolate(layer, index, t)
 Interpolates between layers in a sequence.
 """
-sequence_interpolate(layer, row::Int, col::Int, t::Number) = begin
+sequence_interpolate(layer, index, t::Number) = begin
     # Time position is centered in the current frame, not at the start.
     tf = (t + timespan(layer) * 0.5) / timespan(layer)
     # Linear interpolation between layers in the sequence.
@@ -120,7 +125,7 @@ sequence_interpolate(layer, row::Int, col::Int, t::Number) = begin
     frac = tf - tr
     pos1 = cyclic(tr, num_frames(layer))
     pos2 = cyclic(tr + 1, num_frames(layer))
-    get_cell(layer, row, col, pos1) * (1.0 - frac) + get_cell(layer, row, col, pos2) * frac
+    get_cell(layer, index, pos1) * (1.0 - frac) + get_cell(layer, index, pos2) * frac
 end
 
 num_frames(layer::AbstractLayer) = num_frames(layer.data)
