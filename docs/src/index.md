@@ -43,6 +43,28 @@ init = [0  0  0  0  0  0  0;
 # You also could do this with:
 # init = zeros(suitability); init[5, 3] = 1
 
+# Or use ArchGDAL to import a raster imaage:
+using ArchGDAL
+function readtiff(file)
+    img = ArchGDAL.registerdrivers() do
+        ArchGDAL.read(file) do dataset
+            ArchGDAL.read(dataset)
+        end
+    end
+    # Scale values to a maximum of 1.0
+    img ./= maximum(img)
+    # Remove values below 0.0
+    img .= max.(0.0, img)
+    # Transpose: fix until ArchGDAL does this automatically (soon)
+    img = img[:,:,1]'
+end
+
+pop = readtiff("population_density.tif")
+
+# You could also crop the raster, this funciton cuts out Australia from a world map:
+cropaust(x) = x[950:1350, 3100:3600]
+
+austpop = cropaust(pop)
 
 # Define a dispersal kernel function
 
