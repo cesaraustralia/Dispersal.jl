@@ -1,5 +1,5 @@
 using Revise, Dispersal, Cellular
-using Dispersal: suitability, cyclic, num_frames
+using Dispersal: suitability, cyclic, sequence_interpolate
 
 @static if VERSION < v"0.7.0-DEV.2005"
     using Base.Test
@@ -7,38 +7,96 @@ else
     using Test
 end
 
-@testset "suitability layer interpolation" begin
-    # default is 1.0
-    @test suitability(nothing, (1, 1), 30) == 1.0
-    # sequence of layers
-    suitseq = SuitabilitySequence(30, [[0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8]])
-    @test num_frames(suitseq.data) == 2
-    @test suitability(suitseq, (1, 1), 15) == 0.1
-    @test suitability(suitseq, (2, 2), 15) == 0.4
-    @test suitability(suitseq, (1, 2), 45) == 0.6
-    @test suitability(suitseq, (2, 1), 45) == 0.7
-    # interpolated frames
-    @test suitability(suitseq, (2, 2), 30) ≈ 0.6
-    @test suitability(suitseq, (1, 1), 30) ≈ 0.3
+
+@testset "suitability is 1.0 by default" begin
+    @test suitability(nothing, (1, 1), 10) == 1.0
+    @test suitability(HumanLayer([1 2]), (1, 1), 10) == 1.0
+end
+
+@testset "single layer suitability just returns the layer value" begin
     suitlayer = SuitabilityLayer([0.1 0.2; 0.3 0.4])
-    # single layer suitability
     @test suitability(suitlayer, (1, 1), 34325) == 0.1
     @test suitability(suitlayer, (2, 2), 7685) == 0.4
 end
 
-@testset "sequence cycling" begin
-    @test cyclic(13, 12) == 1
-    @test cyclic(0, 12) == 12
-    @test cyclic(3, 12) == 3
+@testset "suitability sequences are interpolated over timespans" begin
+    # sequence of layers
+    seq = [[0.1 0.2; 0.3 0.4], 
+           [0.5 0.6; 0.7 0.8]]
+    suitseq = SuitabilitySequence(seq, 10)
+
+    @testset "sequence cycling" begin
+        @test cyclic(-4, 2) == 2
+        @test cyclic(-3, 2) == 1
+        @test cyclic(-2, 2) == 2
+        @test cyclic(-1, 2) == 1
+        @test cyclic(0, 2) == 2
+        @test cyclic(1, 2) == 1 
+        @test cyclic(2, 2) == 2 
+        @test cyclic(3, 2) == 1 
+        @test cyclic(4, 2) == 2 
+        @test cyclic(20, 10) == 10  
+        @test cyclic(21, 10) == 1  
+        @test cyclic(27, 10) == 7  
+    end
+
+    @test length(suitseq.data) == 2
+    indices = ((1, 1),(1, 2),(2, 1),(2, 2))
+    @test suitability.((suitseq,), indices, 10) == suitability.((suitseq,), indices, 20)
+    @test suitability.((suitseq,), indices, 16) == suitability.((suitseq,), indices, 14)
+    @test suitability.((suitseq,), indices, 19) == suitability.((suitseq,), indices, 11)
+    @test suitability.((suitseq,), indices, 5) == suitability.((suitseq,), indices, 45)
+    @test suitability.((suitseq,), indices, 15) == suitability.((suitseq,), indices, 55)
+
+    @testset "suitability returns first frame values at 0.5 through the timespan" begin
+        @test suitability(suitseq, (1, 1), 5) == 0.1
+        @test suitability(suitseq, (1, 2), 5) == 0.2
+        @test suitability(suitseq, (2, 1), 5) == 0.3
+        @test suitability(suitseq, (2, 2), 5) == 0.4
+    end
+    @testset "suitability returns second frame values at 1.5 times through the timespan" begin
+        @test suitability(suitseq, (1, 1), 15) == 0.5
+        @test suitability(suitseq, (1, 2), 15) == 0.6
+        @test suitability(suitseq, (2, 1), 15) == 0.7
+        @test suitability(suitseq, (2, 2), 15) == 0.8
+    end
+    @testset "suitability interpolates halfway between frames on the timespan" begin
+        @test suitability(suitseq, (1, 1), 10) ≈ 0.3
+        @test suitability(suitseq, (1, 2), 10) ≈ 0.4
+        @test suitability(suitseq, (2, 1), 10) ≈ 0.5
+        @test suitability(suitseq, (2, 2), 10) ≈ 0.6
+    end
+
+    init = [0 0; 0 1] 
+    hood = DispersalNeighborhood(; radius=1)
+    model = InwardsLocalDispersal(layers=suitseq, neighborhood=hood, prob=0.0, suitability_threshold=0.4)
+    output = ArrayOutput(init)
+    sim!(output, model, init; time = 1:30)
+
+    # All offset by one, because 1 = t0
+    @test output[1]  == [0 0; 0 1]  
+    @test output[2]  == [0 0; 1 1]  
+    @test output[6]  == [0 0; 0 1]  
+    @test output[9]  == [0 0; 1 1]  
+    @test output[11] == [0 1; 1 1]  
+    @test output[16] == [1 1; 1 1]  
+    @test output[21] == [0 1; 1 1]  
+    @test output[23] == [0 0; 1 1]  
+    @test output[26] == [0 0; 0 1]  
 end
 
 @testset "build dispersal kernel" begin
     dk = DispersalNeighborhood(f=d->e^-d, radius=1).kernel
     @test typeof(dk) == Array{Float64,2}
-    @test size(dk, 1) == 3
-    @test size(dk, 2) == 3
+    @test size(dk) == (3, 3)
     @test dk[1,1] == dk[3,3] == dk[3,1] == dk[1,3]
     @test dk[2,1] == dk[1,2] == dk[3,2] == dk[2,3]
+
+    suit =  [1 0 1 1 0;
+             0 0 1 1 1;
+             1 1 1 1 0;
+             1 1 0 1 1;
+             1 0 1 1 1]
 end
 
 @testset "simple local dispersal simulation" begin
@@ -77,21 +135,23 @@ end
     hood = DispersalNeighborhood(; radius=1)
     layers = SuitabilityLayer(suit)
 
-    @testset "inwards" begin
+    @testset "inwards dispersal fills the grid where reachable and suitable" begin
         model = InwardsLocalDispersal(layers=layers, neighborhood=hood, prob=0.0)
         output = ArrayOutput(init)
         sim!(output, model, init; time = 1:3)
-        @test output.frames[1] == test1
-        @test output.frames[2] == test2
-        @test output.frames[3] == test3
+        @test output[1] == test1
+        @test output[2] == test2
+        @test output[3] == test3
     end
 
-    @testset "outwards" begin
+    @testset "outwards dispersal fills the grid where reachable and suitable" begin
         model = OutwardsLocalDispersal(layers=layers, neighborhood=hood, prob=0.0)
         output = ArrayOutput(init)
         sim!(output, model, init; time = 1:3)
-        @test output.frames[1] == test1
-        @test output.frames[2] == test2
-        @test output.frames[3] == test3
+        @test output[1] == test1
+        @test output[2] == test2
+        @test output[3] == test3
     end
 end
+
+# TODO: test dispersal with randomisation, and jump/human dispersal

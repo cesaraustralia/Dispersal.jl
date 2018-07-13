@@ -54,7 +54,10 @@ end
 "Inherit to extend human dispersal."
 abstract type AbstractHumanDispersal <: AbstractPartialModel end
 "Human dispersal model."
-@Probabilistic @Dispersal struct HumanDispersal{L,S} <: AbstractHumanDispersal end
+@Probabilistic @Dispersal struct HumanDispersal{L,S} <: AbstractHumanDispersal 
+    # "A number or Unitful.jl distance."
+    spotrange::Int = 30.0
+end
 
 
 "Neighborhoods for dispersal"
@@ -137,7 +140,8 @@ suitable habitat. Otherwise it keeps its current state.
 """
 rule(model::AbstractInwardsDispersal, state, index, t, args...) = begin
     # Exit unless cell habitat is suitabile for invasion
-    suitability(model.layers, index, t) > model.suitability_threshold || return state
+    suit = suitability(model.layers, index, t)
+    suit >= model.suitability_threshold || return zero(state)
 
     # Combine neighborhood cells into a single scalar
     cc = neighbors(model.neighborhood, state, index, t, args...)
@@ -239,7 +243,7 @@ rule(model::AbstractJumpDispersal, state, index, t, source, dest, args...) = beg
 
     # Update spotted cell if it's on the grid and suitable habitat
     row, col, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds && suitability(model.layers, row, col, t) > model.suitability_threshold
+    if is_inbounds && suitability(model.layers, (row, col), t) > model.suitability_threshold
         dest[row, col] = oneunit(state)
     end
 end
@@ -253,7 +257,7 @@ rule(model::AbstractHumanDispersal, state, index, t, source, dest, args...) = be
     # Ignore empty cells
     state > zero(state) || return
 
-    rand() < model.prob * human_impact(model.layers, row, col, t) || return
+    rand() < model.prob * human_impact(model.layers, index, t) || return
 
     # Calculate maximum spotting distance
     range = -model.spotrange:model.spotrange ./ model.cellsize
@@ -262,8 +266,8 @@ rule(model::AbstractHumanDispersal, state, index, t, source, dest, args...) = be
 
     # Update spotted cell if it's on the grid and suitable habitat
     row, col, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds && suitability(model.layers, (row, col), t) > model.suitability_threshold
-        source[row, col] = oneunit(state)
+    if is_inbounds && suitability(model.layers, (row, col), t) * human_impact(model.layers, (row, col), t) > model.suitability_threshold
+        dest[row, col] = oneunit(state)
     end
 end
 
@@ -281,14 +285,14 @@ neighbors(hood::DispersalNeighborhood, state, index, t, source, dest, args...) =
     radius = hood.radius
 
     # Loop over dispersal kernel grid dimensions
-    for a = -radius:radius, b = -radius:radius
+    for b = -radius:radius, a = -radius:radius
         # Ignore the current center cell
         a == 0 && b == 0 && continue
         # Check boundaries
         p, q, is_inbounds = inbounds((row + b, col + a), (height, width), hood.overflow)
         is_inbounds || continue
         # Update cumulative value with cell value and dispersal kernel
-        cc += source[p, q] * hood.kernel[a + radius + 1, b + radius + 1]
+        cc += source[p, q] * hood.kernel[b + radius + 1, a + radius + 1]
     end
     return cc
 end

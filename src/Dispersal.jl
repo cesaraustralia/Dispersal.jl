@@ -16,7 +16,7 @@ module Dispersal
 using Cellular, DocStringExtensions, Parameters, Mixers
 
 import Cellular: rule, neighbors, inbounds
-import Base: getindex, setindex!, endof, size, length
+import Base: getindex, setindex!, endof, size, length, push!
 
 # Documentation templates
 @template TYPES =
