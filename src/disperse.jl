@@ -7,12 +7,12 @@
     # "Minimum habitat suitability index."
     suitability_threshold::T = 0.1
     # "Neighborhood to disperse to or from"
-    neighborhood::N = DispersalNeighborhood()
+    neighborhood::N = DispersalNeighborhood(cellsize=cellsize)
 end
 
 @mix struct Probabilistic{P}
     # "A real number between one and zero."
-    prob::P = 0.1
+    prob_threshold::P = 0.1
 end
 
 "Extend to modify [`InwardsLocalDispersal`](@ref)"
@@ -47,8 +47,8 @@ abstract type AbstractJumpDispersal <: AbstractPartialModel end
 
 "Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other neighborhoods."
 @Probabilistic @Dispersal struct JumpDispersal{L,S} <: AbstractJumpDispersal
-    # "A number or Unitful.jl distance."
-    spotrange::Int = 30.0
+    "A number or Unitful.jl distance with the same units as cellsize"
+    spotrange::S = 30.0
 end
 
 "Inherit to extend human dispersal."
@@ -74,6 +74,7 @@ struct DispersalNeighborhood{K,S} <: AbstractDispersalNeighborhood
     radius::Int
     overflow::S
 end
+
 """
     DispersalNeighborhood(; f=d -> exponential(d, 1), radius=3, overflow=Skip())
 Constructor for neighborhoods, using a dispersal kernel function and a cell radius.
@@ -83,14 +84,17 @@ Constructor for neighborhoods, using a dispersal kernel function and a cell radi
 - `radius::Integer`: a positive integer
 - `overflow = Skip()
 """
-DispersalNeighborhood(; f=d -> exponential(d, 1), radius=3, overflow=Skip()) = begin
+DispersalNeighborhood(; f=d -> exponential(d, 1), radius=3, cellsize=1, overflow=Skip()) = begin
     r = radius
     size = 2r + 1
     kernel = zeros(Float64, size, size)
     for i = -r:r, j = -r:r
-        d = sqrt(i^2 + j^2)
-        kernel[i + r + 1, j + r + 1] = f(d)
+        kernel[i+r+1, j+r+1] = f(norm([i, j]) * cellsize)
     end
+    # Zero central cell
+    kernel[r + 1, r + 1] = 0.0
+    # Normalise
+    kernel ./= sum(kernel)
     DispersalNeighborhood(kernel, radius, overflow)
 end
 
@@ -129,7 +133,7 @@ end
     pressure(model, cc)
 Calculates the propagule pressure from the output of a neighborhood.
 """
-pressure(model, cc) = rand()^model.prob > (1 - cc) / 1
+pressure(model, cc) = rand()^model.prob_threshold > (1 - cc) / 1
 
 """
     rule(model::AbstractInwardsDispersal, state, index, t, args...)
@@ -197,7 +201,7 @@ invade(hood::DispersalNeighborhood, model, state, index, t, source, dest, args..
         # Habitat is suitabile
         suitability(model.layers, (i, j), t) > model.suitability_threshold || continue
         # Invasion pressure is above the threshold
-        rand() * hood.kernel[a + r + 1, b + r + 1] > model.prob || continue 
+        rand() * hood.kernel[a + r + 1, b + r + 1] > model.prob_threshold || continue 
 
         # Invade the cell
         dest[i, j] = 1
@@ -234,7 +238,7 @@ rule(model::AbstractJumpDispersal, state, index, t, source, dest, args...) = beg
     # Ignore empty cells
     state > zero(state) || return
     # Random dispersal events
-    rand() < model.prob || return
+    rand() < model.prob_threshold || return
 
     # Calculate maximum spotting distance
     range = -model.spotrange:model.spotrange ./ model.cellsize
@@ -257,7 +261,7 @@ rule(model::AbstractHumanDispersal, state, index, t, source, dest, args...) = be
     # Ignore empty cells
     state > zero(state) || return
 
-    rand() < model.prob * human_impact(model.layers, index, t) || return
+    rand() < model.prob_threshold * human_impact(model.layers, index, t) || return
 
     # Calculate maximum spotting distance
     range = -model.spotrange:model.spotrange ./ model.cellsize

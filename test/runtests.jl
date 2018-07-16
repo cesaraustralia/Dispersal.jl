@@ -1,5 +1,5 @@
 using Revise, Dispersal, Cellular
-using Dispersal: suitability, cyclic, sequence_interpolate
+using Dispersal: suitability, cyclic, sequence_interpolate, neighbors
 
 @static if VERSION < v"0.7.0-DEV.2005"
     using Base.Test
@@ -69,7 +69,7 @@ end
 
     init = [0 0; 0 1] 
     hood = DispersalNeighborhood(; radius=1)
-    model = InwardsLocalDispersal(layers=suitseq, neighborhood=hood, prob=0.0, suitability_threshold=0.4)
+    model = InwardsLocalDispersal(layers=suitseq, neighborhood=hood, prob_threshold=0.0, suitability_threshold=0.4)
     output = ArrayOutput(init)
     sim!(output, model, init; time = 1:30)
 
@@ -85,27 +85,47 @@ end
     @test output[26] == [0 0; 0 1]  
 end
 
-@testset "build dispersal kernel" begin
-    dk = DispersalNeighborhood(f=d->e^-d, radius=1).kernel
+@testset "dispersal kernel array matches passed in function" begin
+    f(d) = e^-d
+    dk = DispersalNeighborhood(f=f, cellsize=1, radius=2).kernel
     @test typeof(dk) == Array{Float64,2}
-    @test size(dk) == (3, 3)
-    @test dk[1,1] == dk[3,3] == dk[3,1] == dk[1,3]
-    @test dk[2,1] == dk[1,2] == dk[3,2] == dk[2,3]
+    @test size(dk) == (5, 5)
 
-    suit =  [1 0 1 1 0;
-             0 0 1 1 1;
-             1 1 1 1 0;
-             1 1 0 1 1;
-             1 0 1 1 1]
+    tesst = [0.0 0.0 0.0 0.0 0.0;
+             0.0 0.0 0.0 0.0 0.0;
+             0.0 0.0 1.0 0.0 0.0;
+             0.0 0.0 0.0 0.0 0.0;
+             0.0 0.0 0.0 0.0 0.0;]
+
+    @test sum(dk) == 1.0
+    @test_broken dk == test
+end
+
+suit =  [1 0 1 1 0;
+         0 0 1 1 1;
+         1 1 1 1 0;
+         1 1 0 1 1;
+         1 0 1 1 1]
+
+@testset "dispersal nieghborhood sum matches the passed-in kernel function" begin
+    f(d) = 1/d
+    hood = DispersalNeighborhood(f=f, cellsize=1, radius=2)
+    state = 0
+    t = 0
+
+    source = [1 0 0 0 0;
+              0 0 0 1 0;
+              0 1 0 0 1;
+              0 0 0 1 0;
+              0 1 0 0 0]
+
+    @testset "neighbouhood sum matches grid*kernel sum for same-sized grid" begin
+        cc = neighbors(hood, state, (3, 3), t, source, [])
+        @test cc ≈ sum(source .* hood.kernel) 
+    end
 end
 
 @testset "simple local dispersal simulation" begin
-
-    suit =  [1 0 1 1 0;
-             0 0 1 1 1;
-             1 1 1 1 0;
-             1 1 0 1 1;
-             1 0 1 1 1]
 
     init =  [0 0 0 0 0;
              0 0 0 0 0;
@@ -136,7 +156,7 @@ end
     layers = SuitabilityLayer(suit)
 
     @testset "inwards dispersal fills the grid where reachable and suitable" begin
-        model = InwardsLocalDispersal(layers=layers, neighborhood=hood, prob=0.0)
+        model = InwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
         output = ArrayOutput(init)
         sim!(output, model, init; time = 1:3)
         @test output[1] == test1
@@ -145,7 +165,7 @@ end
     end
 
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
-        model = OutwardsLocalDispersal(layers=layers, neighborhood=hood, prob=0.0)
+        model = OutwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
         output = ArrayOutput(init)
         sim!(output, model, init; time = 1:3)
         @test output[1] == test1
@@ -154,4 +174,27 @@ end
     end
 end
 
-# TODO: test dispersal with randomisation, and jump/human dispersal
+
+@testset "jump dispersal models work" begin
+    init =  [0 0 0 0 0;
+             0 0 0 0 0;
+             0 0 1 0 0;
+             0 0 0 0 0;
+             0 0 0 0 0]
+
+    @testset "Jump dispersal spread randomly" begin
+        layers = SuitabilityLayer(suit)
+        srand(1234)
+        model = JumpDispersal(layers=layers, prob_threshold=0.5)
+        output = ArrayOutput(init)
+        sim!(output, model, init; time = 1:3)
+    end
+
+    @testset "Human dispersal relies on source ans sink population" begin
+        layers = SuitabilityLayer(suit)
+        srand(1234)
+        model = HumanDispersal(layers=layers, prob_threshold=0.5)
+        output = ArrayOutput(init)
+        sim!(output, model, init; time = 1:3)
+    end
+end
