@@ -15,6 +15,11 @@ end
     prob_threshold::P = 0.1
 end
 
+@mix struct SpotRange{S}
+    # "A number or Unitful.jl distance with the same units as cellsize"
+    spotrange::S = 30.0
+end
+
 "Extend to modify [`InwardsLocalDispersal`](@ref)"
 abstract type AbstractInwardsDispersal <: AbstractModel end
 
@@ -44,20 +49,13 @@ end
 
 "Extend to modify [`JumpDispersal`](@ref)"
 abstract type AbstractJumpDispersal <: AbstractPartialModel end
-
 "Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other neighborhoods."
-@Probabilistic @Dispersal struct JumpDispersal{L,S} <: AbstractJumpDispersal
-    "A number or Unitful.jl distance with the same units as cellsize"
-    spotrange::S = 30.0
-end
+@Probabilistic @SpotRange @Dispersal struct JumpDispersal{} <: AbstractJumpDispersal end
 
-"Inherit to extend human dispersal."
+"Extend to modify [`HumanDispersal`](@ref)"
 abstract type AbstractHumanDispersal <: AbstractPartialModel end
 "Human dispersal model."
-@Probabilistic @Dispersal struct HumanDispersal{L,S} <: AbstractHumanDispersal 
-    # "A number or Unitful.jl distance."
-    spotrange::Int = 30.0
-end
+@Probabilistic @SpotRange @Dispersal struct HumanDispersal{} <: AbstractHumanDispersal end
 
 
 "Neighborhoods for dispersal"
@@ -69,10 +67,10 @@ Can be built directly by passing in the array, radius and overflow
 arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 """
-struct DispersalNeighborhood{K,S} <: AbstractDispersalNeighborhood
+struct DispersalNeighborhood{K,O} <: AbstractDispersalNeighborhood
     kernel::K
     radius::Int
-    overflow::S
+    overflow::O
 end
 
 """
