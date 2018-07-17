@@ -97,8 +97,8 @@ end
              0.0 0.0 0.0 0.0 0.0;
              0.0 0.0 0.0 0.0 0.0;]
 
-    @test sum(dk) == 1.0
-    @test_broken dk == test
+    @test sum(dk) ≈ 1.0
+    @test_broken dk ≈ test
 end
 
 suit =  [1 0 1 1 0;
