@@ -71,18 +71,19 @@ end
     hood = DispersalNeighborhood(; radius=1)
     model = InwardsLocalDispersal(layers=suitseq, neighborhood=hood, prob_threshold=0.0, suitability_threshold=0.4)
     output = ArrayOutput(init)
-    sim!(output, model, init; time = 1:30)
+    sim!(output, model, init; time=25)
 
     # All offset by one, because 1 = t0
     @test output[1]  == [0 0; 0 1]  
     @test output[2]  == [0 0; 1 1]  
-    @test output[6]  == [0 0; 0 1]  
-    @test output[9]  == [0 0; 1 1]  
-    @test output[11] == [0 1; 1 1]  
-    @test output[16] == [1 1; 1 1]  
-    @test output[21] == [0 1; 1 1]  
-    @test output[23] == [0 0; 1 1]  
-    @test output[26] == [0 0; 0 1]  
+    @test output[5]  == [0 0; 0 1]  
+    @test output[8]  == [0 0; 1 1]  
+    @test output[10] == [0 1; 1 1]  
+    @test output[15] == [1 1; 1 1]  
+    @test output[20] == [0 1; 1 1]  
+    @test output[22] == [0 0; 1 1]  
+    @test output[25] == [0 0; 0 1]  
+    @test_throws BoundsError output[26]
 end
 
 @testset "dispersal kernel array matches passed in function" begin
@@ -158,7 +159,7 @@ end
     @testset "inwards dispersal fills the grid where reachable and suitable" begin
         model = InwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
         output = ArrayOutput(init)
-        sim!(output, model, init; time = 1:3)
+        sim!(output, model, init; time=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
@@ -167,7 +168,7 @@ end
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
         model = OutwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
         output = ArrayOutput(init)
-        sim!(output, model, init; time = 1:3)
+        sim!(output, model, init; time=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
@@ -187,7 +188,7 @@ end
         srand(1234)
         model = JumpDispersal(layers=layers, prob_threshold=0.5)
         output = ArrayOutput(init)
-        sim!(output, model, init; time = 1:3)
+        sim!(output, model, init; time=3)
     end
 
     @testset "Human dispersal relies on source ans sink population" begin
@@ -195,6 +196,6 @@ end
         srand(1234)
         model = HumanDispersal(layers=layers, prob_threshold=0.5)
         output = ArrayOutput(init)
-        sim!(output, model, init; time = 1:3)
+        sim!(output, model, init; time=3)
     end
 end
