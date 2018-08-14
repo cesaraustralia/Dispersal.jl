@@ -120,8 +120,8 @@ suit =  [1 0 1 1 0;
               0 0 0 1 0;
               0 1 0 0 0]
 
-    @testset "neighbouhood sum matches grid*kernel sum for same-sized grid" begin
-        cc = neighbors(hood, state, (3, 3), t, source, [])
+    @testset "neighbouhood sum matches grid * kernel sum for same-sized grid" begin
+        cc = neighbors(hood, nothing, state, (3, 3), t, source, [])
         @test cc ≈ sum(source .* hood.kernel) 
     end
 end
@@ -153,10 +153,10 @@ end
              1 0 1 1 1]
 
     # Dispersal in radius 1 neighborhood
-    hood = DispersalNeighborhood(; radius=1)
     layers = SuitabilityLayer(suit)
 
     @testset "inwards dispersal fills the grid where reachable and suitable" begin
+        hood = DispersalNeighborhood(; dir=:inwards, radius=1)
         model = InwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
         output = ArrayOutput(init)
         sim!(output, model, init; time=3)
@@ -166,6 +166,7 @@ end
     end
 
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
+        hood = DispersalNeighborhood(; dir=:outwards,  radius=1)
         model = OutwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
         output = ArrayOutput(init)
         sim!(output, model, init; time=3)

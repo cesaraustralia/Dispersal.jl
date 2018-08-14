@@ -25,6 +25,8 @@ import Base: getindex, setindex!, endof, size, length, push!
     $(FIELDS)
     """
 
+include("types.jl")
+include("neighborhoods.jl")
 include("disperse.jl")
 include("layers.jl")
 
