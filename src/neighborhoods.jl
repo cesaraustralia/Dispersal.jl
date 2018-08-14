@@ -101,12 +101,12 @@ end
 
 update_cell!(hood::DispersalNeighborhood{:outwards}, model, state::Integer,
                    t, source, dest, hood_index, dest_index, args...) = begin
+    suitability(model.layers, dest_index, t) > model.suitability_threshold || return zero(state)
     rand() * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
     # Invade the cell
     dest[dest_index...] = oneunit(state)
 end
 
-update_cell!(hood::DispersalNeighborhood{:inwards}, model, state, t, source, dest, 
-             hood_index, dest_index, args...) = 
+update_cell!(hood::DispersalNeighborhood{:inwards}, model, state, t, source, dest, hood_index, source_index, args...) = 
     source[source_index...] * hood.kernel[hood_index...] 
 
