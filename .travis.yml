@@ -3,7 +3,7 @@ language: julia
 sudo: required
 os:
   - linux
-  - osx
+  # - osx
 julia:
   - 0.6
   - nightly
@@ -26,6 +26,7 @@ addons:
 script:
 - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 - if [[ `uname` = "Linux" ]]; then TESTCMD="xvfb-run julia"; else TESTCMD="julia"; fi
+- julia -e 'Pkg.clone("https://github.com/rafaqz/TerminalGraphics.jl.git"); Pkg.build("TerminalGraphics")'
 - julia -e 'Pkg.clone("https://github.com/rafaqz/Cellular.jl.git"); Pkg.build("Cellular")'
 - $TESTCMD -e 'Pkg.clone(pwd()); 
                Pkg.build("Dispersal"); 
