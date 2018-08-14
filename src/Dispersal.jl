@@ -27,7 +27,7 @@ import Base: getindex, setindex!, endof, size, length, push!
 
 include("types.jl")
 include("neighborhoods.jl")
-include("disperse.jl")
+include("rules.jl")
 include("layers.jl")
 
 export AbstractDispersal,
