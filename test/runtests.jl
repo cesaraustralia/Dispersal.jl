@@ -69,7 +69,7 @@ end
 
     init = [0 0; 0 1] 
     hood = DispersalNeighborhood(; radius=1)
-    model = InwardsLocalDispersal(layers=suitseq, neighborhood=hood, prob_threshold=0.0, suitability_threshold=0.4)
+    model = Models(InwardsLocalDispersal(layers=suitseq, neighborhood=hood, prob_threshold=0.0, suitability_threshold=0.4))
     output = ArrayOutput(init)
     sim!(output, model, init; time=25)
 
@@ -157,7 +157,7 @@ end
 
     @testset "inwards dispersal fills the grid where reachable and suitable" begin
         hood = DispersalNeighborhood(; dir=:inwards, radius=1)
-        model = InwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
+        model = Models(InwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0))
         output = ArrayOutput(init)
         sim!(output, model, init; time=3)
         @test output[1] == test1
@@ -167,7 +167,7 @@ end
 
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
         hood = DispersalNeighborhood(; dir=:outwards,  radius=1)
-        model = OutwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0)
+        model = Models(OutwardsLocalDispersal(layers=layers, neighborhood=hood, prob_threshold=0.0))
         output = ArrayOutput(init)
         sim!(output, model, init; time=3)
         @test output[1] == test1
@@ -187,7 +187,7 @@ end
     @testset "Jump dispersal spread randomly" begin
         layers = SuitabilityLayer(suit)
         srand(1234)
-        model = JumpDispersal(layers=layers, prob_threshold=0.5)
+        model = Models(JumpDispersal(layers=layers, prob_threshold=0.5))
         output = ArrayOutput(init)
         sim!(output, model, init; time=3)
     end
@@ -195,7 +195,7 @@ end
     @testset "Human dispersal relies on source ans sink population" begin
         layers = SuitabilityLayer(suit)
         srand(1234)
-        model = HumanDispersal(layers=layers, prob_threshold=0.5)
+        model = Models(HumanDispersal(layers=layers, prob_threshold=0.5))
         output = ArrayOutput(init)
         sim!(output, model, init; time=3)
     end

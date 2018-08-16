@@ -13,10 +13,12 @@ packages that extend it may be incorporated into a simulaiton.
 """
 module Dispersal
 
-using Cellular, DocStringExtensions, Parameters, Mixers
+using Cellular, DocStringExtensions, Parameters, Mixers, Flatten, MetaFields
 
 import Cellular: rule, neighbors, inbounds
 import Base: getindex, setindex!, endof, size, length, push!
+import Flatten: flattenable
+import MetaFields: @description, @limits, description, limits
 
 # Documentation templates
 @template TYPES =

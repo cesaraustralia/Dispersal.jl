@@ -21,25 +21,25 @@ end
 
 
 
-@mix @with_kw struct Dispersal{L,S,T,N}
+@mix @limits @flattenable @with_kw struct Dispersal{L,S,T,N}
     # "[`AbstractLayers`](@ref) or a single [AbstractLayer](@ref). The default is `nothing`."
-    layers::L = nothing
+    layers::L = nothing                                        | Exclude() | _
     # "A number or Unitful.jl distance."
-    cellsize::S = 1.0
+    cellsize::S = 1.0                                          | Exclude() | _
     # "Minimum habitat suitability index."
-    suitability_threshold::T = 0.1
+    suitability_threshold::T = 0.1                             | Include() | (0.0, 1.0)
     # "Neighborhood to disperse to or from"
-    neighborhood::N = DispersalNeighborhood(cellsize=cellsize)
+    neighborhood::N = DispersalNeighborhood(cellsize=cellsize) | Exclude() | _
 end
 
-@mix struct Probabilistic{P}
+@mix @limits @flattenable struct Probabilistic{P}
     # "A real number between one and zero."
-    prob_threshold::P = 0.1
+    prob_threshold::P = 0.1 | Include() | (0.0, 1.0)
 end
 
-@mix struct SpotRange{S}
+@mix @limits @flattenable struct SpotRange{S}
     # "A number or Unitful.jl distance with the same units as cellsize"
-    spotrange::S = 30.0
+    spotrange::S = 30.0     | Include() | (0.0, 100.0)
 end
 
 "Extend to modify [`InwardsLocalDispersal`](@ref)"
@@ -65,8 +65,8 @@ proportion of the grid is occupied.
 @Probabilistic @Dispersal struct OutwardsLocalDispersal{} <: AbstractOutwardsDispersal end
 
 @Dispersal struct HudginsDispersal{} <: AbstractOutwardsDispersal
-    pop_threshold::Float64 = 0.0006227
-    growthrate::Float64 = 2.4321
+    pop_threshold::Float64 = 0.0006227 | Include() | (0.0, 0.1) 
+    growthrate::Float64 = 2.4321       | Include() | (0.0, 10.0)
 end
 
 "Extend to modify [`JumpDispersal`](@ref)"
