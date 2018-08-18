@@ -84,11 +84,11 @@ end
     @test output[22] == [0 0; 1 1]  
     @test output[25] == [0 0; 0 1]  
     @test_throws BoundsError output[26]
+
 end
 
 @testset "dispersal kernel array matches passed in function" begin
-    f(d) = e^-d
-    dk = DispersalNeighborhood(f=f, cellsize=1, radius=2).kernel
+    dk = DispersalNeighborhood(f=exponential, cellsize=1, radius=2, param=1.0).kernel
     @test typeof(dk) == Array{Float64,2}
     @test size(dk) == (5, 5)
 
@@ -109,8 +109,7 @@ suit =  [1 0 1 1 0;
          1 0 1 1 1]
 
 @testset "dispersal nieghborhood sum matches the passed-in kernel function" begin
-    f(d) = 1/d
-    hood = DispersalNeighborhood(f=f, cellsize=1, radius=2)
+    hood = DispersalNeighborhood(f=exponential, cellsize=1, radius=2)
     state = 0
     t = 0
 

@@ -9,19 +9,15 @@ Constructor for neighborhoods, using a dispersal kernel function and a cell radi
 - `radius::Integer`: a positive integer
 - `overflow = Skip()
 """
-DispersalNeighborhood(; dir=:inwards, f=d -> exponential(d, 1), radius=3, cellsize=1, overflow=Skip()) = begin
-    r = radius
-    size = 2r + 1
-    kernel = zeros(Float64, size, size)
+build_dispersal_kernel(f, param, init, cellsize, r) = begin
+    sze = 2r + 1
+    kernel = similar(init, Float64, sze, sze)
     # Paper: l. 97
     for y = -r:r, x = -r:r
-        kernel[y+r+1, x+r+1] = f(sqrt(y^2 + x^2) * cellsize)
+        kernel[y+r+1, x+r+1] = f(sqrt(y^2 + x^2) * cellsize, param)
     end
-    # Zero central cell
-    kernel[r + 1, r + 1] = 0.0
-    # Normalise?
+    # Normalise
     kernel ./= sum(kernel)
-    DispersalNeighborhood{dir, typeof(kernel), typeof(overflow)}(kernel, radius, overflow)
 end
 
 # Paper: l. 96
