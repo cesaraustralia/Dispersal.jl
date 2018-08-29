@@ -5,11 +5,6 @@ Calculates the propagule pressure from the output of a neighborhood.
 pressure(model, source::Array, cc, args...) = 
     rand() ^ model.prob_threshold > (1 - cc) / 1
 
-pressure(model, source, cc, randomstate, args...) = begin
-    rnd = GPUArrays.gpu_rand(Float64, CuArrays.CuKernelState(), randomstate)
-    CUDAnative.pow(rnd, model.prob_threshold) > (1 - cc) / 1
-end
-
 """
     rule(model::AbstractInwardsDispersal, state, row, col, t, layers, args...)
 Runs rule for of [`AbstractInwardsDispersal`](@ref) dispersal.

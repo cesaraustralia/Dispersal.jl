@@ -22,8 +22,6 @@ using Cellular,
       Requires,
       Tags
 
-using CUDAnative, GPUArrays, CuArrays
-
 import Cellular: rule, neighbors, inbounds
 import Base: getindex, setindex!, endof, size, length, push!
 import Flatten: flattenable
