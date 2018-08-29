@@ -11,13 +11,14 @@ Constructor for neighborhoods, using a dispersal kernel function and a cell radi
 """
 build_dispersal_kernel(f, param, init, cellsize, r) = begin
     sze = 2r + 1
-    kernel = similar(init, Float64, sze, sze)
+    kernel = zeros(Float64, sze, sze)
     # Paper: l. 97
     for y = -r:r, x = -r:r
         kernel[y+r+1, x+r+1] = f(sqrt(y^2 + x^2) * cellsize, param)
     end
     # Normalise
     kernel ./= sum(kernel)
+    SMatrix{sze,sze}(kernel)
 end
 
 # Paper: l. 96
@@ -46,7 +47,7 @@ end
 Dispersal function taken from Hudgins, 'Predicting the spread of all
 invasive forest pests in the United States', 2017
 """
-neighborhood(hood::HudginsDispersalGrid, model::HudginsDispersal, state, index, t, source, dest, args...) = begin
+neighborhood(hood::HudginsDispersalGrid, model::HudginsDispersal, state, row, col, t, source, dest, args...) = begin
     # Ignore cells below the population threshold
     state > output.pop_threshold || return zero(eltype(kernel[1,1]))
 
@@ -57,21 +58,21 @@ neighborhood(hood::HudginsDispersalGrid, model::HudginsDispersal, state, index, 
     # Disperse to the entire grid
     for i = 1:height, j = 1:width
         # Skip the state cell
-        i, j == index && continue
+        i, j == row, col && continue
         # Invade the cell
-        dest[i, j] += kernel[index...][i, j]
-        propagules += kernel[index...][i, j]
+        dest[i, j] += kernel[row, col][i, j]
+        propagules += kernel[row, col][i, j]
     end
     propagules
 end
 
 """
-    neighbors(hood::DispersalNeighborhood, state, index, t, source, dest, args...)
+    neighbors(hood::DispersalNeighborhood, state, row, col, t, source, dest, args...)
 Returns nieghbors for a [`DispersalNeighborhood`](@ref), looping over
 the array of dispersal propabilities.
 """
-neighbors(hood::DispersalNeighborhood, model, state, index, t, source, dest, args...) = begin
-    cc = 0.0
+neighbors(hood::DispersalNeighborhood, model, state, row, col, t, source, dest, args...) = begin
+    cc = zero(state) 
     r = hood.radius
 
     # Loop over dispersal kernel grid dimensions
@@ -80,7 +81,7 @@ neighbors(hood::DispersalNeighborhood, model, state, index, t, source, dest, arg
         # Ignore the current center cell
         b == 0 && a == 0 && continue
         # Check boundaries
-        y, x, is_inbounds = inbounds(index .+ (b, a), size(source), hood.overflow)
+        y, x, is_inbounds = inbounds((row, col) .+ (b, a), size(source), hood.overflow)
         is_inbounds || continue
         # Update cumulative value, and cell value for outwards dispersal
         cc += update_cell!(hood, model, state, t, source, dest, (b, a) .+ (r + 1), (y, x), args...)
@@ -96,13 +97,17 @@ update_cell!(hood::DispersalNeighborhood{:outwards}, model, state::AbstractFloat
 end
 
 update_cell!(hood::DispersalNeighborhood{:outwards}, model, state::Integer,
-                   t, source, dest, hood_index, dest_index, args...) = begin
-    suitability(model.layers, dest_index, t) > model.suitability_threshold || return zero(state)
+                   t, source, dest, hood_index, dest_index, layers, args...) = begin
+    suitability(layers, dest_index, t) > model.suitability_threshold || return zero(state)
     rand() * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
     # Invade the cell
     dest[dest_index...] = oneunit(state)
 end
 
-update_cell!(hood::DispersalNeighborhood{:inwards}, model, state, t, source, dest, hood_index, source_index, args...) = 
-    source[source_index...] * hood.kernel[hood_index...] 
+update_cell!(hood::DispersalNeighborhood{:inwards}, model, state, t, source, dest, hood_index, source_index, args...) = begin
+    s = size(hood.kernel, 1)
+    # No idea why this is needed but cuda dies without it
+    hood_index = min(max(hood_index[1], s, 0)), min(max(hood_index[2], s, 0))
+    source[source_index...] * hood.kernel[1, 1] 
+end
 

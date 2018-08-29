@@ -9,22 +9,24 @@ Can be built directly by passing in the array, radius and overflow
 arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 """
-@limits @flattenable struct DispersalNeighborhood{T,F,P,K,C,O} #<: AbstractDispersalNeighborhood
+@limits @flattenable struct DispersalNeighborhood{T,F,P,K,C,I,O} #<: AbstractDispersalNeighborhood
     f::F        | Exclude() | _
     param::P    | Include() | (0.0, 10.0)
     kernel::K   | Exclude() | _
     cellsize::C | Include() | (0.0, 10.0)
-    radius::Int | Include() | (1, 10)
+    radius::I   | Include() | (1, 10)
     overflow::O | Exclude() | _
-    function DispersalNeighborhood{T,F,P,K,C,O}(f::F, param::P, init_kernel::K, cellsize::C, radius::Int, overflow::O) where {T,F,P,K,C,O}
+    function DispersalNeighborhood{T,F,P,K,C,I,O}(f::F, param::P, init_kernel::K, 
+                                                  cellsize::C, radius::I, overflow::O
+                                                 ) where {T,F,P,K,C,I,O}
         kernel = build_dispersal_kernel(f, param, init_kernel, cellsize, radius)
-        new{T,F,P,typeof(kernel),C,O}(f, param, kernel, cellsize, radius, overflow)
+        new{T,F,P,typeof(kernel),C,I,O}(f, param, kernel, cellsize, radius, overflow)
     end
 end
 
 DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, 
                       radius=3, overflow=Skip()) = begin
-    DispersalNeighborhood{dir, typeof.((f, param, init, cellsize, overflow))...
+    DispersalNeighborhood{dir, typeof.((f, param, init, cellsize, radius, overflow))...
                          }(f, param, init, cellsize, radius, overflow)
 end
 
@@ -35,9 +37,9 @@ end
 
 
 
-@mix @limits @flattenable @with_kw struct Dispersal{L,S,T}
+@mix @limits @flattenable @with_kw struct Dispersal{S,T}
     # "[`AbstractLayers`](@ref) or a single [AbstractLayer](@ref). The default is `nothing`."
-    layers::L = nothing                                        | Exclude() | _
+    # layers::L = nothing                                        | Exclude() | _
     # "A number or Unitful.jl distance."
     cellsize::S = 1.0                                          | Exclude() | _
     # "Minimum habitat suitability index."

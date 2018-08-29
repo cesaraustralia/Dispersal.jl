@@ -13,12 +13,21 @@ packages that extend it may be incorporated into a simulaiton.
 """
 module Dispersal
 
-using Cellular, DocStringExtensions, Parameters, Mixers, Flatten, MetaFields
+using Cellular, 
+      DocStringExtensions, 
+      Parameters, 
+      Mixers, 
+      StaticArrays,
+      Flatten, 
+      Requires,
+      Tags
+
+using CUDAnative, GPUArrays, CuArrays
 
 import Cellular: rule, neighbors, inbounds
 import Base: getindex, setindex!, endof, size, length, push!
 import Flatten: flattenable
-import MetaFields: @description, @limits, description, limits
+import Tags: @description, @limits, description, limits
 
 # Documentation templates
 @template TYPES =
@@ -45,16 +54,19 @@ export AbstractDispersal,
        AbstractDispersalNeighborhood, 
        DispersalNeighborhood,
        DispersalGrid,
-       AbstractLayers,
-       Layers,
-       AbstractLayer, 
-       AbstractSuitabilityLayer, 
-       SuitabilityLayer, 
+       Sequencwe,
        Layer,
-       AbstractHumanLayer,
-       HumanLayer,
-       AbstractSuitabilitySequence, 
+       SuitabilityLayer, 
        SuitabilitySequence,
+       HumanLayer, 
        exponential
+
+function __init__()
+    @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
+        include("cuda.jl")
+    end
+end
+
+
 
 end # module
