@@ -10,12 +10,12 @@ arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 """
 @limits @flattenable struct DispersalNeighborhood{T,F,P,K,C,I,O} #<: AbstractDispersalNeighborhood
-    f::F        | Exclude() | _
-    param::P    | Include() | (0.0, 10.0)
-    kernel::K   | Exclude() | _
-    cellsize::C | Include() | (0.0, 10.0)
-    radius::I   | Include() | (1, 10)
-    overflow::O | Exclude() | _
+    f::F        | false | _
+    param::P    | true  | (0.0, 10.0)
+    kernel::K   | false | _
+    cellsize::C | true  | (0.0, 10.0)
+    radius::I   | true  | (1, 10)
+    overflow::O | false | _
     function DispersalNeighborhood{T,F,P,K,C,I,O}(f::F, param::P, init_kernel::K, 
                                                   cellsize::C, radius::I, overflow::O
                                                  ) where {T,F,P,K,C,I,O}
@@ -38,27 +38,25 @@ end
 
 
 @mix @limits @flattenable @with_kw struct Dispersal{S,T}
-    # "[`AbstractLayers`](@ref) or a single [AbstractLayer](@ref). The default is `nothing`."
-    # layers::L = nothing                                        | Exclude() | _
     # "A number or Unitful.jl distance."
-    cellsize::S = 1.0                                          | Exclude() | _
+    cellsize::S = 1.0                                          | false | _
     # "Minimum habitat suitability index."
-    suitability_threshold::T = 0.1                             | Include() | (0.0, 1.0)
+    suitability_threshold::T = 0.1                             | true  | (0.0, 1.0)
 end
 
 @mix @limits @flattenable @with_kw struct Neighbors{N}
     # "Neighborhood to disperse to or from"
-    neighborhood::N = DispersalNeighborhood(cellsize=cellsize) | Include() | _
+    neighborhood::N = DispersalNeighborhood(cellsize=cellsize) | true  | _
 end
 
 @mix @limits @flattenable struct Probabilistic{P}
     # "A real number between one and zero."
-    prob_threshold::P = 0.1 | Include() | (0.0, 1.0)
+    prob_threshold::P = 0.1 | true | (0.0, 1.0)
 end
 
 @mix @limits @flattenable struct SpotRange{S}
     # "A number or Unitful.jl distance with the same units as cellsize"
-    spotrange::S = 30.0     | Include() | (0.0, 100.0)
+    spotrange::S = 30.0     | true | (0.0, 100.0)
 end
 
 "Extend to modify [`InwardsLocalDispersal`](@ref)"
@@ -84,8 +82,8 @@ proportion of the grid is occupied.
 @Probabilistic @Dispersal @Neighbors struct OutwardsLocalDispersal{} <: AbstractOutwardsDispersal end
 
 @Dispersal struct HudginsDispersal{} <: AbstractOutwardsDispersal
-    pop_threshold::Float64 = 0.0006227 | Include() | (0.0, 0.1) 
-    growthrate::Float64 = 2.4321       | Include() | (0.0, 10.0)
+    pop_threshold::Float64 = 0.0006227 | true | (0.0, 0.1) 
+    growthrate::Float64 = 2.4321       | true | (0.0, 10.0)
 end
 
 "Extend to modify [`JumpDispersal`](@ref)"
