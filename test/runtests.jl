@@ -1,11 +1,43 @@
-using Revise, 
-      Dispersal, 
-      Cellular, 
+using Revise,
+      Dispersal,
+      Cellular,
       StaticArrays,
       Test
+using Dispersal: suitability, cyclic, sequence_interpolate, neighbors, hudgins_precalc
 
-using Dispersal: suitability, cyclic, sequence_interpolate, neighbors
+@testset "Hudgins" begin
 
+    global init =  Float32[0.0 0.0 1.0 0.0 0.0;
+                           0.0 0.0 1.0 0.0 0.0;
+                           0.0 0.0 1.0 0.0 0.0;
+                           0.0 0.0 0.0 0.0 0.0;
+                           0.0 0.0 0.0 0.0 0.0]
+
+    global suit =  Float32[1.0 0.0 1.0 1.0 0.0;
+                           0.0 0.0 1.0 1.0 1.0;
+                           1.0 1.0 1.0 1.0 0.0;
+                           1.0 1.0 0.0 1.0 1.0;
+                           1.0 0.0 1.0 1.0 1.0]
+
+    global human = Float32[1.0 1.0 0.0 0.0 0.0;
+                           1.0 0.0 0.0 0.0 0.0;
+                           0.0 0.0 1.0 0.0 0.0;
+                           0.0 0.0 0.0 0.0 1.0;
+                           0.0 0.0 0.0 0.0 0.0]
+
+    # init = CuArray(init)
+    # human = CuArray(human)
+    # suit = CuArray(suit)
+    # suit_layer = (SuitabilityLayer(), suit)
+    # human_layer = (HumanLayer(), human)
+
+    # precalc = hudgins_precalc(init, suit, human)
+
+    # model = Models(HudginsDispersal())
+    # output = ArrayOutput(init)
+    # layers = (human_layer, suit_layer)
+    # sim!(output, model, init, layers, precalc; time=30)
+end
 
 @testset "suitability is 1.0 by default" begin
     @test suitability(nothing, (1, 1), 10) == 1.0
@@ -25,13 +57,13 @@ end
         @test cyclic(-2, 2) == 2
         @test cyclic(-1, 2) == 1
         @test cyclic(0, 2) == 2
-        @test cyclic(1, 2) == 1 
-        @test cyclic(2, 2) == 2 
-        @test cyclic(3, 2) == 1 
-        @test cyclic(4, 2) == 2 
-        @test cyclic(20, 10) == 10  
-        @test cyclic(21, 10) == 1  
-        @test cyclic(27, 10) == 7  
+        @test cyclic(1, 2) == 1
+        @test cyclic(2, 2) == 2
+        @test cyclic(3, 2) == 1
+        @test cyclic(4, 2) == 2
+        @test cyclic(20, 10) == 10
+        @test cyclic(21, 10) == 1
+        @test cyclic(27, 10) == 7
     end
 
     # sequence of layers
@@ -65,35 +97,40 @@ end
         @test suitability(suitseq, (2, 2), 10) ≈ 0.6
     end
 
-    global init = [0 0; 0 1] 
+
+    global init = [0 0; 0 1]
     global hood = DispersalNeighborhood(; radius=1)
     global model = Models(InwardsLocalDispersal(neighborhood=hood, prob_threshold=0.0, suitability_threshold=0.4))
     global output = ArrayOutput(init)
-    sim!(output, model, init, suitseq; time=25)
+
+    @test Dispersal.pressure(model.models[1], init, 1) 
+    Cellular.rule(model.models[1], 0, 2, 2, 2, init, [], suitseq)
+    sim!(output, model, init, (suitseq,); time=25)
 
     # All offset by one, because 1 = t0
-    @test output[1]  == [0 0; 0 1]  
-    @test output[2]  == [0 0; 1 1]  
-    @test output[5]  == [0 0; 0 1]  
-    @test output[8]  == [0 0; 1 1]  
-    @test output[10] == [0 1; 1 1]  
-    @test output[15] == [1 1; 1 1]  
-    @test output[20] == [0 1; 1 1]  
-    @test output[22] == [0 0; 1 1]  
-    @test output[25] == [0 0; 0 1]  
+    output
+    @test output[1]  == [0 0; 0 1]
+    @test output[2]  == [0 0; 1 1]
+    @test output[5]  == [0 0; 0 1]
+    @test output[8]  == [0 0; 1 1]
+    @test output[10] == [0 1; 1 1]
+    @test output[15] == [1 1; 1 1]
+    @test output[20] == [0 1; 1 1]
+    @test output[22] == [0 0; 1 1]
+    @test output[25] == [0 0; 0 1]
     @test_throws BoundsError output[26]
 
 end
 
 @testset "dispersal kernel array matches passed in function" begin
-    global dk = DispersalNeighborhood(f=exponential, cellsize=1, radius=2, param=1.0).kernel
+    global dk = DispersalNeighborhood(dir=:inwards, f=exponential, cellsize=1, radius=2, param=(1.0,)).kernel
     @test typeof(dk) == StaticArrays.SArray{Tuple{5,5},Float64,2,25}
     @test size(dk) == (5, 5)
     @test sum(dk) ≈ 1.0
 end
 
 @testset "dispersal nieghborhood sum matches the passed-in kernel function" begin
-    global hood = DispersalNeighborhood(f=exponential, cellsize=1, radius=2)
+    global hood = DispersalNeighborhood(dir=:inwards, f=exponential, cellsize=1, radius=2)
     global state = 0
     global t = 0
 
@@ -103,43 +140,43 @@ end
                      0 0 0 1 0;
                      0 1 0 0 0]
 
-    @testset "neighbouhood sum matches grid * kernel sum for same-sized grid" begin
+    @testset "neighborhood sum matches grid * kernel sum for same-sized grid" begin
         global cc = neighbors(hood, nothing, state, 3, 3, t, source, [])
-        @test_broken cc ≈ sum(source .* hood.kernel) 
+        @test cc ≈ sum(source .* hood.kernel)
     end
 end
 
-global suit =  [1 0 1 1 0;
-                0 0 1 1 1;
-                1 1 1 1 0;
-                1 1 0 1 1;
-                1 0 1 1 1]
-
 @testset "simple local dispersal simulation" begin
 
+    global suit =  [1 0 1 1 0;
+                    0 0 1 1 1;
+                    1 1 1 1 0;
+                    1 1 0 1 1;
+                    1 0 1 1 1]
+
     global init =  [0 0 0 0 0;
-             0 0 0 0 0;
-             0 0 1 0 0;
-             0 0 0 0 0;
-             0 0 0 0 0]
+                    0 0 0 0 0;
+                    0 0 1 0 0;
+                    0 0 0 0 0;
+                    0 0 0 0 0]
 
     global test1 = [0 0 0 0 0;
-             0 0 0 0 0;
-             0 0 1 0 0;
-             0 0 0 0 0;
-             0 0 0 0 0]
+                    0 0 0 0 0;
+                    0 0 1 0 0;
+                    0 0 0 0 0;
+                    0 0 0 0 0]
 
     global test2 = [0 0 0 0 0;
-             0 0 1 1 0;
-             0 1 1 1 0;
-             0 1 0 1 0;
-             0 0 0 0 0]
+                    0 0 1 1 0;
+                    0 1 1 1 0;
+                    0 1 0 1 0;
+                    0 0 0 0 0]
 
     global test3 = [0 0 1 1 0;
-             0 0 1 1 1;
-             1 1 1 1 0;
-             1 1 0 1 1;
-             1 0 1 1 1]
+                    0 0 1 1 1;
+                    1 1 1 1 0;
+                    1 1 0 1 1;
+                    1 0 1 1 1]
 
     # Dispersal in radius 1 neighborhood
     global layers = (SuitabilityLayer(), suit)
@@ -188,4 +225,5 @@ end
         global output = ArrayOutput(init)
         sim!(output, model, init, layers; time=3)
     end
+
 end

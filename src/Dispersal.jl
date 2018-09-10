@@ -20,6 +20,7 @@ using Cellular,
       StaticArrays,
       Flatten, 
       Requires,
+      CUDAnative,
       Tags
 
 import Cellular: rule, neighbors, inbounds
@@ -38,6 +39,7 @@ include("types.jl")
 include("neighborhoods.jl")
 include("rules.jl")
 include("layers.jl")
+include("hudgins.jl")
 
 export AbstractDispersal,
        AbstractInwardsDispersal, 

@@ -7,6 +7,8 @@ struct SuitabilitySequence <: Sequence end
 struct HumanLayer <: Layer end
 struct HumanSequence <: Sequence end
 
+struct HudginsPrecalc <: Layer end
+
 """
     suitability(layers, index, t::Number)
 Returns a scalar representing cell suitability from one or multiple layers.
@@ -23,10 +25,13 @@ Layers of type other than AbstractSuitabilityLayer return 1.0.
 function suitability end
 suitability(layers::Tuple, index, t::Number) = mapreduce(l -> suitability(l, index, t), *, layers)
 suitability(layer, index, t::Number) = 1.0
-suitability((X, layer)::Tuple{SuitabilityLayer, AbstractMatrix}, index, t::Number) = layer[index...]
+suitability((_, layer)::Tuple{SuitabilityLayer, AbstractMatrix}, index, t::Number) = layer[index...]
 suitability((_, sequence, timespan)::Tuple{SuitabilitySequence, Tuple, Number}, index, t::Number) = 
     sequence_interpolate(sequence, timespan, index, t)
 
+hudgins_precalc(layers::Tuple, index) = mapreduce(l -> hudgins_precalc(l, index), *, layers)
+hudgins_precalc(layer, index) = 1.0
+hudgins_precalc((_, layer)::Tuple{HudginsPrecalc, AbstractMatrix}, index) = layer[index...]
 
 """
     human_impact(layers, index, t)

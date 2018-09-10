@@ -3,7 +3,7 @@
 Calculates the propagule pressure from the output of a neighborhood.
 """
 pressure(model, source::Array, cc, args...) = 
-    rand() ^ model.prob_threshold > (1 - cc) / 1
+    rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
 
 """
     rule(model::AbstractInwardsDispersal, state, row, col, t, layers, args...)
@@ -21,7 +21,8 @@ rule(model::AbstractInwardsDispersal, state, row, col, t, source, dest, layers, 
     cc = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
 
     # Set to occupied if suitable habitat and enough pressure from neighbors
-    pressure(model, source, cc, args...) ? oneunit(state) : state
+    out = pressure(model, source, cc, args...) ? oneunit(state) : state
+    out
 end
 
 """
@@ -34,13 +35,12 @@ suitable habitat. Otherwise they keeps their current state.
 rule(model::AbstractOutwardsDispersal, state::Integer, row, col, t, source, dest, layers, args...) = begin
     state == zero(state) && return # Ignore empty cells 
 
-    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
+    dest[row, col...] = state 
 
-    # Set dest cell state to occupied
-    dest[row, col...] = oneunit(state)
+    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
 end
 
-rule(model::AbstractOutwardsDispersal, state, row, col, t, source, dest, layers, args...) = begin
+rule(model::AbstractOutwardsDispersal, state::AbstractFloat, row, col, t, source, dest, layers, args...) = begin
     state == zero(state) && return # Ignore empty cells
     # Grow population - easier to do at the start than the end
     state *= model.growthrate
@@ -60,7 +60,7 @@ rule(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, arg
     # Ignore empty cells
     state > zero(state) || return
     # Random dispersal events
-    rand() < model.prob_threshold || return
+    spec_rand(source, Float64) < model.prob_threshold || return
 
     # Calculate maximum spotting distance
     range = -model.spotrange:model.spotrange ./ model.cellsize
@@ -69,7 +69,7 @@ rule(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, arg
 
     # Update spotted cell if it's on the grid and suitable habitat
     row, col, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds && suitability(model.layers, (row, col), t) > model.suitability_threshold
+    if is_inbounds && suitability(layers, (row, col), t) > model.suitability_threshold
         dest[row, col] = oneunit(state)
     end
 end
@@ -83,7 +83,7 @@ rule(model::AbstractHumanDispersal, state, row, col, t, source, dest, layers, ar
     # Ignore empty cells
     state > zero(state) || return
 
-    # rand() < model.prob_threshold * human_impact(model.layers, (row, col), t) || return
+    spec_rand(source, Float64) < model.prob_threshold * human_impact(layers, (row, col), t) || return
 
     # Calculate maximum spotting distance
     range = -model.spotrange:model.spotrange ./ model.cellsize
@@ -92,7 +92,10 @@ rule(model::AbstractHumanDispersal, state, row, col, t, source, dest, layers, ar
 
     # Update spotted cell if it's on the grid and suitable habitat
     row, col, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds#3 && suitability(model.layers, (row, col), t)# * human_impact(model.layers, (row, col), t) > model.suitability_threshold
+    if is_inbounds#3 && suitability(layers, (row, col), t)# * human_impact(layers, (row, col), t) > model.suitability_threshold
         dest[row, col] = oneunit(state)
     end
 end
+
+
+spec_rand(source::Array, typ, args...) = rand(typ)

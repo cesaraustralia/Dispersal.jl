@@ -3,6 +3,8 @@ abstract type AbstractDispersalNeighborhood <: AbstractNeighborhood end
 
 abstract type AbstractDispersalGrid <: AbstractDispersalNeighborhood end
 
+@chain columns @limits @flattenable @with_kw 
+
 """
 A neighborhood built from a dispersal kernel function and a cell radius.
 Can be built directly by passing in the array, radius and overflow
@@ -25,36 +27,31 @@ a dispersal kernel function.
 end
 
 DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, 
-                      radius=3, overflow=Skip()) = begin
+                      radius=Int64(3), overflow=Skip()) = begin
     DispersalNeighborhood{dir, typeof.((f, param, init, cellsize, radius, overflow))...
                          }(f, param, init, cellsize, radius, overflow)
 end
 
 
-struct HudginsDispersalGrid{K} <: AbstractDispersalGrid
-    kernel::K
-end
 
-
-
-@mix @limits @flattenable @with_kw struct Dispersal{S,T}
+@mix @columns struct Dispersal{S,T}
     # "A number or Unitful.jl distance."
     cellsize::S = 1.0                                          | false | _
     # "Minimum habitat suitability index."
     suitability_threshold::T = 0.1                             | true  | (0.0, 1.0)
 end
 
-@mix @limits @flattenable @with_kw struct Neighbors{N}
+@mix struct Neighbors{N}
     # "Neighborhood to disperse to or from"
     neighborhood::N = DispersalNeighborhood(cellsize=cellsize) | true  | _
 end
 
-@mix @limits @flattenable struct Probabilistic{P}
+@mix @columns struct Probabilistic{P}
     # "A real number between one and zero."
     prob_threshold::P = 0.1 | true | (0.0, 1.0)
 end
 
-@mix @limits @flattenable struct SpotRange{S}
+@mix @columns struct SpotRange{S}
     # "A number or Unitful.jl distance with the same units as cellsize"
     spotrange::S = 30.0     | true | (0.0, 100.0)
 end
@@ -80,11 +77,6 @@ dispersal when a small number of cells are occupied, but less efficient when a l
 proportion of the grid is occupied.
 """
 @Probabilistic @Dispersal @Neighbors struct OutwardsLocalDispersal{} <: AbstractOutwardsDispersal end
-
-@Dispersal struct HudginsDispersal{} <: AbstractOutwardsDispersal
-    pop_threshold::Float64 = 0.0006227 | true | (0.0, 0.1) 
-    growthrate::Float64 = 2.4321       | true | (0.0, 10.0)
-end
 
 "Extend to modify [`JumpDispersal`](@ref)"
 abstract type AbstractJumpDispersal <: AbstractPartialModel end

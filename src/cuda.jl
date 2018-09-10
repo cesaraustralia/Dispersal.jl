@@ -3,6 +3,9 @@ using CuArrays,
       CUDAnative
 
 pressure(model, source, cc, randomstate, args...) = begin
-    rnd = GPUArrays.gpu_rand(Float64, CuArrays.CuKernelState(), randomstate)
-    CUDAnative.pow(rnd, model.prob_threshold) > (1 - cc) / 1
+    spec_rand(source, Float64, randomstate)
+    CUDAnative.pow(rnd, model.prob_threshold) > (one(cc) - cc) / one(cc)
 end
+
+
+spec_rand(source, typ, randomstate, args...) = GPUArrays.gpu_rand(typ, CuArrays.CuKernelState(), randomstate)
