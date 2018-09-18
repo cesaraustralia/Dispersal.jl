@@ -59,22 +59,23 @@ function readtiff(file)
     img = img[:,:,1]'
 end
 
-pop = readtiff("population_density.tif")
+suitability = readtiff("suitability.tif")
 
-# You could also crop the raster, this funciton cuts out Australia from a world map:
+# You could also crop the raster, this function cuts out Australia from a world map:
 cropaust(x) = x[950:1350, 3100:3600]
 
-austpop = cropaust(pop)
+austsuitability = cropaust(suitability)
 
 # Define a dispersal kernel function
 
 f = d -> e^-d
 
 # Define the neighborhood, using the dispersal kernel and a radius
-hood = DispersalNeighborhood(; f=f, radius=2)
+hood = DispersalNeighborhood(; f=f, radius=2, init=init)
 
-# Define additional raster layers
-layers = SuitabilityLayer(suitability)
+# Define raster layers. This tuple syntax lets you use layer arrays on GPUs but still
+label their purpose, and dispatch on the layer type.
+layers = (SuitabilityLayer(), suitability)
 
 # Define disersal modules
 localdisp = InwardsLocalDispersal(layers=layers, neighborhood=hood)
@@ -84,7 +85,7 @@ jumpdisp = JumpDispersal(layers=layers)
 output = ArrayOutput(init)
 
 # Run the simulation
-sim!(output, (localdisp, jumpdisp), init; time=1:3) 
+sim!(output, Models(localdisp, jumpdisp), init; time=1:3) 
 
 output.frames[3]
 ```
@@ -129,14 +130,14 @@ Extend Cellular.AbstractNeighborhood, and add `neighbors()` methods.
 ```@docs
 AbstractDispersalNeighborhood
 DispersalNeighborhood
-DispersalNeighborhood(; f=d -> exponential(d, 1), radius=3, overflow=Skip())
+DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, radius=3, overflow=Skip())
 ```
 
 ### Methods
 
 ```@docs
 neighbors
-neighbors(hood::DispersalNeighborhood, state, index, t, source, args...)
+neighbors(hood::DispersalNeighborhood, model, state, row, col, t, source, dest, args...) = begin
 pressure
 ```
 
@@ -145,8 +146,9 @@ pressure
 Layers are a concept not present in Cellular.jl. They provide 
 overlay grids of additional information about dispersal potential.
 
-Like models, than can be combined arbitrarily in tuples. Methods loop through
-all relevant layers to return a scalar that is the product of their outputs.
+Like models, than can be combined arbitrarily, in this case in a tuple. Methods
+loop through all layers to return a scalar that is the product of their
+outputs. Unrelated layers are ignored.
 
 ### Types
 

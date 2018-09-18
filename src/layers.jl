@@ -1,13 +1,68 @@
-abstract type Layer end
-abstract type Sequence <: Layer end
+"""
+Layers wrap an array, normally built from some kind of raster.
 
-struct SuitabilityLayer <: Layer end
-struct SuitabilitySequence <: Sequence end
+The wrapper defines the purpose of the layer and allows specialised
+method dispatch to utilise them.
+"""
+abstract type AbstractLayerMatrix{T,S<:AbstractMatrix{T}} <: AbstractMatrix{T} end
+abstract type AbstractLayer{T,S} <: AbstractLayerMatrix{T,S} end
 
-struct HumanLayer <: Layer end
-struct HumanSequence <: Sequence end
+(::Type{F})(data::D) where {F<:AbstractLayer,D} = F{eltype(D),D}(data)
 
-struct HudginsPrecalc <: Layer end
+length(l::AbstractLayer) = length(l.data)
+size(l::AbstractLayer) = size(l.data)
+endof(l::AbstractLayer) = endof(l.data)
+Base.@propagate_inbounds getindex(l::AbstractLayer, i...) = @inbounds getindex(l.data, i...)
+Base.@propagate_inbounds setindex!(l::AbstractLayer, x, i...) = @inbounds setindex!(l.data, x, i...)
+push!(l::AbstractLayer, x) = push!(l.data, x)
+
+@premix struct Layer{T,S}
+    "Any 2-dimensional AbstractArray matching the coordinates of the init array"
+    data::S
+end
+
+
+abstract type AbstractHumanLayer{T,S} <: AbstractLayer{T,S} end
+
+"A wrapper for arrays that provide human dispersal scalars for the grid."
+@Layer struct HumanLayer{} <: AbstractHumanLayer{T,S} end
+
+
+"Abstract type for layers that provide suitability scalars."
+abstract type AbstractSuitabilityLayer{T,S} <: AbstractLayer{T,S} end
+
+"A wrapper for arrays that provide suitability scalars for the grid."
+@Layer struct SuitabilityLayer{} <: AbstractSuitabilityLayer{T,S} end
+
+
+"""
+An abstract type for for sequences of suitability layers.
+"""
+abstract type AbstractSequence{T} <: AbstractVector{T} end
+
+length(s::AbstractSequence) = length(s.data)
+size(s::AbstractSequence) = size(s.data, 1)
+endof(s::AbstractSequence) = endof(s.data)
+Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i) where T = @inbounds getindex(s.data, i)
+
+
+@premix struct Sequence{T,D,TS}
+    "Any 2-dimensional AbstractArray matching the coordinates of the init array"
+    data::D
+    "The timespan of each layer in the sequence."
+    timespan::TS
+end
+
+(::Type{F})(data::D, timespan::TS) where {F<:AbstractSequence,D,TS} = F{eltype(D),D,TS}(data, timespan)
+
+abstract type AbstractSuitabilitySequence{T} <: AbstractSequence{T} end
+
+"""
+A wrapper for a sequence of arrays that provide suitability scalar
+for grid points that cycle over a time span.
+"""
+@Sequence struct SuitabilitySequence{} <: AbstractSuitabilitySequence{T} end
+
 
 """
     suitability(layers, index, t::Number)
@@ -23,15 +78,13 @@ Layers of type other than AbstractSuitabilityLayer return 1.0.
 - `t::Number` : current timestep for interploating layere sequences.
 """
 function suitability end
-suitability(layers::Tuple, index, t::Number) = mapreduce(l -> suitability(l, index, t), *, layers)
-suitability(layer, index, t::Number) = 1.0
-suitability((_, layer)::Tuple{SuitabilityLayer, AbstractMatrix}, index, t::Number) = layer[index...]
-suitability((_, sequence, timespan)::Tuple{SuitabilitySequence, Tuple, Number}, index, t::Number) = 
-    sequence_interpolate(sequence, timespan, index, t)
-
-hudgins_precalc(layers::Tuple, index) = mapreduce(l -> hudgins_precalc(l, index), *, layers)
-hudgins_precalc(layer, index) = 1.0
-hudgins_precalc((_, layer)::Tuple{HudginsPrecalc, AbstractMatrix}, index) = layer[index...]
+Base.@propagate_inbounds suitability(layers::Tuple, index, t::Number) = 
+    suitability(layers[1], index, t) * suitability(layers[2:end], index, t::Number)
+suitability(layers::Tuple{}, index, t::Number) = 1
+Base.@propagate_inbounds suitability(layer::AbstractSuitabilityLayer, index, t::Number) = layer[index...]
+Base.@propagate_inbounds suitability(sequence::AbstractSuitabilitySequence, index, t::Number) =
+    sequence_interpolate(sequence, index, t)
+suitability(layers, index, t::Number) = 1
 
 """
     human_impact(layers, index, t)
@@ -47,24 +100,25 @@ Layers of type other than AbstractHumanLayer return 1.0.
 - `t::Number` : current timestep for interploating layere sequences.
 """
 function human_impact end
-human_impact(layers::Tuple, index, t) =
-    mapreduce(l -> human_impact(l, index, t), *, layers)
-human_impact(::Tuple{Layer,Vararg}, index, t::Number) = 1.0
-human_impact((_, layer)::Tuple{HumanLayer,Tuple}, index, t) = layer[index...]
+Base.@propagate_inbounds human_impact(layers::Tuple, index, t::Number) = 
+    human_impact(layers[1], index, t) * human_impact(layers[2:end], index, t::Number)
+human_impact(layers::Tuple{}, index, t::Number) = 1
+Base.@propagate_inbounds human_impact(layer::AbstractHumanLayer, index, t::Number) = layer[index...]
+human_impact(layers, index, t::Number) = 1
 
 """
     sequence_interpolate(layer, index, t)
 Interpolates between layers in a sequence.
 """
-sequence_interpolate(sequence, timespan, index, t::Number) = begin
+Base.@propagate_inbounds sequence_interpolate(seq, index, t::Number) = begin
     # Time position is centered in the current frame, not at the start.
-    tf = (t + timespan * 0.5) / timespan
+    tf = (t + seq.timespan / 2) / seq.timespan
     # Linear interpolation between layers in the sequence.
-    tr = floor(Int64, tf)
-    frac = convert(eltype(sequence[1]), tf - tr)
-    pos1 = cyclic(tr, length(sequence))
-    pos2 = cyclic(tr + 1, length(sequence))
-    @inbounds sequence[pos1][index...] * (oneunit(eltype(sequence[1])) - frac) + sequence[pos2][index...] * frac
+    tr = unsafe_trunc(Int64, tf)
+    frac = tf - tr
+    pos1 = cyclic(tr, length(seq))
+    pos2 = cyclic(tr + 1, length(seq))
+    seq[pos1][index...] * (oneunit(eltype(seq[1])) - frac) + seq[pos2][index...] * frac
 end
 
 "Cycles a time position through a particular timespan length"

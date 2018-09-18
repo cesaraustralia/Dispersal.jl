@@ -20,10 +20,9 @@ using Cellular,
       StaticArrays,
       Flatten, 
       Requires,
-      CUDAnative,
       Tags
 
-import Cellular: rule, neighbors, inbounds
+import Cellular: rule, rule!, neighbors, inbounds
 import Base: getindex, setindex!, endof, size, length, push!
 import Flatten: flattenable
 import Tags: @description, @limits, description, limits
@@ -36,10 +35,11 @@ import Tags: @description, @limits, description, limits
     """
 
 include("types.jl")
+include("utils.jl")
+include("kernels.jl")
 include("neighborhoods.jl")
 include("rules.jl")
 include("layers.jl")
-include("hudgins.jl")
 
 export AbstractDispersal,
        AbstractInwardsDispersal, 
@@ -64,6 +64,7 @@ export AbstractDispersal,
 function __init__()
     @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
         include("cuda.jl")
+        include("hudgins.jl")
     end
 end
 

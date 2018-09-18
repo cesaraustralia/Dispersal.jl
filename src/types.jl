@@ -26,12 +26,20 @@ a dispersal kernel function.
     end
 end
 
+"""
+    DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, radius=Int64(3), overflow=Skip())
+Constructor for neighborhoods, using a dispersal kernel function and a cell radius.
+
+### Keyword Arguments:
+- `f::Function`: any function that accepts a Number argument and returns a propbability between 0.0 and 1.0
+- `radius::Integer`: a positive integer
+- `overflow = Skip()
+"""
 DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, 
                       radius=Int64(3), overflow=Skip()) = begin
     DispersalNeighborhood{dir, typeof.((f, param, init, cellsize, radius, overflow))...
                          }(f, param, init, cellsize, radius, overflow)
 end
-
 
 
 @mix @columns struct Dispersal{S,T}
@@ -90,3 +98,7 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
 @Probabilistic @SpotRange @Dispersal struct HumanDispersal{} <: AbstractHumanDispersal end
 
 
+" Simple linear growth rate "
+struct FixedRateGrowth{R} <: AbstractModel 
+    growthrate::R
+end

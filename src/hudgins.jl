@@ -10,46 +10,57 @@ hudgins_precalc(init, suit, human) = begin
     precalc = similar(init, Float32)
     d = similar(init, Float32)
     f = similar(init, Float32)
+    zi = similar(init, Float32)
     h, w = convert.(Int32, size(init))
     rows = typeof(similar(init, Int32))(collect(row for row in 1:h, col in 1:w))
     cols = typeof(similar(init, Int32))(collect(col for row in 1:h, col in 1:w))
 
-    for i in one(h):h, j in one(w):w
-        broadcast!(f, rows, cols, (d,), (suit,), (human,), (i,), (j,)) do ii, jj, d, suit, human, i, j
-            d[ii, jj] = CUDAnative.sqrt(convert(Float32, (i - ii)^Int32(2) + (j - jj)^Int32(2)))
-            ZI = -0.8438f0 * suit[ii, jj] - 0.1378f0 * human[ii, jj]
-            2.0f0 * 1.1248f0 * exp(Int32(2))/(Int32(1)+exp(Int32(2)))
-        end
-        precalc[i, j] = sum(exp.(-d .* f))
+    broadcast!(zi, suit, human) do s, h
+        -0.8438f0 .* s .- 0.1378f0 .* h
     end
-    precalc
+
+    broadcast!(f, zi) do z 
+        2.0f0 * 1.1248f0 * CUDAnative.exp(z)/(oneunit(z) + CUDAnative.exp(z))
+    end
+
+    for i in one(h):h 
+        # println("Cell: ", i)
+        for j in one(w):w
+            broadcast!(d, rows, cols, (i,), (j,)) do ii, jj, i, j
+                CUDAnative.sqrt(convert(Float32, (i - ii) * (i - ii) + (j - jj) * (j - jj)))
+            end
+            precalc[i, j] = sum(CUDAnative.exp.(-d .* f))
+        end
+    end
+    typeof(zi)(precalc)
 end
 
 """
 Dispersal function taken from Hudgins, 'Predicting the spread of all
 invasive forest pests in the United States', 2017
 """
-neighbors(hood, model::HudginsDispersal, state::Float32, row::Int32, col::Int32, 
-          t::Int32, source, dest, layers, precalc, args...) = begin
+neighbors(hood, model::HudginsDispersal, state, row, col, t, 
+          source, dest, layers, precalc, args...) = begin
     # Ignore cells below the population threshold
-    state > model.pop_threshold || return zero(state)
+    # state > model.pop_threshold || return zero(state)
 
     # Setup
-    h, w = convert.(Int32, size(precalc))
-    propagules = zero(state)
+    # h, w = convert.(Int32, size(precalc))
+    # propagules = zero(state)
 
-    local d::Float32
+    # local d::Float32
     # Disperse to the entire grid
-    for i = one(h):h, j = one(w):w
+    # for i = one(h):h, j = one(w):w
         # Invade the cell
-        ZI = -0.8438f0 * suitability(layers, (i, j), t) + -0.1378f0 * human_impact(layers, (i, j), t)
-        f = 2.0f0 * 1.1248f0 * exp(ZI)/(1.0f0+exp(ZI))
-        d = CUDAnative.sqrt(convert(Float32, (row - i)^Int32(2) + (col - j)^Int32(2)))
-        t = exp(-d * f)/precalc[i, j]
+        # @inbounds ZI = -0.8438f0 * suitability(layers, (i, j), t) + -0.1378f0 * human_impact(layers, (i, j), t)
+        # f = 2.0f0 * 1.1248f0 * CUDAnative.exp(ZI)/(1.0f0+CUDAnative.exp(ZI))
+        # d = CUDAnative.sqrt(convert(Float32, ((row - i)^2 + (col - j)^2)))
+        # t = exp(-d * f)/precalc[i, j]
 
-        invaders = t * state
-        dest[i, j] += invaders   
-        propagules = propagules + invaders
-    end
-    typeof(state)(propagules)
+        # invaders = state
+        # dest[i, j] += invaders   
+        # propagules = propagules + invaders
+    # end
+    # typeof(state)(propagules)
+    state
 end

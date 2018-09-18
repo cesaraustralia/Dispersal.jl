@@ -2,8 +2,7 @@
     pressure(model, cc)
 Calculates the propagule pressure from the output of a neighborhood.
 """
-pressure(model, source::Array, cc, args...) = 
-    rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
+pressure(model, source, cc, args...) = rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
 
 """
     rule(model::AbstractInwardsDispersal, state, row, col, t, layers, args...)
@@ -21,9 +20,12 @@ rule(model::AbstractInwardsDispersal, state, row, col, t, source, dest, layers, 
     cc = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
 
     # Set to occupied if suitable habitat and enough pressure from neighbors
-    out = pressure(model, source, cc, args...) ? oneunit(state) : state
-    out
+    pressure(model, source, cc, args...) ? oneunit(state) : state
 end
+
+" Grow the population at a fixed rate "
+rule(model::FixedRateGrowth, state, args...) = state * model.growthrate
+
 
 """
     rule(model::AbstractOutwardsDispersal, state, row, col, t, source, dest, layers, args...)
@@ -32,23 +34,23 @@ Runs rule for of [`AbstractOutwardsDispersal`](@ref) dispersal.
 Surrounding cells are invaded if the current cell is occupied and they have
 suitable habitat. Otherwise they keeps their current state.
 """
-rule(model::AbstractOutwardsDispersal, state::Integer, row, col, t, source, dest, layers, args...) = begin
+rule!(model::AbstractOutwardsDispersal, state::Integer, row, col, t, source, dest, args...) = begin
     state == zero(state) && return # Ignore empty cells 
 
-    dest[row, col...] = state 
+    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, args...)
 
-    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
+    dest[row, col] = state 
+    state
 end
 
-rule(model::AbstractOutwardsDispersal, state::AbstractFloat, row, col, t, source, dest, layers, args...) = begin
-    state == zero(state) && return # Ignore empty cells
-    # Grow population - easier to do at the start than the end
-    state *= model.growthrate
+rule!(model::AbstractOutwardsDispersal, state::AbstractFloat, row, col, t, source, dest, args...) = begin
+    state == zero(state) && return state # Ignore empty cells
 
-    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
+    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, args...)
 
     # Write the new popuation size to the dest array
-    dest[row, col] = state - propagules
+    dest[row, col] = state # - propagules
+    state
 end
 
 """
@@ -56,22 +58,22 @@ end
 Long range rule for [`AbstractJumpDispersal`](@ref). A random cell
 within the spotrange is invaded if it is suitable.
 """
-rule(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, args...) = begin
+rule!(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, args...) = begin
     # Ignore empty cells
-    state > zero(state) || return
+    state > zero(state) || return state
     # Random dispersal events
-    spec_rand(source, Float64) < model.prob_threshold || return
+    spec_rand(source, Float64, args...) < model.prob_threshold || return state
 
-    # Calculate maximum spotting distance
-    range = -model.spotrange:model.spotrange ./ model.cellsize
-    # Randomly select actual spotting distance
-    spot = tuple(round.(Int, rand(range, 2) .+ (row, col))...)
+    # Randomly select rpotting distance
+    rnge = spec_rand.((source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / model.cellsize)
+    spot = tuple(unsafe_trunc.(Int64, rnge .+ (row, col))...)
 
     # Update spotted cell if it's on the grid and suitable habitat
-    row, col, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds && suitability(layers, (row, col), t) > model.suitability_threshold
-        dest[row, col] = oneunit(state)
+    spotrow, spotcol, is_inbounds = inbounds(spot, size(dest), Skip())
+    if is_inbounds && suitability(layers, (spotrow, spotcol), t) > model.suitability_threshold
+        dest[1, 2] = state # oneunit(state)
     end
+    state
 end
 
 """
@@ -79,23 +81,20 @@ end
 Simulates human dispersal, weighting dispersal probability based on human
 population in the source cell.
 """
-rule(model::AbstractHumanDispersal, state, row, col, t, source, dest, layers, args...) = begin
+rule!(model::AbstractHumanDispersal, state, row, col, t, source, dest, layers, args...) = begin
     # Ignore empty cells
     state > zero(state) || return
 
-    spec_rand(source, Float64) < model.prob_threshold * human_impact(layers, (row, col), t) || return
+    spec_rand(source, Float64, args...) < model.prob_threshold * human_impact(layers, (row, col), t) || return
 
-    # Calculate maximum spotting distance
-    range = -model.spotrange:model.spotrange ./ model.cellsize
-    # Randomly select actual spotting distance
-    spot = tuple(round.(Int64, rand(range, 2) .+ (row, col))...)
+    # Randomly select spotting distance
+    rnge = spec_rand.((source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / model.cellsize)
+    spot = tuple(unsafe_trunc.(Int64, rnge .+ (row, col))...)
 
     # Update spotted cell if it's on the grid and suitable habitat
-    row, col, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds#3 && suitability(layers, (row, col), t)# * human_impact(layers, (row, col), t) > model.suitability_threshold
-        dest[row, col] = oneunit(state)
+    spotrow, spotcol, is_inbounds = inbounds(spot, size(dest), Skip())
+    if is_inbounds && suitability(layers, (spotrow, spotcol), t) * human_impact(layers, (spotrow, spotcol), t) > model.suitability_threshold
+        dest[spotrow, spotcol] = oneunit(state)
     end
+    state
 end
-
-
-spec_rand(source::Array, typ, args...) = rand(typ)
