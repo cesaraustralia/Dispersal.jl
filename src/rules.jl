@@ -75,26 +75,3 @@ rule!(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, ar
     end
     state
 end
-
-"""
-    rule(model::AbstractHumanDispersal, state, row, col, t, source, dest, args...)
-Simulates human dispersal, weighting dispersal probability based on human
-population in the source cell.
-"""
-rule!(model::AbstractHumanDispersal, state, row, col, t, source, dest, layers, args...) = begin
-    # Ignore empty cells
-    state > zero(state) || return
-
-    spec_rand(source, Float64, args...) < model.prob_threshold * human_impact(layers, (row, col), t) || return
-
-    # Randomly select spotting distance
-    rnge = spec_rand.((source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / model.cellsize)
-    spot = tuple(unsafe_trunc.(Int64, rnge .+ (row, col))...)
-
-    # Update spotted cell if it's on the grid and suitable habitat
-    spotrow, spotcol, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds && suitability(layers, (spotrow, spotcol), t) * human_impact(layers, (spotrow, spotcol), t) > model.suitability_threshold
-        dest[spotrow, spotcol] = oneunit(state)
-    end
-    state
-end

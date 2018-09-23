@@ -11,9 +11,10 @@ abstract type AbstractLayer{T,S} <: AbstractLayerMatrix{T,S} end
 
 length(l::AbstractLayer) = length(l.data)
 size(l::AbstractLayer) = size(l.data)
-endof(l::AbstractLayer) = endof(l.data)
-Base.@propagate_inbounds getindex(l::AbstractLayer, i...) = @inbounds getindex(l.data, i...)
-Base.@propagate_inbounds setindex!(l::AbstractLayer, x, i...) = @inbounds setindex!(l.data, x, i...)
+firstindex(l::AbstractLayer) = firstindex(l.data)
+lastindex(l::AbstractLayer) = lastindex(l.data)
+Base.@propagate_inbounds getindex(l::AbstractLayer, i...) = getindex(l.data, i...)
+Base.@propagate_inbounds setindex!(l::AbstractLayer, x, i...) = setindex!(l.data, x, i...)
 push!(l::AbstractLayer, x) = push!(l.data, x)
 
 @premix struct Layer{T,S}
@@ -42,8 +43,9 @@ abstract type AbstractSequence{T} <: AbstractVector{T} end
 
 length(s::AbstractSequence) = length(s.data)
 size(s::AbstractSequence) = size(s.data, 1)
-endof(s::AbstractSequence) = endof(s.data)
-Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i) where T = @inbounds getindex(s.data, i)
+firstindex(s::AbstractSequence) = firstindex(s.data)
+lastindex(s::AbstractSequence) = lastindex(s.data)
+Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T = getindex(s.data, i...)
 
 
 @premix struct Sequence{T,D,TS}

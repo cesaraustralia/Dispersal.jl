@@ -12,8 +12,7 @@ hudgins_precalc(init, suit, human) = begin
     f = similar(init, Float32)
     zi = similar(init, Float32)
     h, w = convert.(Int32, size(init))
-    rows = typeof(similar(init, Int32))(collect(row for row in 1:h, col in 1:w))
-    cols = typeof(similar(init, Int32))(collect(col for row in 1:h, col in 1:w))
+    rows, cols = broadcastable_indices(init)
 
     broadcast!(zi, suit, human) do s, h
         -0.8438f0 .* s .- 0.1378f0 .* h

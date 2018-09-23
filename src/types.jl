@@ -42,11 +42,14 @@ DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsiz
 end
 
 
-@mix @columns struct Dispersal{S,T}
+@mix @columns struct Dispersal{CS}
     # "A number or Unitful.jl distance."
-    cellsize::S = 1.0                                          | false | _
+    cellsize::CS = 1.0                                          | false | _
+end
+
+@mix @columns struct Suitability{ST}
     # "Minimum habitat suitability index."
-    suitability_threshold::T = 0.1                             | true  | (0.0, 1.0)
+    suitability_threshold::ST = 0.1                             | true  | (0.0, 1.0)
 end
 
 @mix struct Neighbors{N}
@@ -54,14 +57,14 @@ end
     neighborhood::N = DispersalNeighborhood(cellsize=cellsize) | true  | _
 end
 
-@mix @columns struct Probabilistic{P}
+@mix @columns struct Probabilistic{PT}
     # "A real number between one and zero."
-    prob_threshold::P = 0.1 | true | (0.0, 1.0)
+    prob_threshold::PT = 0.1 | true | (0.0, 1.0)
 end
 
-@mix @columns struct SpotRange{S}
+@mix @columns struct SpotRange{SR}
     # "A number or Unitful.jl distance with the same units as cellsize"
-    spotrange::S = 30.0     | true | (0.0, 100.0)
+    spotrange::SR = 30.0     | true | (0.0, 100.0)
 end
 
 "Extend to modify [`InwardsLocalDispersal`](@ref)"
@@ -71,7 +74,7 @@ abstract type AbstractInwardsDispersal <: AbstractModel end
 Local dispersal within a [`DispersalNeighborhood`](@ref) or other neighborhoods.
 Inwards dispersal calculates dispersal *to* the current cell from cells in the neighborhood.
 """
-@Probabilistic @Dispersal @Neighbors struct InwardsLocalDispersal{} <: AbstractInwardsDispersal end
+@Probabilistic @Dispersal @Suitability @Neighbors struct InwardsLocalDispersal{} <: AbstractInwardsDispersal end
 
 "Extend to modify [`OutwardsLocalDispersal`](@ref)"
 abstract type AbstractOutwardsDispersal <: AbstractPartialModel end
@@ -84,19 +87,13 @@ in its neighborhood. This should be more efficient than inwards
 dispersal when a small number of cells are occupied, but less efficient when a large
 proportion of the grid is occupied.
 """
-@Probabilistic @Dispersal @Neighbors struct OutwardsLocalDispersal{} <: AbstractOutwardsDispersal end
+@Probabilistic @Dispersal @Suitability @Neighbors struct OutwardsLocalDispersal{} <: AbstractOutwardsDispersal end
 
 "Extend to modify [`JumpDispersal`](@ref)"
 abstract type AbstractJumpDispersal <: AbstractPartialModel end
 
 "Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other neighborhoods."
-@Probabilistic @SpotRange @Dispersal struct JumpDispersal{} <: AbstractJumpDispersal end
-
-"Extend to modify [`HumanDispersal`](@ref)"
-abstract type AbstractHumanDispersal <: AbstractPartialModel end
-"Human dispersal model."
-@Probabilistic @SpotRange @Dispersal struct HumanDispersal{} <: AbstractHumanDispersal end
-
+@Probabilistic @SpotRange @Dispersal @Suitability struct JumpDispersal{} <: AbstractJumpDispersal end
 
 " Simple linear growth rate "
 struct FixedRateGrowth{R} <: AbstractModel 
