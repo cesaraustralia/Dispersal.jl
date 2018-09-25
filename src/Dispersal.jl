@@ -20,12 +20,12 @@ using Cellular,
       StaticArrays,
       Flatten, 
       Requires,
-      Tags
+      FieldMetadata
 
 import Cellular: rule, rule!, neighbors, inbounds
 import Base: getindex, setindex!, endof, size, length, push!
 import Flatten: flattenable
-import Tags: @description, @limits, description, limits
+import FieldMetadata: @description, @limits, description, limits
 
 # Documentation templates
 @template TYPES =
