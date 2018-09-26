@@ -78,14 +78,14 @@ label their purpose, and dispatch on the layer type.
 layers = (SuitabilityLayer(), suitability)
 
 # Define disersal modules
-localdisp = InwardsLocalDispersal(layers=layers, neighborhood=hood)
-jumpdisp = JumpDispersal(layers=layers)
+localdisp = InwardsLocalDispersal(neighborhood=hood)
+jumpdisp = JumpDispersal()
 
 # Set the output type
 output = ArrayOutput(init)
 
 # Run the simulation
-sim!(output, Models(localdisp, jumpdisp), init; time=1:3) 
+sim!(output, Models(localdisp, jumpdisp), init, layers; time=1:3) 
 
 output.frames[3]
 ```
