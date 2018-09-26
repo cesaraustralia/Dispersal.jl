@@ -40,6 +40,7 @@ include("kernels.jl")
 include("neighborhoods.jl")
 include("rules.jl")
 include("layers.jl")
+include("human.jl")
 
 export AbstractDispersal,
        AbstractInwardsDispersal, 

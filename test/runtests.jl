@@ -4,12 +4,18 @@ using Revise,
       Test
 using Dispersal: suitability, cyclic, sequence_interpolate, neighbors
 
+setup(x) = x
+
+# For manual testing on CUDA
+using CuArrays, CUDAnative
+setup(x) = CuArray(x)
+
 @testset "suitability is 1.0 by default" begin
     @test suitability(nothing, (1, 1), 10) == 1.0
 end
 
 @testset "single layer suitability just returns the layer value" begin
-    global suitlayer = SuitabilityLayer([0.1 0.2; 0.3 0.4])
+    global suitlayer = SuitabilityLayer(setup([0.1 0.2; 0.3 0.4]))
     @test suitability(suitlayer, (1, 1), 34325) == 0.1
     @test suitability(suitlayer, (2, 2), 7685) == 0.4
 end
@@ -32,7 +38,7 @@ end
     end
 
     # sequence of layers
-    global suitseq = SuitabilitySequence([[0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8]], 10)
+    global suitseq = SuitabilitySequence(setup.(([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8])), 10)
 
     # suitseq = SuitabilitySequence(seq, 10)
 
@@ -75,79 +81,82 @@ end
 
     # All offset by one, because 1 = t0
     output
-    @test output[1]  == [0 0; 0 1]
-    @test output[2]  == [0 0; 1 1]
-    @test output[5]  == [0 0; 0 1]
-    @test output[8]  == [0 0; 1 1]
-    @test output[10] == [0 1; 1 1]
-    @test output[15] == [1 1; 1 1]
-    @test output[20] == [0 1; 1 1]
-    @test output[22] == [0 0; 1 1]
-    @test output[25] == [0 0; 0 1]
+    @test output[1]  == setup([0 0; 0 1])
+    @test output[2]  == setup([0 0; 1 1])
+    @test output[5]  == setup([0 0; 0 1])
+    @test output[8]  == setup([0 0; 1 1])
+    @test output[10] == setup([0 1; 1 1])
+    @test output[15] == setup([1 1; 1 1])
+    @test output[20] == setup([0 1; 1 1])
+    @test output[22] == setup([0 0; 1 1])
+    @test output[25] == setup([0 0; 0 1])
     @test_throws BoundsError output[26]
 
 end
 
+global init = setup([0 1 0; 1 0 1])
+
 @testset "dispersal kernel array matches passed in function" begin
-    global dk = DispersalNeighborhood(dir=:inwards, f=exponential, cellsize=1, radius=2, param=(1.0,)).kernel
+    global dk = DispersalNeighborhood(dir=:inwards, f=exponential, cellsize=1, init=init, radius=2, param=(1.0,)).kernel
     @test size(dk) == (5, 5)
     @test sum(dk) ≈ 1.0
 end
 
 @testset "dispersal nieghborhood sum matches the passed-in kernel function" begin
-    global hood = DispersalNeighborhood(dir=:inwards, f=exponential, cellsize=1, radius=2)
+    global hood = DispersalNeighborhood(dir=:inwards, f=exponential, init=init, cellsize=1, radius=2)
     global state = 0
     global t = 0
 
-    global source = [1 0 0 0 0;
+    global source = setup([1 0 0 0 0;
                      0 0 0 1 0;
                      0 1 0 0 1;
                      0 0 0 1 0;
-                     0 1 0 0 0]
+                     0 1 0 0 0])
 
     @testset "neighborhood sum matches grid * kernel sum for same-sized grid" begin
         global cc = neighbors(hood, nothing, state, 3, 3, t, source, [])
         @test cc ≈ sum(source .* hood.kernel)
     end
+
 end
 
 @testset "simple local dispersal simulation" begin
 
-    global suit =  [1 0 1 1 0;
+    global suit =  setup([1 0 1 1 0;
                     0 0 1 1 1;
                     1 1 1 1 0;
                     1 1 0 1 1;
-                    1 0 1 1 1]
+                    1 0 1 1 1])
 
-    global init =  [0 0 0 0 0;
+    global init =  setup([0 0 0 0 0;
                     0 0 0 0 0;
                     0 0 1 0 0;
                     0 0 0 0 0;
-                    0 0 0 0 0]
+                    0 0 0 0 0])
 
-    global test1 = [0 0 0 0 0;
+    global test1 = setup([0 0 0 0 0;
                     0 0 0 0 0;
                     0 0 1 0 0;
                     0 0 0 0 0;
-                    0 0 0 0 0]
+                    0 0 0 0 0])
 
-    global test2 = [0 0 0 0 0;
+    global test2 = setup([0 0 0 0 0;
                     0 0 1 1 0;
                     0 1 1 1 0;
                     0 1 0 1 0;
-                    0 0 0 0 0]
+                    0 0 0 0 0])
 
-    global test3 = [0 0 1 1 0;
+    global test3 = setup([0 0 1 1 0;
                     0 0 1 1 1;
                     1 1 1 1 0;
                     1 1 0 1 1;
-                    1 0 1 1 1]
+                    1 0 1 1 1])
 
     # Dispersal in radius 1 neighborhood
     global layers = SuitabilityLayer(suit)
 
     @testset "inwards dispersal fills the grid where reachable and suitable" begin
-        global hood = DispersalNeighborhood(; dir=:inwards, radius=1)
+        global hood = DispersalNeighborhood(; dir=:inwards, init=init, radius=1)
         global model = Models(InwardsLocalDispersal(neighborhood=hood, prob_threshold=0.0))
         global output = ArrayOutput(init)
         sim!(output, model, init, layers; time=3)
@@ -167,26 +176,18 @@ end
     end
 end
 
+global init =  setup([0 0 0 0 0;
+                      0 0 0 0 0;
+                      0 0 1 0 0;
+                      0 0 0 0 0;
+                      0 0 0 0 0])
 
 @testset "jump dispersal models work" begin
-    global init =  [0 0 0 0 0;
-                    0 0 0 0 0;
-                    0 0 1 0 0;
-                    0 0 0 0 0;
-                    0 0 0 0 0]
 
     @testset "Jump dispersal spread randomly" begin
         global layers = SuitabilityLayer(suit)
         # srand(1234)
         global model = Models(JumpDispersal(prob_threshold=0.5))
-        global output = ArrayOutput(init)
-        sim!(output, model, init, layers; time=3)
-    end
-
-    @testset "Human dispersal relies on source ans sink population" begin
-        global layers = SuitabilityLayer(suit)
-        # srand(1234)
-        global model = Models(HumanDispersal(prob_threshold=0.5))
         global output = ArrayOutput(init)
         sim!(output, model, init, layers; time=3)
     end
