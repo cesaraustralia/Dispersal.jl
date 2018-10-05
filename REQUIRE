@@ -3,7 +3,7 @@ Requires
 Cellular
 Parameters
 DocStringExtensions
-Mixers
-FieldMetadata
-Flatten
+Mixers 0.1.0
+FieldMetadata 0.0.1
+Flatten 0.0.1
 StaticArrays
