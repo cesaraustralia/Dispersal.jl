@@ -7,8 +7,8 @@ using Dispersal: suitability, cyclic, sequence_interpolate, neighbors
 setup(x) = x
 
 # For manual testing on CUDA
-using CuArrays, CUDAnative
-setup(x) = CuArray(x)
+# using CuArrays, CUDAnative
+# setup(x) = CuArray(x)
 
 @testset "suitability is 1.0 by default" begin
     @test suitability(nothing, (1, 1), 10) == 1.0
