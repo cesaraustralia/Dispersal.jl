@@ -94,12 +94,12 @@ populate!(a::AbstractMatrix{Int}, cis::AbstractVector{CellInterval}) =
 Simulates human dispersal, weighting dispersal probability based on human
 population in the source cell.
 """
-rule!(model::AbstractHumanDispersal, state, row, col, t, source, dest, layers, precalc, args...) = begin
+rule!(model::AbstractHumanDispersal, state, row, col, t, source, dest, layers, args...) = begin
     # Ignore empty cells
     state > zero(state) || return
     
     # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
-    shortlist = precalc[row, col]
+    shortlist = model.precalc[row, col]
     dest_id = min(length(shortlist), searchsortedfirst(shortlist, spec_rand(source, Float64, args...)))
     # Disperse to the cell
     dest[shortlist[dest_id].ind...] = oneunit(state)
