@@ -1,6 +1,7 @@
 # Dispersal
 
 [![Build Status](https://travis-ci.org/rafaqz/Dispersal.jl.svg?branch=master)](https://travis-ci.org/rafaqz/Dispersal.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/648h30ifo85wnvfk?svg=true)](https://ci.appveyor.com/project/rafaqz/dispersal-jl)
 [![Coverage Status](https://coveralls.io/repos/github/rafaqz/Dispersal.jl/badge.svg?branch=master)](https://coveralls.io/github/rafaqz/Dispersal.jl?branch=master)
 [![codecov.io](http://codecov.io/github/rafaqz/Dispersal.jl/coverage.svg?branch=master)](http://codecov.io/github/rafaqz/Dispersal.jl?branch=master)
 
