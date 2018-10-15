@@ -40,8 +40,6 @@ end
     # sequence of layers
     global suitseq = SuitabilitySequence(setup.(([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8])), 10)
 
-    # suitseq = SuitabilitySequence(seq, 10)
-
     global ind = ((1, 1),(1, 2),(2, 1),(2, 2))
     @test suitability.((suitseq,), ind, 10) == suitability.((suitseq,), ind, 20)
     @test suitability.((suitseq,), ind, 16) == suitability.((suitseq,), ind, 14)
@@ -71,7 +69,7 @@ end
 
     global init = [0 0; 0 1]
     global hood = DispersalNeighborhood(; radius=1)
-    global model = Models(InwardsLocalDispersal(neighborhood=hood, prob_threshold=0.0, suitability_threshold=0.4))
+    global model = Models(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0), SuitabilityMask(suitability_threshold=0.4))
     global output = ArrayOutput(init)
 
     @test Dispersal.pressure(model.models[1], init, 1) 
@@ -108,10 +106,10 @@ end
     global t = 0
 
     global source = setup([1 0 0 0 0;
-                     0 0 0 1 0;
-                     0 1 0 0 1;
-                     0 0 0 1 0;
-                     0 1 0 0 0])
+                           0 0 0 1 0;
+                           0 1 0 0 1;
+                           0 0 0 1 0;
+                           0 1 0 0 0])
 
     @testset "neighborhood sum matches grid * kernel sum for same-sized grid" begin
         global cc = neighbors(hood, nothing, state, 3, 3, t, source, [])
@@ -120,44 +118,47 @@ end
 
 end
 
-@testset "simple local dispersal simulation" begin
+
+@testset "binary dispersal simulation with suitability mask" begin
 
     global suit =  setup([1 0 1 1 0;
-                    0 0 1 1 1;
-                    1 1 1 1 0;
-                    1 1 0 1 1;
-                    1 0 1 1 1])
+                          0 0 1 1 1;
+                          1 1 1 1 0;
+                          1 1 0 1 1;
+                          1 0 1 1 1])
 
     global init =  setup([0 0 0 0 0;
-                    0 0 0 0 0;
-                    0 0 1 0 0;
-                    0 0 0 0 0;
-                    0 0 0 0 0])
+                          0 0 0 0 0;
+                          0 0 1 0 0;
+                          0 0 0 0 0;
+                          0 0 0 0 0])
 
     global test1 = setup([0 0 0 0 0;
-                    0 0 0 0 0;
-                    0 0 1 0 0;
-                    0 0 0 0 0;
-                    0 0 0 0 0])
+                          0 0 0 0 0;
+                          0 0 1 0 0;
+                          0 0 0 0 0;
+                          0 0 0 0 0])
 
     global test2 = setup([0 0 0 0 0;
-                    0 0 1 1 0;
-                    0 1 1 1 0;
-                    0 1 0 1 0;
-                    0 0 0 0 0])
+                          0 0 1 1 0;
+                          0 1 1 1 0;
+                          0 1 0 1 0;
+                          0 0 0 0 0])
 
     global test3 = setup([0 0 1 1 0;
-                    0 0 1 1 1;
-                    1 1 1 1 0;
-                    1 1 0 1 1;
-                    1 0 1 1 1])
+                          0 0 1 1 1;
+                          1 1 1 1 0;
+                          1 1 0 1 1;
+                          1 0 1 1 1])
 
     # Dispersal in radius 1 neighborhood
     global layers = SuitabilityLayer(suit)
+    global suitmask = SuitabilityMask()
 
-    @testset "inwards dispersal fills the grid where reachable and suitable" begin
+    @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         global hood = DispersalNeighborhood(; dir=:inwards, init=init, radius=1)
-        global model = Models(InwardsLocalDispersal(neighborhood=hood, prob_threshold=0.0))
+        global inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
+        global model = Models(inwards, suitmask)
         global output = ArrayOutput(init)
         sim!(output, model, init, layers; time=3)
         @test output[1] == test1
@@ -167,7 +168,67 @@ end
 
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
         global hood = DispersalNeighborhood(; dir=:outwards,  radius=1)
-        global model = Models(OutwardsLocalDispersal(neighborhood=hood, prob_threshold=0.0))
+        global outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
+        global model = Models(outwards, suitmask)
+        global output = ArrayOutput(init)
+        sim!(output, model, init, layers; time=3)
+        @test output[1] == test1
+        @test output[2] == test2
+        @test output[3] == test3
+    end
+end
+
+@testset "floating point population dispersal simulation" begin
+
+    global suit =  setup([1.0 0.0 1.0 1.0 0.0;
+                          0.0 0.0 1.0 1.0 1.0;
+                          1.0 1.0 1.0 1.0 0.0;
+                          1.0 1.0 0.0 1.0 1.0;
+                          1.0 0.0 1.0 1.0 1.0])
+
+    global init =  setup([0.0 0.0 0.0 0.0 0.0;
+                          0.0 0.0 0.0 0.0 0.0;
+                          0.0 0.0 1.0 0.0 0.0;
+                          0.0 0.0 0.0 0.0 0.0;
+                          0.0 0.0 0.0 0.0 0.0])
+
+    global test1 = setup([0.0 0.0 0.0 0.0 0.0;
+                          0.0 0.0 0.0 0.0 0.0;
+                          0.0 0.0 1.0 0.0 0.0;
+                          0.0 0.0 0.0 0.0 0.0;
+                          0.0 0.0 0.0 0.0 0.0])
+
+    global test2 = setup([0.0 0.0 0.0 0.0 0.0;
+                          0.0 0.0 1.0 1.0 0.0;
+                          0.0 1.0 2.0 1.0 0.0;
+                          0.0 1.0 0.0 1.0 0.0;
+                          0.0 0.0 0.0 0.0 0.0])
+
+    global test3 = setup([0.0 0.0 2.0  2.0 0.0;
+                          0.0 0.0 7.0  6.0 2.0;
+                          2.0 6.0 10.0 7.0 0.0;
+                          2.0 5.0 0.0  5.0 2.0;
+                          1.0 0.0 2.0  1.0 1.0])
+
+    # Dispersal in radius 1 neighborhood
+    global layers = SuitabilityLayer(suit)
+    global suitgrowth = SuitabilityGrowth()
+
+    @testset "inwards population dispersal fills the grid where reachable suitable" begin
+        global hood = DispersalNeighborhood(; dir=:inwards, f=(d,a)->1.0, radius=1)
+        global inwards = InwardsPopulationDispersal(neighborhood=hood, fraction=9/1)
+        global model = Models(inwards, suitmask)
+        global output = ArrayOutput(init)
+        sim!(output, model, init, layers; time=3)
+        @test output[1] == test1
+        @test output[2] == test2
+        @test output[3] ≈ test3
+    end
+
+    @testset "outwards population dispersal fills the grid where reachable and suitable" begin
+        global hood = DispersalNeighborhood(; dir=:outwards, f=(d,a)->1.0, radius=1)
+        global outwards = OutwardsPopulationDispersal(neighborhood=hood, fraction=9/1)
+        global model = Models(outwards, suitmask)
         global output = ArrayOutput(init)
         sim!(output, model, init, layers; time=3)
         @test output[1] == test1
@@ -186,7 +247,6 @@ global init =  setup([0 0 0 0 0;
 
     @testset "Jump dispersal spread randomly" begin
         global layers = SuitabilityLayer(suit)
-        # srand(1234)
         global model = Models(JumpDispersal(prob_threshold=0.5))
         global output = ArrayOutput(init)
         sim!(output, model, init, layers; time=3)

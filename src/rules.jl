@@ -1,30 +1,26 @@
 """
-    pressure(model, cc)
-Calculates the propagule pressure from the output of a neighborhood.
-"""
-pressure(model, source, cc, args...) = rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
-
-"""
-    rule(model::AbstractInwardsDispersal, state, row, col, t, layers, args...)
-Runs rule for of [`AbstractInwardsDispersal`](@ref) dispersal.
+    rule(model::InwardsBinaryDispersal, state::Integer, row, col, t, layers, args...)
+Runs rule for of [`InwardsBinaryDispersal`](@ref) dispersal.
 
 The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 """
-rule(model::AbstractInwardsDispersal, state, row, col, t, source, dest, layers, args...) = begin
-    # Exit unless cell habitat is suitabile for invasion
-    suit = suitability(layers, (row, col), t)
-    suit >= model.suitability_threshold || return zero(state)
-
+rule(model::InwardsBinaryDispersal, state::Integer, row, col, t, source, dest, layers, args...) = begin
     # Combine neighborhood cells into a single scalar
     cc = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
 
-    # Set to occupied if suitable habitat and enough pressure from neighbors
+    # Set to occupied if enough pressure from neighbors
     pressure(model, source, cc, args...) ? oneunit(state) : state
 end
 
-" Grow the population at a fixed rate "
-rule(model::FixedRateGrowth, state, args...) = state * model.growthrate
+"""
+    rule(model::InwardsPopulationDispersal, state::AbstractFloat, args...)
+Runs rule for of [`InwardsPopulationDispersal`](@ref) dispersal.
+
+The current cell is invaded by surrounding cells.
+"""
+rule(model::InwardsPopulationDispersal, state::AbstractFloat, args...) = 
+    state + neighbors(model.neighborhood, model, state, args...) * model.fraction
 
 
 """
@@ -34,22 +30,11 @@ Runs rule for of [`AbstractOutwardsDispersal`](@ref) dispersal.
 Surrounding cells are invaded if the current cell is occupied and they have
 suitable habitat. Otherwise they keeps their current state.
 """
-rule!(model::AbstractOutwardsDispersal, state::Integer, row, col, t, source, dest, args...) = begin
+rule!(model::AbstractOutwardsDispersal, state, row, col, t, source, dest, args...) = begin
     state == zero(state) && return # Ignore empty cells 
 
     propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, args...)
-
-    dest[row, col] = state 
-    state
-end
-
-rule!(model::AbstractOutwardsDispersal, state::AbstractFloat, row, col, t, source, dest, args...) = begin
-    state == zero(state) && return state # Ignore empty cells
-
-    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, args...)
-
-    # Write the new popuation size to the dest array
-    dest[row, col] = state # - propagules
+    
     state
 end
 
@@ -69,9 +54,16 @@ rule!(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, ar
     spot = tuple(unsafe_trunc.(Int64, rnge .+ (row, col))...)
 
     # Update spotted cell if it's on the grid and suitable habitat
-    spotrow, spotcol, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds && suitability(layers, (spotrow, spotcol), t) > model.suitability_threshold
+    spot, is_inbounds = inbounds(spot, size(dest), Skip())
+    if is_inbounds && suitability(layers, spot, t) > model.suitability_threshold
         dest[1, 2] = state # oneunit(state)
     end
     state
 end
+
+"""
+    pressure(model, cc)
+Calculates the propagule pressure from the output of a neighborhood.
+"""
+pressure(model, source, cc, args...) = rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
+

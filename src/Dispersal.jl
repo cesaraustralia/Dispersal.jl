@@ -40,18 +40,24 @@ include("kernels.jl")
 include("neighborhoods.jl")
 include("rules.jl")
 include("layers.jl")
+include("growth.jl")
 include("human.jl")
 
 export AbstractDispersal,
        AbstractInwardsDispersal, 
-       InwardsLocalDispersal,
+       InwardsBinaryDispersal,
+       InwardsPopulationDispersal,
        AbstractOutwardsDispersal, 
-       OutwardsLocalDispersal,
+       OutwardsBinaryDispersal,
+       OutwardsPopulationDispersal,
        HudginsDispersal,
        AbstractJumpDispersal, 
        JumpDispersal,
        AbstractHumanDispersal, 
        HumanDispersal,
+       SuitabilityGrowth,
+       SuitabilityMask, 
+       FixedGrowth,
        AbstractDispersalNeighborhood, 
        DispersalNeighborhood,
        DispersalGrid,

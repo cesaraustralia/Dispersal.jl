@@ -2,7 +2,7 @@
 abstract type AbstractHumanDispersal <: AbstractPartialModel end
 
 # "Human dispersal model."
-@Probabilistic @SpotRange @Dispersal @Suitability struct HumanDispersal{P} <: AbstractHumanDispersal 
+@Probabilistic @SpotRange @Dispersal struct HumanDispersal{P} <: AbstractHumanDispersal 
     precalc::P = [] | false | _
 end
 
