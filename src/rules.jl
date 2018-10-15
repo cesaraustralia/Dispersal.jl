@@ -46,18 +46,20 @@ within the spotrange is invaded if it is suitable.
 rule!(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, args...) = begin
     # Ignore empty cells
     state > zero(state) || return state
+
     # Random dispersal events
     spec_rand(source, Float64, args...) < model.prob_threshold || return state
 
     # Randomly select rpotting distance
     rnge = spec_rand.((source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / model.cellsize)
     spot = tuple(unsafe_trunc.(Int64, rnge .+ (row, col))...)
-
-    # Update spotted cell if it's on the grid and suitable habitat
     spot, is_inbounds = inbounds(spot, size(dest), Skip())
-    if is_inbounds && suitability(layers, spot, t) > model.suitability_threshold
-        dest[1, 2] = state # oneunit(state)
+
+    # Update spotted cell if it's on the grid
+    if is_inbounds
+        dest[spot...] = state
     end
+
     state
 end
 
