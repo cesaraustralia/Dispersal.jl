@@ -212,7 +212,6 @@ end
 
     # Dispersal in radius 1 neighborhood
     global layers = SuitabilityLayer(suit)
-    global suitgrowth = SuitabilityGrowth()
 
     @testset "inwards population dispersal fills the grid where reachable suitable" begin
         global hood = DispersalNeighborhood(; dir=:inwards, f=(d,a)->1.0, radius=1)
@@ -237,19 +236,78 @@ end
     end
 end
 
-global init =  setup([0 0 0 0 0;
-                      0 0 0 0 0;
-                      0 0 1 0 0;
-                      0 0 0 0 0;
-                      0 0 0 0 0])
-
-@testset "jump dispersal models work" begin
+@testset "human dispersal models work" begin
 
     @testset "Jump dispersal spread randomly" begin
         global layers = SuitabilityLayer(suit)
-        global model = Models(JumpDispersal(prob_threshold=0.5))
+        global model = Models(JumpDispersal(prob_threshold=0.0, spotrange=3))
         global output = ArrayOutput(init)
+        sim!(output, model, init, layers; time=20)
+    end
+
+end
+
+@testset "growth models" begin
+
+    global init =  setup([1.0 4.0 7.0;
+                          2.0 5.0 8.0;
+                          3.0 6.0 9.0])
+    
+    global output = ArrayOutput(init)
+
+
+    @testset "fixed growth" begin
+        global model = Models(FixedGrowth(2.0))
+        sim!(output, model, init; time=3)
+        @test output[1] == [1.0 4.0 7.0;
+                            2.0 5.0 8.0;
+                            3.0 6.0 9.0]
+        @test output[2] == [2.0  8.0 14.0;
+                            4.0 10.0 16.0;
+                            6.0 12.0 18.0]
+        @test output[3] == [ 4.0 16.0 28.0;
+                             8.0 20.0 32.0;
+                            12.0 24.0 36.0]
+    end
+
+    @testset "suitability growth" begin
+        
+        global init =  setup([1.0 1.0 1.0;
+                              1.0 1.0 1.0;
+                              1.0 1.0 1.0])
+        global suit =  setup([1.0 4.0 7.0;
+                              2.0 5.0 8.0;
+                              3.0 6.0 9.0])
+        global layers = SuitabilityLayer(suit)
+        global model = Models(SuitabilityGrowth(0.0, 40.0, 1.0))
+
         sim!(output, model, init, layers; time=3)
+        @test output[1] == [1.0 1.0 1.0;
+                            1.0 1.0 1.0;
+                            1.0 1.0 1.0]
+        @test output[2] ≈  [1.0 4.0 7.0;
+                            2.0 5.0 8.0;
+                            3.0 6.0 9.0]
+        @test output[3] ≈  [1.0 16.0 40.0;
+                            4.0 25.0 40.0;
+                            9.0 36.0 40.0]
+    end
+
+end
+
+@testset "jump dispersal models work" begin
+
+    global init =  setup([0 0 0 0 0;
+                          0 0 0 0 0;
+                          0 0 1 0 0;
+                          0 0 0 0 0;
+                          0 0 0 0 0])
+
+    @testset "Jump dispersal spread randomly" begin
+        global layers = SuitabilityLayer(suit)
+        global model = Models(JumpDispersal(prob_threshold=0.0, spotrange=3))
+        global output = ArrayOutput(init)
+        sim!(output, model, init, layers; time=20)
     end
 
 end
