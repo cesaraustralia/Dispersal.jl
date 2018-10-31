@@ -1,13 +1,13 @@
 """
-    rule(model::InwardsBinaryDispersal, state::Integer, row, col, t, layers, args...)
+    rule(model::InwardsBinaryDispersal, state::Integer, index, t, layers, args...)
 Runs rule for of [`InwardsBinaryDispersal`](@ref) dispersal.
 
 The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 """
-rule(model::InwardsBinaryDispersal, state::Integer, row, col, t, source, dest, layers, args...) = begin
+rule(model::InwardsBinaryDispersal, state::Integer, index, t, source, dest, layers, args...) = begin
     # Combine neighborhood cells into a single scalar
-    cc = neighbors(model.neighborhood, model, state, row, col, t, source, dest, layers, args...)
+    cc = neighbors(model.neighborhood, model, state, index, t, source, dest, layers, args...)
 
     # Set to occupied if enough pressure from neighbors
     pressure(model, source, cc, args...) ? oneunit(state) : state
@@ -24,26 +24,26 @@ rule(model::InwardsPopulationDispersal, state::AbstractFloat, args...) =
 
 
 """
-    rule(model::AbstractOutwardsDispersal, state, row, col, t, source, dest, layers, args...)
+    rule(model::AbstractOutwardsDispersal, state, index, t, source, dest, layers, args...)
 Runs rule for of [`AbstractOutwardsDispersal`](@ref) dispersal.
 
 Surrounding cells are invaded if the current cell is occupied and they have
 suitable habitat. Otherwise they keeps their current state.
 """
-rule!(model::AbstractOutwardsDispersal, state, row, col, t, source, dest, args...) = begin
+rule!(model::AbstractOutwardsDispersal, state, index, t, source, dest, args...) = begin
     state == zero(state) && return # Ignore empty cells 
 
-    propagules = neighbors(model.neighborhood, model, state, row, col, t, source, dest, args...)
+    propagules = neighbors(model.neighborhood, model, state, index, t, source, dest, args...)
     
     state
 end
 
 """
-    rule(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, args...)
+    rule(model::AbstractJumpDispersal, state, index, t, source, dest, layers, args...)
 Long range rule for [`AbstractJumpDispersal`](@ref). A random cell
 within the spotrange is invaded if it is suitable.
 """
-rule!(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, args...) = begin
+rule!(model::AbstractJumpDispersal, state, index, t, source, dest, layers, args...) = begin
     # Ignore empty cells
     state > zero(state) || return state
 
@@ -52,7 +52,7 @@ rule!(model::AbstractJumpDispersal, state, row, col, t, source, dest, layers, ar
 
     # Randomly select rpotting distance
     rnge = spec_rand.((source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / model.cellsize)
-    spot = tuple(unsafe_trunc.(Int64, rnge .+ (row, col))...)
+    spot = tuple(unsafe_trunc.(Int64, rnge .+ index)...)
     spot, is_inbounds = inbounds(spot, size(dest), Skip())
 
     # Update spotted cell if it's on the grid

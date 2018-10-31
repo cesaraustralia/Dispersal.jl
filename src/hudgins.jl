@@ -12,7 +12,7 @@ hudgins_precalc(init, suit, human) = begin
     f = similar(init, Float32)
     zi = similar(init, Float32)
     h, w = convert.(Int32, size(init))
-    rows, cols = broadcastable_indices(init)
+    indices = broadcastable_indices(init)
 
     broadcast!(zi, suit, human) do s, h
         -0.8438f0 .* s .- 0.1378f0 .* h
@@ -25,7 +25,7 @@ hudgins_precalc(init, suit, human) = begin
     for i in one(h):h 
         # println("Cell: ", i)
         for j in one(w):w
-            broadcast!(d, rows, cols, (i,), (j,)) do ii, jj, i, j
+            broadcast!(d, indices, (i,), (j,)) do ii, jj, i, j
                 CUDAnative.sqrt(convert(Float32, (i - ii) * (i - ii) + (j - jj) * (j - jj)))
             end
             precalc[i, j] = sum(CUDAnative.exp.(-d .* f))
@@ -38,7 +38,7 @@ end
 Dispersal function taken from Hudgins, 'Predicting the spread of all
 invasive forest pests in the United States', 2017
 """
-neighbors(hood, model::HudginsDispersal, state, row, col, t, 
+neighbors(hood, model::HudginsDispersal, state, indices, t, 
           source, dest, layers, precalc, args...) = begin
     # Ignore cells below the population threshold
     # state > model.pop_threshold || return zero(state)

@@ -1,10 +1,10 @@
 """
-    neighbors(hood::DispersalNeighborhood, state, row, col, t, source, dest, args...)
+    neighbors(hood::DispersalNeighborhood, state, index, t, source, dest, args...)
 
 Returns nieghbors for a [`DispersalNeighborhood`](@ref), looping over
 the array of dispersal propabilities.
 """
-neighbors(hood::DispersalNeighborhood, model, state, row, col, t, source, dest, args...) = begin
+neighbors(hood::DispersalNeighborhood, model, state, index, t, source, dest, args...) = begin
     cc = zero(state)
     r = hood.radius
 
@@ -12,7 +12,7 @@ neighbors(hood::DispersalNeighborhood, model, state, row, col, t, source, dest, 
     for b = -r:r, a = -r:r
 
         # Check boundaries
-        source_index, is_inbounds = inbounds((row, col) .+ (b, a), size(source), hood.overflow)
+        source_index, is_inbounds = inbounds(index .+ (b, a), size(source), hood.overflow)
         is_inbounds || continue
         hood_index = (b, a) .+ (r + one(r))
 
