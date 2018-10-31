@@ -17,7 +17,6 @@ using Cellular,
       DocStringExtensions, 
       Parameters, 
       Mixers, 
-      StaticArrays,
       Flatten, 
       Requires,
       FieldMetadata
