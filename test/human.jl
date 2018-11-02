@@ -1,44 +1,61 @@
-using Revise,
-      Dispersal,
-      Cellular,
-      Test
-using Dispersal: precalc_human_dispersal, CellMagnitude, CellInterval, build_cell_pop_index
-
-setup(x) = x
-
+using Dispersal: precalc_human_dispersal, CellMagnitude, CellInterval, build_cell_pop_index, populate!
 
 @testset "Human dispersal" begin
-
-    global human = setup([0.0 1.0 2.0 3.0 4.0;
-                          0.1 1.1 2.1 3.1 4.1;
-                          0.2 1.2 2.2 3.2 4.2;
-                          0.3 1.3 2.3 3.3 4.3;
-                          0.4 1.4 2.4 3.4 4.4])
-
+    Random.seed!(1234)
+    global human = setup(ones(5, 5))
+    global init = zero(human)
+    init[3, 3] = 1.0
     global cellsize = 1
-    global take = 200
-    # human = (rand(400, 400) .* 3) .^ 6
+    global take = 9
 
-    @time precalc, props = precalc_human_dispersal(human, exponential, (0.05), cellsize, take)
-    precalc[100,10]
+    global precalc, props = precalc_human_dispersal(human, cellsize, take)
+    @test length(precalc) == 25
+    @test length(precalc[1, 1]) == take
 
-    Profile.clear()
-    @profile 
-    using Profile
-    using ProfileView
-    ProfileView.view()
-    precalc[3,5]
+    a = zeros(5, 5)
+    b = zeros(5, 5)
+    populate!(a, precalc[1, 1]) 
+    populate!(b, precalc[5, 5])
+    @test reverse(a, dims=1) == reverse(b, dims=2)
 
-    # global layers = SuitabilityLayer(suit)
-    # srand(1234)
-    # global model = Models(HumanDispersal(prob_threshold=0.5))
-    # global output = ArrayOutput(init)
-    # sim!(output, model, init, layers; time=3)
+    a = zeros(Int, 5, 5)
+    b = zeros(Int, 5, 5)
+    c = zeros(Int, 5, 5)
+    d = zeros(Int, 5, 5)
+    populate!(a, precalc[1, 1]) 
+    populate!(b, precalc[5, 5])
+    populate!(c, precalc[5, 3])
+    populate!(d, precalc[3, 3])
 
-    a = [1 2; 3 4]
-    b = [1,2,3,4]
-    b .= vec(a)
-    broadcast!(b -> b, a, b)
+    @test a == [1 1 1 0 0;
+                1 1 1 0 0;
+                1 1 1 0 0;
+                0 0 0 0 0;
+                0 0 0 0 0]
+
+    @test b == [0 0 0 0 0;
+                0 0 0 0 0;
+                0 0 1 1 1;
+                0 0 1 1 1;
+                0 0 1 1 1]
+
+    @test c == [0 0 0 0 0;
+                0 0 0 0 0;
+                0 0 1 0 0;
+                0 1 1 1 0;
+                1 1 1 1 1]
+
+    @test d == [0 0 0 0 0;
+                0 1 1 1 0;
+                0 1 1 1 0;
+                0 1 1 1 0;
+                0 0 0 0 0]
+
+    global model = Models(HumanDispersal(prob_threshold=0.5, precalc=precalc))
+    global output = ArrayOutput(init)
+    sim!(output, model, init; time=3)
+    output[3]
 
 end
+
 

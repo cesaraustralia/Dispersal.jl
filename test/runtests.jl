@@ -13,3 +13,4 @@ setup(x) = x
 include("growth.jl")
 include("dispersal.jl")
 include("layers.jl")
+include("human.jl")
