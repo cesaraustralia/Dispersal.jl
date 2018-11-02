@@ -14,7 +14,7 @@ a dispersal kernel function.
     f::F        | false | _
     param::P    | true  | (0.0, 10.0)
     kernel::K   | false | _
-    cellsize::C | true  | (0.0, 10.0)
+    cellsize::C | false | (0.0, 10.0)
     radius::I   | true  | (1, 10)
     overflow::O | false | _
     function DispersalNeighborhood{T,F,P,K,C,I,O}(f::F, param::P, init_kernel::K, 
@@ -42,18 +42,13 @@ end
 
 
 
-@mix @columns struct Dispersal{CS}
-    "A number or Unitful.jl distance."
-    cellsize::CS = 1.0 | true | _
-end
-
 @mix @columns struct Timestep{TS}
     timestep::TS = 30.0 | true | _
 end
 
 @mix struct Neighbors{N}
     "Neighborhood to disperse to or from"
-    neighborhood::N = DispersalNeighborhood(cellsize=cellsize) | true  | _
+    neighborhood::N = DispersalNeighborhood() | true  | _
 end
 
 @mix @columns struct Probabilistic{PT}
@@ -79,9 +74,9 @@ abstract type AbstractInwardsDispersal <: AbstractModel end
 Binary dispersal within a [`DispersalNeighborhood`](@ref) or other neighborhoods.
 Inwards dispersal calculates dispersal *to* the current cell from cells in the neighborhood.
 """
-@Probabilistic @Dispersal @Neighbors struct InwardsBinaryDispersal{} <: AbstractInwardsDispersal end
+@Probabilistic @Neighbors struct InwardsBinaryDispersal{} <: AbstractInwardsDispersal end
 
-@Fraction @Dispersal @Neighbors struct InwardsPopulationDispersal{} <: AbstractInwardsDispersal end
+@Fraction @Neighbors struct InwardsPopulationDispersal{} <: AbstractInwardsDispersal end
 
 
 "Extend to modify [`OutwardsBinaryDispersal`](@ref)"
@@ -95,13 +90,13 @@ in its neighborhood. This should be more efficient than inwards
 dispersal when a small number of cells are occupied, but less efficient when a large
 proportion of the grid is occupied.
 """
-@Probabilistic @Dispersal @Neighbors struct OutwardsBinaryDispersal{} <: AbstractOutwardsDispersal end
+@Probabilistic @Neighbors struct OutwardsBinaryDispersal{} <: AbstractOutwardsDispersal end
 
-@Fraction @Dispersal @Neighbors struct OutwardsPopulationDispersal{} <: AbstractOutwardsDispersal end
+@Fraction @Neighbors struct OutwardsPopulationDispersal{} <: AbstractOutwardsDispersal end
 
 
 "Extend to modify [`JumpDispersal`](@ref)"
 abstract type AbstractJumpDispersal <: AbstractPartialModel end
 
 "Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other neighborhoods."
-@Probabilistic @SpotRange @Dispersal struct JumpDispersal{} <: AbstractJumpDispersal end
+@Probabilistic @SpotRange struct JumpDispersal{} <: AbstractJumpDispersal end

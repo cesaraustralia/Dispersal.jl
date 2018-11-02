@@ -19,11 +19,12 @@ end
                            0 1 0 0 0])
 
     @testset "neighborhood sum matches grid * kernel sum for same-sized grid" begin
-        global cc = neighbors(hood, nothing, state, (3, 3), t, source, [])
+        data = Cellular.ModelData(1, source, deepcopy(source), 1)
+        global cc = neighbors(hood, nothing, data, state, (3, 3))
         @test cc ≈ sum(source .* hood.kernel)
     end
 
-end
+end 
 
 
 @testset "binary dispersal simulation with suitability mask" begin

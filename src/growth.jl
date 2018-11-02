@@ -38,24 +38,24 @@ SuitabilityLogisticGrowth(init::ScalableMatrix, args...) =
 end
 
 
-rule(model::ExponentialGrowth, state, args...) = state * model.growthrate
-rule(model::LogisticGrowth, state, args...) = state + state * model.rate * (1 - state / model.carrycap) 
+rule(model::ExponentialGrowth, data, state, args...) = state * model.growthrate
+rule(model::LogisticGrowth, data, state, args...) = state + state * model.growthrate * (1 - state / model.carrycap) 
 
-rule(model::SuitabilityMask, state, index, t, source, dest, layers, args...) = begin
+rule(model::SuitabilityMask, data, state, index, layers, args...) = begin
     state == zero(state) && return state
-    suit = suitability(layers, index, t)
+    suit = suitability(layers, index, data.t)
     return suit >= model.suitability_threshold ? state : zero(state)
 end
 
-rule(model::SuitabilityExponentialGrowth, state, index, t, source, dest, layers, args...) = begin
+rule(model::SuitabilityExponentialGrowth, data, state, index, layers, args...) = begin
     state == zero(state) && return state
-    growthrate = suitability(layers, index, t)
+    growthrate = suitability(layers, index, data.t)
     max(min(state * growthrate, model.max), model.min)
 end
 
-rule(model::SuitabilityLogisticGrowth, state, index, t, source, dest, layers, args...) = begin
+rule(model::SuitabilityLogisticGrowth, data, state, index, layers, args...) = begin
     state == zero(state) && return state
-    growthrate = suitability(layers, index, t)
+    growthrate = suitability(layers, index, data.t)
     state1 = state + state * growthrate * (1 - state / model.carrycap) 
     max(min(state1 , model.max), model.min)
 end
