@@ -1,4 +1,5 @@
 using Dispersal: precalc_human_dispersal, CellMagnitude, CellInterval, build_cell_pop_index, populate!
+using Random
 
 @testset "Human dispersal" begin
     Random.seed!(1234)
@@ -8,7 +9,7 @@ using Dispersal: precalc_human_dispersal, CellMagnitude, CellInterval, build_cel
     global cellsize = 1
     global take = 9
 
-    global precalc, props = precalc_human_dispersal(human, cellsize, take)
+    global precalc, prop = precalc_human_dispersal(human, cellsize, take)
     @test length(precalc) == 25
     @test length(precalc[1, 1]) == take
 
@@ -51,11 +52,11 @@ using Dispersal: precalc_human_dispersal, CellMagnitude, CellInterval, build_cel
                 0 1 1 1 0;
                 0 0 0 0 0]
 
+
     global model = Models(HumanDispersal(prob_threshold=0.5, precalc=precalc))
     global output = ArrayOutput(init)
     sim!(output, model, init; time=3)
     output[3]
-
 end
 
 
