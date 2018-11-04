@@ -44,11 +44,11 @@ precalc_human_dispersal(human::A, cellsize, take) where A <: AbstractArray{T} wh
     dist = distances(human) .* cellsize
     s = similar(human)
     take = min(take, length(human))
-    precalc = [Array{CellInterval{Float32,Float32,Tuple{Int32,Int32}}}(take) for i in 1:size(human, 1), j in 1:size(human, 2)]
-    magnitudes = Array{CellMagnitude{Float32,Tuple{Int32,Int32}}}(size(human)...)
+    precalc = [Matrix{CellInterval{Float32,Float32,Tuple{Int32,Int32}}}(take) for i in 1:size(human, 1), j in 1:size(human, 2)]
+    magnitudes = Matrix{CellMagnitude{Float32,Tuple{Int32,Int32}}}(size(human)...)
     broadcast!(index -> CellMagnitude(0.0f0, index), magnitudes, indices)
-    flat_magnitudes = Array{CellMagnitude{Float32,Tuple{Int32,Int32}}}(size(human, 1) * size(human, 2))
-    top_magnitudes = Array{CellMagnitude{Float32,Tuple{Int32,Int32}}}(take)
+    flat_magnitudes = Vector{CellMagnitude{Float32,Tuple{Int32,Int32}}}(size(human, 1) * size(human, 2))
+    top_magnitudes = Vector{CellMagnitude{Float32,Tuple{Int32,Int32}}}(take)
     intervals = [CellInterval(0.0f0, 0.0f0, 0.0f0, Int32.((0, 0))) for i in 1:take]
     props = similar(human)
 
