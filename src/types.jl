@@ -15,7 +15,7 @@ a dispersal kernel function.
     param::P    | true  | (0.0, 10.0)
     kernel::K   | false | _
     cellsize::C | false | (0.0, 10.0)
-    radius::I   | true  | (1, 10)
+    radius::I   | false | (1, 10)
     overflow::O | false | _
     function DispersalNeighborhood{T,F,P,K,C,I,O}(f::F, param::P, init_kernel::K, 
                                                   cellsize::C, radius::I, overflow::O
@@ -68,7 +68,7 @@ end
 
 
 "Extend to modify [`InwardsBinaryDispersal`](@ref)"
-abstract type AbstractInwardsDispersal <: AbstractModel end
+abstract type AbstractInwardsDispersal <: AbstractNeighborhoodModel end
 
 """
 Binary dispersal within a [`DispersalNeighborhood`](@ref) or other neighborhoods.

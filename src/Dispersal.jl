@@ -19,7 +19,9 @@ using Cellular,
       Mixers, 
       Flatten, 
       Requires,
-      FieldMetadata
+      FieldMetadata,
+      StaticArrays
+
 
 import Cellular: rule, rule!, neighbors, inbounds
 import Base: getindex, setindex!, endof, size, length, push!

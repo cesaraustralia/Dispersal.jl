@@ -3,6 +3,7 @@ using CuArrays,
       CUDAnative
 
 import CUDAnative: cudaconvert
+import Cellular: broadcast_rule!
 
 pressure(model, source::CuDeviceArray, cc, randomstate, args...) = begin
     rnd = spec_rand(source, Float64, randomstate)
@@ -31,4 +32,17 @@ spec_rand(source::CuDeviceArray, typ, randomstate, args...) = GPUArrays.gpu_rand
 
 build_cell_pop_index(i, j, ii, jj, human::CuDeviceArray, dist::CuDeviceArray) = begin 
     CUDAnative.exp(-dist[abs(i - ii) + 1, abs(j - jj) + 1]) * human[i, j]
+end
+
+broadcast_rule!(model::AbstractPartialModel, data::FrameData{A}, indices, args...
+               ) where A <: CuDeviceArray = begin
+    # Initialise the dest array
+    data.dest .= data.source
+    @cuda threads=100 cuda_rule!(Ref(model), Ref(data), data.source, indices, args...)
+end
+
+cuda_rule!(model, data, args...) = begin
+    x = (blockIdx().x-1) * blockDim().x + threadIdx().x
+    y = (blockIdx().y-1) * blockDim().y + threadIdx().y
+    rule!(model, data, data.source[y, x], (y, x), args...)
 end

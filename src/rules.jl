@@ -5,9 +5,9 @@ Runs rule for of [`InwardsBinaryDispersal`](@ref) dispersal.
 The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 """
-rule(model::InwardsBinaryDispersal, data, state::Integer, index, args...) = begin
+rule(model::InwardsBinaryDispersal, data, state::Integer, args...) = begin
     # Combine neighborhood cells into a single scalar
-    cc = neighbors(model.neighborhood, model, data, state, index, args...)
+    cc = neighbors(model.neighborhood, model, data, state, args...)
 
     # Set to occupied if enough pressure from neighbors
     pressure(model, data.source, cc, args...) ? oneunit(state) : state
@@ -50,14 +50,14 @@ rule!(model::AbstractJumpDispersal, data, state, index, layers, args...) = begin
     # Random dispersal events
     spec_rand(data.source, Float64, args...) < model.prob_threshold || return state
 
-    # Randomly select rpotting distance
+    # Randomly select spotting distance
     rnge = spec_rand.((data.source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / data.cellsize)
     spot = tuple(unsafe_trunc.(Int64, rnge .+ index)...)
     spot, is_inbounds = inbounds(spot, size(data.dest), Skip())
 
     # Update spotted cell if it's on the grid
     if is_inbounds
-        data.dest[spot...] = state
+        @inbounds data.dest[spot...] = state
     end
 
     state

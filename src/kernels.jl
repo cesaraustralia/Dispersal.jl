@@ -10,6 +10,7 @@ build_dispersal_kernel(f, params, init, cellsize, r) = begin
     # Normalise
     kernel ./= sum(kernel)
     typeof(init).name.wrapper(kernel)
+    # SMatrix{sze...}(kernel...) 
 end
 
 # Paper: l. 96
