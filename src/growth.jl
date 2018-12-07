@@ -38,21 +38,21 @@ SuitabilityLogisticGrowth(init::ScalableMatrix, args...) =
 end
 
 
-rule(model::ExponentialGrowth, data, state, args...) = state * model.growthrate
-rule(model::LogisticGrowth, data, state, args...) = state + state * model.growthrate * (1 - state / model.carrycap) 
+@inline rule(model::ExponentialGrowth, data, state, args...) = state * model.growthrate
+@inline rule(model::LogisticGrowth, data, state, args...) = state + state * model.growthrate * (1 - state / model.carrycap) 
 
-rule(model::SuitabilityMask, data, state, index, layers, args...) = begin
+@inline rule(model::SuitabilityMask, data, state, index, layers, args...) = begin
     state == zero(state) && return zero(state)
     suitability(layers, index, data.t) >= model.suitability_threshold ? state : zero(state)
 end
 
-rule(model::SuitabilityExponentialGrowth, data, state, index, layers, args...) = begin
+@inline rule(model::SuitabilityExponentialGrowth, data, state, index, layers, args...) = begin
     state == zero(state) && return state
     growthrate = suitability(layers, index, data.t)
     max(min(state * growthrate, model.max), model.min)
 end
 
-rule(model::SuitabilityLogisticGrowth, data, state, index, layers, args...) = begin
+@inline rule(model::SuitabilityLogisticGrowth, data, state, index, layers, args...) = begin
     state == zero(state) && return state
     growthrate = suitability(layers, index, data.t)
     state1 = state + state * growthrate * (1 - state / model.carrycap) 

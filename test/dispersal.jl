@@ -7,27 +7,6 @@ global init = setup([0 1 0; 1 0 1])
     @test sum(dk) ≈ 1.0
 end
 
-@testset "dispersal nieghborhood sum matches the passed-in kernel function" begin
-    global hood = DispersalNeighborhood(f=exponential, init=init, cellsize=1, radius=2)
-    global state = 0
-    global t = 0
-
-    global source = setup([1 0 0 0 0;
-                           0 0 0 1 0;
-                           0 1 0 0 1;
-                           0 0 0 1 0;
-                           0 1 0 0 0])
-
-    @testset "neighborhood sum matches grid * kernel sum for same-sized grid" begin
-        modeldata = Cellular.prepare((InwardsBinaryDispersal(),), init)
-        data = Cellular.FrameData(source, deepcopy(source), 1, 1, modeldata)
-        # global cc = neighbors(hood, nothing, data, state)
-        # @test cc ≈ sum(source .* hood.kernel)
-    end
-
-end 
-
-
 @testset "binary dispersal simulation with suitability mask" begin
 
     global suit =  setup([1 0 1 1 0;
@@ -68,7 +47,7 @@ end
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         global inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
         global model = Models(inwards, suitmask)
-        global output = ArrayOutput(init)
+        global output = ArrayOutput(init, 3)
         sim!(output, model, init, layers; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
@@ -78,7 +57,7 @@ end
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
         global outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
         global model = Models(outwards, suitmask)
-        global output = ArrayOutput(init)
+        global output = ArrayOutput(init, 3)
         sim!(output, model, init, layers; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
@@ -88,8 +67,6 @@ end
 end
 
 @testset "floating point population dispersal simulation" begin
-
-    setup(x) = ScalableMatrix(x, 0.0, 100.0)
 
     global suit =  [1.0 0.0 1.0 0.0 1.0 1.0 0.0;
                     1.0 1.0 0.0 0.0 1.0 1.0 1.0;
@@ -140,7 +117,7 @@ end
         global hood = DispersalNeighborhood(; f=(d,a)->1.0, radius=r)
         global inwards = InwardsPopulationDispersal(neighborhood=hood, fraction=(2r+1)^2)
         global model = Models(inwards, suitmask)
-        global output = ArrayOutput(init)
+        global output = ArrayOutput(init, 3)
         sim!(output, model, init, layers; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
@@ -151,7 +128,7 @@ end
         global hood = DispersalNeighborhood(; f=(d,a)->1.0, radius=r)
         global outwards = OutwardsPopulationDispersal(neighborhood=hood, fraction=(2r+1)^2)
         global model = Models(outwards, suitmask)
-        global output = ArrayOutput(init)
+        global output = ArrayOutput(init, 3)
         sim!(output, model, init, layers; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
@@ -171,7 +148,7 @@ end
     @testset "Jump dispersal spread randomly" begin
         global layers = SuitabilityLayer(suit)
         global model = Models(JumpDispersal(prob_threshold=0.0, spotrange=3))
-        global output = ArrayOutput(init)
+        global output = ArrayOutput(init, 20)
         sim!(output, model, init, layers; tstop=20)
     end
 

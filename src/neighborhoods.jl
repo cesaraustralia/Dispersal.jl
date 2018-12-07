@@ -11,7 +11,7 @@ Returns nieghbors for a [`DispersalNeighborhood`](@ref), looping over
 the array of dispersal propabilities.
 """
 @inline neighbors(hood, model::AbstractNeighborhoodModel, data, state, index, args...) =
-    @inbounds return dot(data.modeldata, hood.kernel)
+    @inbounds return dot(data.modelmem, hood.kernel)
 
 @inline neighbors(hood, model::AbstractPartialNeighborhoodModel, data, state, index, args...) = begin
     r = hood.radius
