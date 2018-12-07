@@ -32,9 +32,9 @@ using Dispersal: hudgins_precalc
 
     precalc = hudgins_precalc(init, suit_layer, human_layer)
 
-    model = Models(HudginsDispersal())
+    model = ModelList(HudginsDispersal())
     output = ArrayOutput(init)
     layers = (human_layer, suit_layer)
-    sim!(output, model, init, layers, precalc; time=30);
+    sim!(output, model, init, layers, precalc; tstop=30);
     @test length(output) == 30
 end

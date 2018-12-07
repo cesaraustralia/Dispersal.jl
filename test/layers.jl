@@ -62,10 +62,10 @@ end
     global output = ArrayOutput(init)
 
     @test Dispersal.pressure(model.models[1], init, 1) 
-    data = Cellular.ModelData(1, init, deepcopy(init), 2)
+    data = Cellular.FrameData(init, deepcopy(init), 1, 2)
     Cellular.rule(model.models[1], data, 0, (2, 2), suitseq)
 
-    sim!(output, model, init, (suitseq,); time=25)
+    sim!(output, model, init, (suitseq,); tstop=25)
 
     # All offset by one, because 1 = t0
     output

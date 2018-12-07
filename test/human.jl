@@ -55,7 +55,7 @@ using Random
 
     global model = Models(HumanDispersal(prob_threshold=0.5, precalc=precalc))
     global output = ArrayOutput(init)
-    sim!(output, model, init; time=3)
+    sim!(output, model, init; tstop=3)
     output[3]
 end
 

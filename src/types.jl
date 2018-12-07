@@ -10,18 +10,18 @@ Can be built directly by passing in the array, radius and overflow
 arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 """
-@limits @flattenable struct DispersalNeighborhood{T,F,P,K,C,I,O} <: AbstractDispersalNeighborhood
+@limits @flattenable struct DispersalNeighborhood{F,P,K,C,I,O} <: AbstractDispersalNeighborhood
     f::F        | false | _
     param::P    | true  | (0.0, 10.0)
     kernel::K   | false | _
     cellsize::C | false | (0.0, 10.0)
     radius::I   | false | (1, 10)
     overflow::O | false | _
-    function DispersalNeighborhood{T,F,P,K,C,I,O}(f::F, param::P, init_kernel::K, 
+    function DispersalNeighborhood{F,P,K,C,I,O}(f::F, param::P, init_kernel::K, 
                                                   cellsize::C, radius::I, overflow::O
                                                  ) where {T,F,P,K,C,I,O}
         kernel = build_dispersal_kernel(f, param, init_kernel, cellsize, radius)
-        new{T,F,P,typeof(kernel),C,I,O}(f, param, kernel, cellsize, radius, overflow)
+        new{F,P,typeof(kernel),C,I,O}(f, param, kernel, cellsize, radius, overflow)
     end
 end
 
@@ -34,12 +34,11 @@ Constructor for neighborhoods, using a dispersal kernel function and a cell radi
 - `radius::Integer`: a positive integer
 - `overflow = Skip()
 """
-DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, 
+DispersalNeighborhood(; f=exponential, param=1.0, init=[], cellsize=1.0, 
                       radius=Int64(3), overflow=Skip()) = begin
-    DispersalNeighborhood{dir, typeof.((f, param, init, cellsize, radius, overflow))...
+    DispersalNeighborhood{typeof.((f, param, init, cellsize, radius, overflow))...
                          }(f, param, init, cellsize, radius, overflow)
 end
-
 
 
 @mix @columns struct Timestep{TS}
@@ -80,7 +79,7 @@ Inwards dispersal calculates dispersal *to* the current cell from cells in the n
 
 
 "Extend to modify [`OutwardsBinaryDispersal`](@ref)"
-abstract type AbstractOutwardsDispersal <: AbstractPartialModel end
+abstract type AbstractOutwardsDispersal <: AbstractPartialNeighborhoodModel end
 
 """
 Binary binary dispersal within a [`DispersalNeighborhood`](@ref)

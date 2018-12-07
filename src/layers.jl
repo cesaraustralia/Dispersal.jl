@@ -45,7 +45,8 @@ length(s::AbstractSequence) = length(s.data)
 size(s::AbstractSequence) = size(s.data, 1)
 firstindex(s::AbstractSequence) = firstindex(s.data)
 lastindex(s::AbstractSequence) = lastindex(s.data)
-Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T = getindex(s.data, i...)
+Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T = 
+    getindex(s.data, i...)
 
 
 @premix struct Sequence{T,D,TS}
@@ -55,7 +56,8 @@ Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T = getind
     timespan::TS
 end
 
-(::Type{F})(data::D, timespan::TS) where {F<:AbstractSequence,D,TS} = F{eltype(D),D,TS}(data, timespan)
+(::Type{F})(data::D, timespan::TS) where {F<:AbstractSequence,D,TS} = 
+    F{eltype(D),D,TS}(data, timespan)
 
 abstract type AbstractSuitabilitySequence{T} <: AbstractSequence{T} end
 
@@ -80,11 +82,12 @@ Layers of type other than AbstractSuitabilityLayer return 1.0.
 - `t::Number` : current timestep for interploating layere sequences.
 """
 function suitability end
-Base.@propagate_inbounds suitability(layers::Tuple, index, t::Number) = 
-    suitability(layers[1], index, t) * suitability(layers[2:end], index, t::Number)
+suitability(layers::Tuple, index, t::Number) = 
+    suitability(layers[1], index, t) * suitability(Base.tail(layers), index, t::Number)
 suitability(layers::Tuple{}, index, t::Number) = 1
-Base.@propagate_inbounds suitability(layer::AbstractSuitabilityLayer, index, t::Number) = layer[index...]
-Base.@propagate_inbounds suitability(sequence::AbstractSuitabilitySequence, index, t::Number) =
+suitability(layer::AbstractSuitabilityLayer, index, t::Number) = 
+    @inbounds return layer[index...]
+suitability(sequence::AbstractSuitabilitySequence, index, t::Number) =
     sequence_interpolate(sequence, index, t)
 suitability(layers, index, t::Number) = 1
 
@@ -102,17 +105,17 @@ Layers of type other than AbstractHumanLayer return 1.0.
 - `t::Number` : current timestep for interploating layere sequences.
 """
 function human_impact end
-Base.@propagate_inbounds human_impact(layers::Tuple, index, t::Number) = 
-    human_impact(layers[1], index, t) * human_impact(layers[2:end], index, t::Number)
+human_impact(layers::Tuple, index, t::Number) = 
+    human_impact(layers[1], index, t) * human_impact(Base.tail(layers), index, t::Number)
 human_impact(layers::Tuple{}, index, t::Number) = 1
-Base.@propagate_inbounds human_impact(layer::AbstractHumanLayer, index, t::Number) = layer[index...]
+human_impact(layer::AbstractHumanLayer, index, t::Number) = @inbounds return layer[index...]
 human_impact(layers, index, t::Number) = 1
 
 """
     sequence_interpolate(layer, index, t)
 Interpolates between layers in a sequence.
 """
-Base.@propagate_inbounds sequence_interpolate(seq, index, t::Number) = begin
+@inline sequence_interpolate(seq, index, t::Number) = begin
     # Time position is centered in the current frame, not at the start.
     tf = (t + seq.timespan / 2) / seq.timespan
     # Linear interpolation between layers in the sequence.
@@ -120,7 +123,7 @@ Base.@propagate_inbounds sequence_interpolate(seq, index, t::Number) = begin
     frac = tf - tr
     pos1 = cyclic(tr, length(seq))
     pos2 = cyclic(tr + 1, length(seq))
-    seq[pos1][index...] * (oneunit(eltype(seq[1])) - frac) + seq[pos2][index...] * frac
+    @inbounds seq[pos1][index...] * (oneunit(eltype(seq[1])) - frac) + seq[pos2][index...] * frac
 end
 
 "Cycles a time position through a particular timespan length"

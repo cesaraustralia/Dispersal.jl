@@ -10,7 +10,7 @@
 
     @testset "exponential growth" begin
         global model = Models(ExponentialGrowth(2.0))
-        sim!(output, model, init; time=3)
+        sim!(output, model, init; tstop=3)
         @test output[1] == [1.0 4.0 7.0;
                             2.0 5.0 8.0;
                             3.0 6.0 9.0]
@@ -37,7 +37,7 @@
         global layers = SuitabilityLayer(suit)
         global model = Models(SuitabilityExponentialGrowth(minmaxrange...))
 
-        sim!(output, model, init, layers; time=3)
+        sim!(output, model, init, layers; tstop=3)
         @test output[1] == [1.0 1.0 1.0;
                             1.0 1.0 1.0;
                             1.0 1.0 1.0]

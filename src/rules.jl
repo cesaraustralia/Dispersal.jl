@@ -5,7 +5,7 @@ Runs rule for of [`InwardsBinaryDispersal`](@ref) dispersal.
 The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 """
-rule(model::InwardsBinaryDispersal, data, state::Integer, args...) = begin
+@inline rule(model::InwardsBinaryDispersal, data, state::Integer, args...) = begin
     # Combine neighborhood cells into a single scalar
     cc = neighbors(model.neighborhood, model, data, state, args...)
 
@@ -19,7 +19,7 @@ Runs rule for of [`InwardsPopulationDispersal`](@ref) dispersal.
 
 The current cell is invaded by surrounding cells.
 """
-rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = 
+@inline rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = 
     state + neighbors(model.neighborhood, model, data, state, args...) * model.fraction
 
 
@@ -30,11 +30,9 @@ Runs rule for of [`AbstractOutwardsDispersal`](@ref) dispersal.
 Surrounding cells are invaded if the current cell is occupied and they have
 suitable habitat. Otherwise they keeps their current state.
 """
-rule!(model::AbstractOutwardsDispersal, data, state, index, args...) = begin
-    state == zero(state) && return # Ignore empty cells 
-
-    propagules = neighbors(model.neighborhood, model, data, state, index, args...)
-    
+@inline rule!(model::AbstractOutwardsDispersal, data, state, args...) = begin
+    state == zero(state) && return state # Ignore empty cells 
+    propagules = neighbors(model.neighborhood, model, data, state, args...)
     state
 end
 
@@ -43,7 +41,7 @@ end
 Long range rule for [`AbstractJumpDispersal`](@ref). A random cell
 within the spotrange is invaded if it is suitable.
 """
-rule!(model::AbstractJumpDispersal, data, state, index, layers, args...) = begin
+@inline rule!(model::AbstractJumpDispersal, data, state, index, layers, args...) = begin
     # Ignore empty cells
     state > zero(state) || return state
 
@@ -67,5 +65,5 @@ end
     pressure(model, cc)
 Calculates the propagule pressure from the output of a neighborhood.
 """
-pressure(model, source, cc, args...) = rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
+@inline pressure(model, source, cc, args...) = rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
 
