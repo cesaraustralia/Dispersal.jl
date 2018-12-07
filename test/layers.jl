@@ -27,7 +27,7 @@ end
     end
 
     # sequence of layers
-    global suitseq = SuitabilitySequence(setup.(([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8])), 10)
+    global suitseq = SuitabilitySequence(setup.(([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8])), 10);
 
     global ind = ((1, 1),(1, 2),(2, 1),(2, 2))
     @test suitability.((suitseq,), ind, 10) == suitability.((suitseq,), ind, 20)
@@ -59,16 +59,13 @@ end
     global init = [0 0; 0 1]
     global hood = DispersalNeighborhood(; radius=1)
     global model = Models(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0), SuitabilityMask(suitability_threshold=0.4))
-    global output = ArrayOutput(init)
+    global output = ArrayOutput(init, 25)
 
     @test Dispersal.pressure(model.models[1], init, 1) 
-    data = Cellular.FrameData(init, deepcopy(init), 1, 2)
-    Cellular.rule(model.models[1], data, 0, (2, 2), suitseq)
 
     sim!(output, model, init, (suitseq,); tstop=25)
 
     # All offset by one, because 1 = t0
-    output
     @test output[1]  == setup([0 0; 0 1])
     @test output[2]  == setup([0 0; 1 1])
     @test output[5]  == setup([0 0; 0 1])

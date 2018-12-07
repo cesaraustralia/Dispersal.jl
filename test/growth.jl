@@ -5,7 +5,7 @@
                           2.0 5.0 8.0;
                           3.0 6.0 9.0])
     
-    global output = ArrayOutput(init)
+    global output = ArrayOutput(init, 3)
 
 
     @testset "exponential growth" begin
@@ -29,7 +29,7 @@
         global init = ScalableMatrix(setup([1.0 1.0 1.0;
                                             1.0 1.0 1.0;
                                             1.0 1.0 1.0]), minmaxrange...)
-        global output = ArrayOutput(init)
+        global output = ArrayOutput(init, 3)
 
         global suit =  setup([1.0 4.0 7.0;
                               2.0 5.0 0.5;
