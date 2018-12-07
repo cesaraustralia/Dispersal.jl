@@ -22,7 +22,7 @@ using Cellular,
       FieldMetadata
 
 import Cellular: rule, rule!, neighbors, inbounds
-import Base: getindex, setindex!, endof, size, length, push!
+import Base: getindex, setindex!, lastindex, size, length, push!
 import Flatten: flattenable
 import FieldMetadata: @description, @limits, description, limits
 
