@@ -22,7 +22,7 @@ within the spotrange is invaded if it is suitable.
     # Randomly select spotting distance
     rnge = spec_rand.((data.source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / data.cellsize)
     spot = tuple(unsafe_trunc.(Int64, rnge .+ index)...)
-    spot, is_inbounds = inbounds(spot, size(data.dest), Skip())
+    spot, is_inbounds = inbounds(spot, data.dims, Skip())
 
     # Update spotted cell if it's on the grid
     if is_inbounds
