@@ -2,7 +2,7 @@ using Revise,
       Cellular,
       Dispersal,
       Test
-using Dispersal: suitability, cyclic, sequence_interpolate, neighbors
+using Dispersal: get_layers, cyclic, sequence_interpolate, neighbors
 
 setup(x) = x
 
@@ -10,7 +10,9 @@ setup(x) = x
 # using CuArrays, CUDAnative
 # setup(x) = CuArray(x)
 
-include("growth.jl")
-include("dispersal.jl")
-include("layers.jl")
-include("human.jl")
+@testset "layers" begin include("layers.jl") end
+@testset "growth" begin include("growth.jl") end
+@testset "human" begin include("human.jl") end
+@testset "inwards" begin include("inwards.jl") end
+@testset "outwards" begin include("outwards.jl") end
+@testset "integration" begin include("integration.jl") end

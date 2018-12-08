@@ -15,13 +15,14 @@ module Dispersal
 
 using Cellular, 
       DocStringExtensions, 
+      LinearAlgebra,
       Parameters, 
       Mixers, 
       Flatten, 
       Requires,
       FieldMetadata
 
-import Cellular: rule, rule!, neighbors, inbounds
+import Cellular: rule, rule!, neighbors, inbounds, radius
 import Base: getindex, setindex!, lastindex, size, length, push!
 import Flatten: flattenable
 import FieldMetadata: @description, @limits, description, limits
@@ -34,13 +35,14 @@ import FieldMetadata: @description, @limits, description, limits
     """
 
 include("types.jl")
-include("utils.jl")
-include("kernels.jl")
-include("neighborhoods.jl")
-include("rules.jl")
 include("layers.jl")
+include("utils.jl")
+include("kernels/common.jl")
+include("kernels/inwards.jl")
+include("kernels/outwards.jl")
 include("growth.jl")
 include("human.jl")
+include("jump.jl")
 
 export AbstractDispersal,
        AbstractInwardsDispersal, 
@@ -59,20 +61,16 @@ export AbstractDispersal,
        SuitabilityMask, 
        SuitabilityExponentialGrowth,
        SuitabilityLogisticGrowth,
-       AbstractDispersalNeighborhood, 
-       DispersalNeighborhood,
+       AbstractDispersalKernel, 
+       DispersalKernel,
        DispersalGrid,
-       Sequencwe,
-       Layer,
-       SuitabilityLayer, 
-       SuitabilitySequence,
-       HumanLayer, 
+       Layer, 
+       Sequence,
        exponential
 
 function __init__()
     @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
         include("cuda.jl")
-        include("hudgins.jl")
     end
 end
 

@@ -78,7 +78,8 @@ build_cell_pop_index(m, i, j, (ii, jj), human, dist) = begin
 end
 
 """ 
-Populate a matrix with the values of a list of cells 
+Populate a matrix with the values of a list of cells. 
+This lets you view the contents of a cell in an output display.
 
 ## Arguments:
 `a`: A matrix of the same size the precalculation was performed on
@@ -97,13 +98,7 @@ populate!(a::AbstractMatrix{<:Integer}, cells::AbstractVector{<:CellInterval}) =
     a
 end
 
-populate(cells::AbstractVector{<:CellInterval}, sze) = begin
-    a = ScalableMatrix(zeros(sze...), zero(cells[1].fraction), maximum(cells).fraction)
-    for cell in cells 
-        a[cell.ind...] = cell.fraction
-    end
-    a
-end
+populate(cells::AbstractVector{<:CellInterval}, sze) = populate!(zeros(sze...), cells)
 
 
 """

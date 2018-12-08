@@ -26,18 +26,17 @@
         
         minmaxrange = 0.0, 40.0
 
-        global init = ScalableMatrix(setup([1.0 1.0 1.0;
-                                            1.0 1.0 1.0;
-                                            1.0 1.0 1.0]), minmaxrange...)
+        global init = setup([1.0 1.0 1.0;
+                             1.0 1.0 1.0;
+                             1.0 1.0 1.0])
         global output = ArrayOutput(init, 3)
 
         global suit =  setup([1.0 4.0 7.0;
                               2.0 5.0 0.5;
                               3.0 6.0 -1.0])
-        global layers = SuitabilityLayer(suit)
-        global model = Models(SuitabilityExponentialGrowth(minmaxrange...))
+        global model = Models(SuitabilityExponentialGrowth(suit, minmaxrange...))
 
-        sim!(output, model, init, layers; tstop=3)
+        sim!(output, model, init; tstop=3)
         @test output[1] == [1.0 1.0 1.0;
                             1.0 1.0 1.0;
                             1.0 1.0 1.0]
@@ -48,9 +47,9 @@
                             4.0 25.0 0.25;
                             9.0 36.0 0.0]
 
-        @test Cellular.normalize_frame(output[3]) == [0.025 0.4 1.0;
-                                                      0.1 0.625 0.00625;
-                                                      0.225 0.9 0.0] 
+        @test Cellular.normalize_frame(output[3], minmaxrange...) == [0.025 0.4 1.0;
+                                                                      0.1 0.625 0.00625;
+                                                                      0.225 0.9 0.0] 
 
     end
 
