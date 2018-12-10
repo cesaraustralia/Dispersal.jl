@@ -14,6 +14,8 @@ proportion of the grid is occupied.
 
 @Fraction @Kernel struct OutwardsPopulationDispersal{} <: AbstractOutwardsDispersal end
 
+Cellular.radius(model::AbstractOutwardsDispersal) = radius(model.neighborhood)
+Cellular.temp_neighborhood(model::AbstractOutwardsDispersal) = temp_neighborhood(model.neighborhood)
 
 """
     rule(model::AbstractOutwardsDispersal, data, state, index, args...)

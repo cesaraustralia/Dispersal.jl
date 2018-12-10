@@ -51,6 +51,13 @@ end
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
+
+        # As submodels
+        global model = Models((inwards, suitmask))
+        sim!(output, model, init; tstop=3)
+        @test output[1] == test1
+        @test output[2] == test2
+        @test output[3] == test3
     end
 
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
@@ -114,8 +121,17 @@ end
     @testset "inwards population dispersal fills the grid where reachable suitable" begin
         global hood = DispersalKernel(; f=(d,a)->1.0, radius=r)
         global inwards = InwardsPopulationDispersal(neighborhood=hood, fraction=(2r+1)^2)
+
+        # As models
         global model = Models(inwards, suitmask)
         global output = ArrayOutput(init, 3)
+        sim!(output, model, init; tstop=3)
+        @test output[1] == test1
+        @test output[2] == test2
+        @test output[3] ≈ test3
+
+        # As submodels
+        global model = Models((inwards, suitmask))
         sim!(output, model, init; tstop=3)
         @test output[1] == test1
         @test output[2] == test2

@@ -9,7 +9,8 @@ Inwards dispersal calculates dispersal *to* the current cell from cells in the n
 
 @Fraction @Kernel struct InwardsPopulationDispersal{} <: AbstractInwardsDispersal end
 
-Cellular.radius(hood::DispersalKernel) = hood.radius
+Cellular.radius(model::AbstractInwardsDispersal) = radius(model.neighborhood)
+Cellular.temp_neighborhood(model::AbstractInwardsDispersal) = temp_neighborhood(model.neighborhood)
 
 """
     rule(model::InwardsBinaryDispersal, state::Integer, index, args...)
@@ -43,8 +44,7 @@ Returns nieghbors for a [`DispersalKernel`](@ref), looping over
 the array of dispersal propabilities.
 """
 @inline neighbors(hood::AbstractDispersalKernel, model::AbstractNeighborhoodModel, data, state,
-                  index, args...) =
-    @inbounds dot(data.modelmem, hood.kernel)
+                  index, args...) = @inbounds return hood.temp ⋅ hood.kernel
 
 """
     pressure(model, cc)
