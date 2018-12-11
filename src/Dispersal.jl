@@ -4,23 +4,24 @@ This package extends [Cellular.jl](https://github.com/rafaqz/Cellular.jl)
 [Dispersal.jl](https://github.com/rafaqz/Dispersal.jl) provides a range of
 dispersal modules that can be combined to build grid-based organism dispersal simulations.
 
-The design provides a solid framework while allowing customisation of any 
-aspect. A model may start with the defaults and formulations provided, 
-but incrementally customise them for a particular use-case, to any level of detail. 
+The design provides a solid framework while allowing customisation of any
+aspect. A model may start with the defaults and formulations provided,
+but incrementally customise them for a particular use-case, to any level of detail.
 
-Additionally, modules, outputs, neighborhoods provided by Cellular.jl or other 
+Additionally, modules, outputs, neighborhoods provided by Cellular.jl or other
 packages that extend it may be incorporated into a simulaiton.
 """
 module Dispersal
 
-using Cellular, 
-      DocStringExtensions, 
+using Cellular,
+      DocStringExtensions,
       LinearAlgebra,
-      Parameters, 
-      Mixers, 
-      Flatten, 
+      Parameters,
+      Mixers,
+      Flatten,
       Requires,
-      FieldMetadata
+      FieldMetadata,
+      Distributions
 
 import Cellular: rule, rule!, neighbors, inbounds, radius
 import Base: getindex, setindex!, lastindex, size, length, push!
@@ -43,28 +44,34 @@ include("local/outwards.jl")
 include("growth.jl")
 include("human.jl")
 include("jump.jl")
+include("allee.jl")
 
 export AbstractDispersal,
-       AbstractInwardsDispersal, 
+       AbstractInwardsDispersal,
        InwardsBinaryDispersal,
        InwardsPopulationDispersal,
-       AbstractOutwardsDispersal, 
+       AbstractOutwardsDispersal,
        OutwardsBinaryDispersal,
        OutwardsPopulationDispersal,
        HudginsDispersal,
-       AbstractJumpDispersal, 
+       AbstractJumpDispersal,
        JumpDispersal,
-       AbstractHumanDispersal, 
+       AbstractHumanDispersal,
        HumanDispersal,
-       ExponentialGrowth,
-       LogisticGrowth,
-       SuitabilityMask, 
-       SuitabilityExponentialGrowth,
-       SuitabilityLogisticGrowth,
-       AbstractDispersalKernel, 
+       EulerExponentialGrowth,
+       EulerLogisticGrowth,
+       ExactExponentialGrowth,
+       ExactLogisticGrowth,
+       AlleeExtinction,
+       SuitabilityMask,
+       SuitabilityEulerExponentialGrowth,
+       SuitabilityEulerLogisticGrowth,
+       SuitabilityExactExponentialGrowth,
+       SuitabilityExactLogisticGrowth,
+       AbstractDispersalKernel,
        DispersalKernel,
        DispersalGrid,
-       Layer, 
+       Layer,
        Sequence,
        exponential
 
