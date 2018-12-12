@@ -22,10 +22,10 @@ Runs rule for of [`AbstractOutwardsDispersal`](@ref) dispersal.
 Surrounding cells are invaded if the current cell is occupied and they have
 suitable habitat. Otherwise they keeps their current state.
 """
-@inline rule!(model::AbstractOutwardsDispersal, data, state, args...) = begin
-    state == zero(state) && return state # Ignore empty cells 
-    propagules = neighbors(model.neighborhood, model, data, state, args...)
-    state
+@inline rule!(model::AbstractOutwardsDispersal, data, state, index, args...) = begin
+    state == zero(state) && return state # Ignore empty cells
+    propagules = neighbors(model.neighborhood, model, data, state, index, args...)
+    data.dest[index...] -= propagules
 end
 
 @inline neighbors(hood, model::AbstractPartialNeighborhoodModel, data, state, index, args...) = begin
@@ -45,7 +45,7 @@ end
 
 @inline update_cell!(hood, model, data, state::AbstractFloat,
                    hood_index, dest_index, args...) = begin
-    @inbounds propagules = state * model.fraction * hood.kernel[hood_index...]
+    @inbounds propagules = state * hood.kernel[hood_index...]
     @inbounds data.dest[dest_index...] += propagules
     propagules
 end
