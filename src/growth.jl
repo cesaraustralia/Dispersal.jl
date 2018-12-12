@@ -18,33 +18,33 @@ end
 # Euler method solvers
 
 " Simple fixed exponential growth rate solved with Euler method "
-@InstrinsicGrowthRate struct EulerExponentialGrowth{} <: AbstractModel end
+@InstrinsicGrowthRate struct EulerExponentialGrowth{} <: AbstractCellModel end
 
 " Simple fixed logistic growth rate solved with Euler method "
-@CarryCap @InstrinsicGrowthRate struct EulerLogisticGrowth{} <: AbstractModel end
+@CarryCap @InstrinsicGrowthRate struct EulerLogisticGrowth{} <: AbstractCellModel end
 
 " Exponential growth based on a suitability layer solved with Euler method "
-@Layers struct SuitabilityEulerExponentialGrowth{} <: AbstractModel end
+@Layers struct SuitabilityEulerExponentialGrowth{} <: AbstractCellModel end
 
 " Logistic growth based on a suitability layer solved with Euler method "
-@CarryCap @Layers struct SuitabilityEulerLogisticGrowth{} <: AbstractModel end
+@CarryCap @Layers struct SuitabilityEulerLogisticGrowth{} <: AbstractCellModel end
 
 # Exact growth solutions
 
 " Simple fixed exponential growth rate using exact solution "
-@InstrinsicGrowthRate struct ExactExponentialGrowth{} <: AbstractModel end
+@InstrinsicGrowthRate struct ExactExponentialGrowth{} <: AbstractCellModel end
 
 " Simple fixed logistic growth rate using exact solution "
-@CarryCap @InstrinsicGrowthRate struct ExactLogisticGrowth{} <: AbstractModel end
+@CarryCap @InstrinsicGrowthRate struct ExactLogisticGrowth{} <: AbstractCellModel end
 
 " Exponential growth based on a suitability layer using exact solution "
-@Layers struct SuitabilityExactExponentialGrowth{} <: AbstractModel end
+@Layers struct SuitabilityExactExponentialGrowth{} <: AbstractCellModel end
 
 " Logistic growth based on a suitability layer using exact solution "
-@CarryCap @Layers struct SuitabilityExactLogisticGrowth{} <: AbstractModel end
+@CarryCap @Layers struct SuitabilityExactLogisticGrowth{} <: AbstractCellModel end
 
 " Simple suitability layer mask "
-@Layers struct SuitabilityMask{ST} <: AbstractModel
+@Layers struct SuitabilityMask{ST} <: AbstractCellModel
     # "Minimum habitat suitability index."
     threshold::ST = 0.7 | true  | (0.0, 1.0)
 end

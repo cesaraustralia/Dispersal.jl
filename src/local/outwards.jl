@@ -26,24 +26,28 @@ suitable habitat. Otherwise they keeps their current state.
 """
 @inline rule!(model::AbstractOutwardsDispersal, data, state, index, args...) = begin
     state == zero(state) && return state # Ignore empty cells
-    propagules = neighbors(model.neighborhood, model, data, state, index, args...)
-    data.dest[index...] -= propagules
+    neighbors(model.neighborhood, model, data, state, index, args...)
+    data.dest[index...]
 end
 
 @inline neighbors(hood, model::AbstractPartialNeighborhoodModel, data, state, index, args...) = begin
     r = hood.radius
-    cc = zero(state)
+    propagules = zero(state)
     # Loop over dispersal kernel grid dimensions
     for x = one(r):2r + one(r)
         xs = x + index[2] - r - one(r)
         @simd for y = one(r):2r + one(r)
             ys = y + index[1] - r - one(r)
             # Update cumulative value, and cell value for outwards dispersal
-            cc += update_cell!(hood, model, data, state, (y, x), (ys, xs), args...)
+            propagules += update_cell!(hood, model, data, state, (y, x), (ys, xs), args...)
         end
     end
-    cc
+    update_state(model, data, state, index, propagules)
+    propagules
 end
+
+update_state(model, data, state::AbstractFloat, index, propagules) = data.dest[index...] -= propagules
+update_state(model, data, state, index, propagules) = nothing
 
 @inline update_cell!(hood, model, data, state::AbstractFloat,
                    hood_index, dest_index, args...) = begin
