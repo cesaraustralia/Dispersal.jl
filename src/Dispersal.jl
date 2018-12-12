@@ -23,7 +23,7 @@ using Cellular,
       FieldMetadata,
       Distributions
 
-import Cellular: rule, rule!, neighbors, inbounds, radius
+import Cellular: rule, rule!, neighbors, inbounds, radius, temp_neighborhood
 import Base: getindex, setindex!, lastindex, size, length, push!
 import Flatten: flattenable
 import FieldMetadata: @description, @limits, description, limits

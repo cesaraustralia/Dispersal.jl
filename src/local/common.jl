@@ -16,6 +16,7 @@ a dispersal kernel function.
     f::F        | false | _
     param::P    | true  | (0.0, 10.0)
     kernel::K   | false | _
+    temp::K     | false | _
     cellsize::C | false | (0.0, 10.0)
     radius::I   | false | (1, 10)
     overflow::O | false | _
@@ -23,7 +24,9 @@ a dispersal kernel function.
                                                   cellsize::C, radius::I, overflow::O
                                                  ) where {T,F,P,K,C,I,O}
         kernel = build_dispersal_kernel(f, param, init_kernel, cellsize, radius)
-        new{F,P,typeof(kernel),C,I,O}(f, param, kernel, cellsize, radius, overflow)
+        temp = similar(kernel)
+        k = typeof(kernel)
+        new{F,P,k,C,I,O}(f, param, kernel, temp, cellsize, radius, overflow)
     end
 end
 
@@ -41,6 +44,11 @@ DispersalKernel(; f=exponential, param=1.0, init=[], cellsize=1.0,
     DispersalKernel{typeof.((f, param, init, cellsize, radius, overflow))...
                          }(f, param, init, cellsize, radius, overflow)
 end
+
+
+Cellular.radius(hood::DispersalKernel) = hood.radius
+Cellular.temp_neighborhood(hood::DispersalKernel) = hood.temp
+
 
 build_dispersal_kernel(f, params, init, cellsize, r) = begin
     params = typeof(params) <: Tuple ? params : (params,)
