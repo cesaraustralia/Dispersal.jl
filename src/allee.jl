@@ -1,12 +1,8 @@
 # Type declarations
-
 " Minimum individuals required for cell colonisation "
-@premix @columns struct MinimumFounders{MF}
+ @columns struct AlleeExtinction{MF} <: AbstractModel
     minfounders::MF = 5 | true | (0.0, 100.0)
 end
-
-" Simple fixed exponential growth rate solved with Euler method "
-@MinimumFounders struct AlleeExtinction{} <: AbstractModel end
 
 # Rules
 @inline rule(model::AlleeExtinction, data, state, args...) =
