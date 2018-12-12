@@ -1,3 +1,4 @@
+
 "Extend to modify [`InwardsBinaryDispersal`](@ref)"
 abstract type AbstractInwardsDispersal <: AbstractNeighborhoodModel end
 
@@ -33,14 +34,16 @@ Runs rule for of [`InwardsPopulationDispersal`](@ref) dispersal.
 
 The current cell is invaded by surrounding cells.
 """
-@inline rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) =
-    state + neighbors(model.neighborhood, model, data, state, args...) * model.fraction
-
+@inline rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = begin
+    p = neighbors(model.neighborhood, model, data, state, args...)
+    # rand(Poisson(p))
+    p
+end
 
 """
     neighbors(hood::DispersalKernel, state, index, t, source, dest, args...)
 
-Returns nieghbors for a [`DispersalKernel`](@ref), looping over
+Returns neighbors for a [`DispersalKernel`](@ref), looping over
 the array of dispersal propabilities.
 """
 @inline neighbors(hood::AbstractDispersalKernel, model::AbstractNeighborhoodModel, data, state,
