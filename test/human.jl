@@ -8,14 +8,15 @@ using Random
     init[3, 3] = 1.0
     global cellsize = 1
     global take = 9
+    global parb, parc = 1, 1
 
-    global precalc, prop = precalc_human_dispersal(human, cellsize, take)
+    global precalc, prop = precalc_human_dispersal(human, cellsize, take, parb, parc)
     @test length(precalc) == 25
     @test length(precalc[1, 1]) == take
 
     a = zeros(5, 5)
     b = zeros(5, 5)
-    populate!(a, precalc[1, 1]) 
+    populate!(a, precalc[1, 1])
     populate!(b, precalc[5, 5])
     @test reverse(a, dims=1) == reverse(b, dims=2)
 
@@ -23,7 +24,7 @@ using Random
     b = zeros(Int, 5, 5)
     c = zeros(Int, 5, 5)
     d = zeros(Int, 5, 5)
-    populate!(a, precalc[1, 1]) 
+    populate!(a, precalc[1, 1])
     populate!(b, precalc[5, 5])
     populate!(c, precalc[5, 3])
     populate!(d, precalc[3, 3])
@@ -58,5 +59,3 @@ using Random
     sim!(output, model, init; tstop=3)
     output[3]
 end
-
-
