@@ -10,8 +10,6 @@ using Random
     global take = 9
     global human_exponent = 1
     global dist_exponent = 1
-
-
     global precalc, prop = precalc_human_dispersal(human, cellsize, take,
                                                    human_exponent, dist_exponent)
     @test length(precalc) == 25

@@ -43,6 +43,7 @@ precalc_human_dispersal(human::A, cellsize, take, human_exponent, dist_exponent)
     h, w = size(human)
     indices = broadcastable_indices(Int32, human)
     dist = (distances(human) .* cellsize) .^ dist_exponent
+    dist[1] = cellsize/6 * (sqrt(2) + log(1 + sqrt(2))) # mean distance from cell centre 
     s = similar(human)
     take = min(take, length(human))
     magnitudes = Matrix{CellMagnitude{Float32,Tuple{Int32,Int32}}}(undef, size(human)...)
