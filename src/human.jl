@@ -2,7 +2,7 @@
 abstract type AbstractHumanDispersal <: AbstractPartialModel end
 
 # "Human dispersal model."
-@Probabilistic struct HumanDispersal{PC} <: AbstractHumanDispersal 
+@Probabilistic struct HumanDispersal{PC} <: AbstractHumanDispersal
     precalc::PC = [] | false | _
 end
 
@@ -38,7 +38,7 @@ zero(x::Type{CellMagnitude{T,Tuple{A,B}}}) where {T,A,B} = zero(x.magnitude)
 +(x::CellMagnitude, y) = +(x.magnitude, y)
 
 " Precalculate a dispersal shortlist for each cell "
-precalc_human_dispersal(human::A, cellsize, take) where A <: AbstractArray{T} where T = begin
+precalc_human_dispersal(human::A, cellsize, take, parb, parc) where A <: AbstractArray{T} where T = begin
     h, w = size(human)
     indices = broadcastable_indices(Int32, human)
     dist = distances(human) .* cellsize
@@ -53,7 +53,7 @@ precalc_human_dispersal(human::A, cellsize, take) where A <: AbstractArray{T} wh
     props = similar(human)
 
     for i in 1:size(human, 1), j in 1:size(human, 2)
-        broadcast(build_cell_pop_index, magnitudes, i, j, indices, (human,), (dist,)) # 4
+        broadcast(build_cell_pop_index, magnitudes, i, j, indices, (human,), (dist,), parb, parc) # 4
         for n in 1:size(magnitudes, 1) * size(magnitudes, 2)
             flat_magnitudes[n] = magnitudes[n]
         end
@@ -73,12 +73,12 @@ precalc_human_dispersal(human::A, cellsize, take) where A <: AbstractArray{T} wh
     precalc, props
 end
 
-build_cell_pop_index(m, i, j, (ii, jj), human, dist) = begin
-    m.magnitude = exponential(dist[abs(i - ii) + 1, abs(j - jj) + 1], 50) * human[ii, jj]
+build_cell_pop_index(m, i, j, (ii, jj), human, dist, parb, parc) = begin
+    m.magnitude = (human[i, j] * human[ii, jj])^parb / (dist[abs(i - ii) + 1, abs(j - jj) + 1])^parc
 end
 
-""" 
-Populate a matrix with the values of a list of cells. 
+"""
+Populate a matrix with the values of a list of cells.
 This lets you view the contents of a cell in an output display.
 
 ## Arguments:
@@ -86,13 +86,13 @@ This lets you view the contents of a cell in an output display.
 `cells`: A vector of [`CellInterval`](@ref)
 """
 populate!(a::AbstractMatrix, cells::AbstractVector{<:CellInterval}) = begin
-    for cell in cells 
+    for cell in cells
         a[cell.ind...] = cell.fraction
     end
     a
 end
 populate!(a::AbstractMatrix{<:Integer}, cells::AbstractVector{<:CellInterval}) = begin
-    for cell in cells 
+    for cell in cells
         a[cell.ind...] = 1
     end
     a
@@ -111,7 +111,7 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     state > zero(state) || return
     # Randomise dispersal
     rand() < model.prob_threshold || return
-    
+
     # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
     shortlist = model.precalc[index...]
     dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
@@ -121,7 +121,7 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     state
 end
 
-update_cell!(model::AbstractHumanDispersal, data, state::AbstractFloat, dest_index) = 
+update_cell!(model::AbstractHumanDispersal, data, state::AbstractFloat, dest_index) =
     data.dest[dest_index...] += oneunit(state)
-update_cell!(model::AbstractHumanDispersal, data, state::Integer, dest_index) = 
+update_cell!(model::AbstractHumanDispersal, data, state::Integer, dest_index) =
     data.dest[dest_index...] = oneunit(state)
