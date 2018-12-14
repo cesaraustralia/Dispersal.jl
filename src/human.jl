@@ -38,11 +38,11 @@ zero(x::Type{CellMagnitude{T,Tuple{A,B}}}) where {T,A,B} = zero(x.magnitude)
 +(x::CellMagnitude, y) = +(x.magnitude, y)
 
 " Precalculate a dispersal shortlist for each cell "
-precalc_human_dispersal(human::A, cellsize, take, human_exponent) where A <: AbstractArray{T} where T = begin
+precalc_human_dispersal(human::A, cellsize, take, human_exponent, dist_exponent) where A <: AbstractArray{T} where T = begin
     human .^= human_exponent
     h, w = size(human)
     indices = broadcastable_indices(Int32, human)
-    dist = distances(human) .* cellsize
+    dist = (distances(human) .* cellsize) .^ dist_exponent
     s = similar(human)
     take = min(take, length(human))
     magnitudes = Matrix{CellMagnitude{Float32,Tuple{Int32,Int32}}}(undef, size(human)...)
