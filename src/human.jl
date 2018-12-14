@@ -38,10 +38,11 @@ zero(x::Type{CellMagnitude{T,Tuple{A,B}}}) where {T,A,B} = zero(x.magnitude)
 +(x::CellMagnitude, y) = +(x.magnitude, y)
 
 " Precalculate a dispersal shortlist for each cell "
-precalc_human_dispersal(human::A, cellsize, take, parb, parc) where A <: AbstractArray{T} where T = begin
+precalc_human_dispersal(human::A, cellsize, take, human_exponent, dist_exponent) where A <: AbstractArray{T} where T = begin
+    human .^= human_exponent
     h, w = size(human)
     indices = broadcastable_indices(Int32, human)
-    dist = distances(human) .* cellsize
+    dist = (distances(human) .* cellsize) .^ dist_exponent
     s = similar(human)
     take = min(take, length(human))
     magnitudes = Matrix{CellMagnitude{Float32,Tuple{Int32,Int32}}}(undef, size(human)...)
@@ -53,7 +54,7 @@ precalc_human_dispersal(human::A, cellsize, take, parb, parc) where A <: Abstrac
     props = similar(human)
 
     for i in 1:size(human, 1), j in 1:size(human, 2)
-        broadcast(build_cell_pop_index, magnitudes, i, j, indices, (human,), (dist,), parb, parc) # 4
+        broadcast(build_cell_pop_index, magnitudes, i, j, indices, (human,), (dist,)) # 4
         for n in 1:size(magnitudes, 1) * size(magnitudes, 2)
             flat_magnitudes[n] = magnitudes[n]
         end
@@ -73,8 +74,8 @@ precalc_human_dispersal(human::A, cellsize, take, parb, parc) where A <: Abstrac
     precalc, props
 end
 
-build_cell_pop_index(m, i, j, (ii, jj), human, dist, parb, parc) = begin
-    m.magnitude = (human[i, j] * human[ii, jj])^parb / (dist[abs(i - ii) + 1, abs(j - jj) + 1])^parc
+build_cell_pop_index(m, i, j, (ii, jj), human, dist) = begin
+    m.magnitude = (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
 end
 
 """

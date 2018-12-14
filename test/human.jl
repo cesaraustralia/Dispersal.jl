@@ -8,9 +8,12 @@ using Random
     init[3, 3] = 1.0
     global cellsize = 1
     global take = 9
-    global parb, parc = 1, 1
+    global human_exponent = 1
+    global dist_exponent = 1
 
-    global precalc, prop = precalc_human_dispersal(human, cellsize, take, parb, parc)
+
+    global precalc, prop = precalc_human_dispersal(human, cellsize, take,
+                                                   human_exponent, dist_exponent)
     @test length(precalc) == 25
     @test length(precalc[1, 1]) == take
 
