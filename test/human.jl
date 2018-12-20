@@ -1,4 +1,4 @@
-using Dispersal: precalc_human_dispersal, CellMagnitude, CellInterval, build_cell_pop_index, populate!
+using Dispersal: precalc_human_dispersal, populate!
 using Random
 
 @testset "Human dispersal" begin
@@ -18,6 +18,7 @@ using Random
     @test length(precalc[1, 1]) == take
 
 
+    a = zeros(5, 5)
     b = zeros(5, 5)
     populate!(a, precalc[1, 1])
     populate!(b, precalc[5, 5])
