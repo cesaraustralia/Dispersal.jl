@@ -127,7 +127,6 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     dispersalprob = model.human_dispersal_probs[index...]
     meandispersers = round(dispersalprob * state)
 
-    meandispersers = 10
     dispersers = meandispersers # deterministic
     # dispersers = Rand.Poisson(meandispersers) # random
 
