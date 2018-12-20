@@ -10,15 +10,14 @@ using Random
     global take = 9
     global human_exponent = 1
     global dist_exponent = 1
-
-
     global precalc, prop = precalc_human_dispersal(human, cellsize, take,
                                                    human_exponent, dist_exponent)
     @test length(precalc) == 25
     @test length(precalc[1, 1]) == take
 
-
+    a = zeros(5, 5)
     b = zeros(5, 5)
+
     populate!(a, precalc[1, 1])
     populate!(b, precalc[5, 5])
     @test reverse(a, dims=1) == reverse(b, dims=2)
