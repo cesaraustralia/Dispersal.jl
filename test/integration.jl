@@ -59,16 +59,15 @@ end
         @test output[2] == test2
         @test output[3] == test3
     end
-# updating the floating point outwards dispersal broke this test
-    # @testset "outwards dispersal fills the grid where reachable and suitable" begin
-    #     global outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-    #     global model = Models(outwards, suitmask)
-    #     global output = ArrayOutput(init, 3)
-    #     sim!(output, model, init; tstop=3)
-    #     @test output[1] == test1
-    #     @test output[2] == test2
-    #     @test output[3] == test3
-    # end
+    @testset "outwards dispersal fills the grid where reachable and suitable" begin
+        global outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
+        global model = Models(outwards, suitmask)
+        global output = ArrayOutput(init, 3)
+        sim!(output, model, init; tstop=3)
+        @test output[1] == test1
+        @test output[2] == test2
+        @test output[3] == test3
+    end
 
 end
 

@@ -15,7 +15,7 @@ using Random
     @test length(precalc) == 25
     @test length(precalc[1, 1]) == take
 
-    a = zeros(5, 5)
+
     b = zeros(5, 5)
     populate!(a, precalc[1, 1])
     populate!(b, precalc[5, 5])

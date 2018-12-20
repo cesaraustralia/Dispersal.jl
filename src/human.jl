@@ -23,22 +23,27 @@ mutable struct CellInterval{P,M,I} <: AbstractCell
     ind::I
 end
 
-import Base: isless, +, zero
+# isless is used to teratively sort lists and search in funcitons like searchsortedfirst 
+# and partialsort! 
+# we define isless on CellMagnitude.magnitude in order to sort margnitudes in order.
+# on CellInterval it is defined on cumprop in order to randomly choose from a list 
+# maintaining proportion when using searchsortedfirst.
+
+import Base: isless, +
 isless(x::CellMagnitude, y::CellMagnitude) = isless(x.magnitude, y.magnitude)
 isless(x::CellMagnitude, y) = isless(x.magnitude, y)
 isless(x, y::CellMagnitude) = isless(x, y.magnitude)
+
 isless(x::CellInterval, y::CellInterval) = isless(x.cumprop, y.cumprop)
 isless(x::CellInterval, y) = isless(x.cumprop, y)
 isless(x, y::CellInterval) = isless(x, y.cumprop)
-
-zero(x::Type{CellMagnitude{T,Tuple{A,B}}}) where {T,A,B} = zero(x.magnitude)
 
 +(x::CellMagnitude, y::CellMagnitude) = +(x.magnitude, y.magnitude)
 +(x, y::CellMagnitude) = +(x, y.magnitude)
 +(x::CellMagnitude, y) = +(x.magnitude, y)
 
 " Precalculate a dispersal shortlist for each cell "
-precalc_human_dispersal(human::A, cellsize, take, human_exponent, dist_exponent) where A <: AbstractArray{T} where T = begin
+precalc_human_dispersal(human::AbstractMatrix, cellsize, take, human_exponent, dist_exponent) = begin
     human .^= human_exponent
     h, w = size(human)
     indices = broadcastable_indices(Int32, human)
@@ -75,13 +80,13 @@ precalc_human_dispersal(human::A, cellsize, take, human_exponent, dist_exponent)
     precalc, props
 end
 
-build_cell_pop_index(m, i, j, (ii, jj), human, dist) = begin
+@inline build_cell_pop_index(m, i, j, (ii, jj), human, dist) = begin
     m.magnitude = (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
 end
 
-"""
-Populate a matrix with the values of a list of cells.
-This lets you view the contents of a cell in an output display.
+""" 
+Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
+This lets you view the contents of a cell in an AbstractOutput display.
 
 ## Arguments:
 `a`: A matrix of the same size the precalculation was performed on
