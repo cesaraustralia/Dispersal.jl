@@ -6,4 +6,4 @@ end
 
 # Rules
 @inline rule(model::AlleeExtinction, data, state, args...) =
-    (state > model.minfounders ? state : 0)
+    (state >= model.minfounders ? state : 0)

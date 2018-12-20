@@ -57,6 +57,7 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, shortlist_len, huma
     human = human_pop .^ human_exponent
     # Precalculated distances matrix
     dist = (distances(human) .* cellsize) .^ dist_exponent
+    dist[1] =  # mean distance from cell centre 
     # Get matrix dimensions
     h, w = size(human)
     # Get indices to broadcast over

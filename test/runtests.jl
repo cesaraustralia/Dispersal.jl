@@ -16,3 +16,4 @@ setup(x) = x
 @testset "inwards" begin include("inwards.jl") end
 @testset "outwards" begin include("outwards.jl") end
 @testset "integration" begin include("integration.jl") end
+@testset "allee" begin include("allee.jl") end
