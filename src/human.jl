@@ -4,12 +4,19 @@ using SharedArrays
 abstract type AbstractHumanDispersal <: AbstractPartialModel end
 
 # "Human dispersal model."
-@Probabilistic struct HumanDispersal{PC} <: AbstractHumanDispersal
-    precalc::PC = [] | false | _
+@limits @flattenable struct HumanDispersal{PC,H,A,D} <: AbstractHumanDispersal
+    precalc::PC              | false | _
+    human::H                 | false | _
+    par_a::A                 | true | (0.0, 1.0)
+    human_dispersal_probs::D | false | _
 end
 
-HumanDispersal(precalc::PC, cellsize::CS, prob_threshold::PT) where {PC,CS,PT} =
-    HumanDispersal{PC,CS,PT}(precalc, cellsize, prob_threshold)
+HumanDispersal(precalc, human, par_a = 1e-5) = begin
+    human_dispersal_probs = precalc_human_dispersal_probs(human, par_a)
+    HumanDispersal(precalc, human, par_a, human_dispersal_probs)
+end
+
+precalc_human_dispersal_probs(human, par_a) = 1 .- 1 ./ exp.(par_a .* human)
 
 abstract type AbstractCell end
 
@@ -25,13 +32,13 @@ struct CellInterval{P,M,I} <: AbstractCell
     index::I
 end
 
+<<<<<<< HEAD
 ########################################################################################
 # Sorting
 #
 # isless is used to teratively sort lists and search in funcitons like
 # searchsortedfirst() and partialsort!
 # we define isless on CellGravity.gravity in order to sort margnitudes in order.
-# on CellInterval it is defined on cumprop in order to randomly choose from a list
 # maintaining proportion when using searchsortedfirst.
 
 import Base: isless, +
@@ -62,6 +69,8 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, shortlist_len, huma
     h, w = size(human)
     # Get indices to broadcast over
     indices = broadcastable_indices(Int32, human)
+    dist = (distances(human) .* cellsize) .^ dist_exponent
+    dist[1] = cellsize/6 * (sqrt(2) + log(1 + sqrt(2))) # mean distance from cell centre
     s = similar(human)
 
     # Limit shortlist cells to the total available
@@ -167,18 +176,24 @@ population in the source cell.
 rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     # Ignore empty cells
     state > zero(state) || return
-    # Randomly disperse only some proportion of the time
-    rand() < model.prob_threshold || return
 
-    shortlist = model.precalc[index...]
-    # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
-    dest_id = searchsortedfirst(shortlist, rand())
-    # Get the index of the selelected cell
-    dest_index = shortlist[dest_id].index
-    # Disperse to the cell
-    update_cell!(model, data, state, dest_index)
+    dispersalprob = model.human_dispersal_probs[index...]
+    meandispersers = round(dispersalprob * state)
 
-    state
+    dispersers = meandispersers # deterministic
+    # dispersers = Rand.Poisson(meandispersers) # random
+
+    for i = 1:dispersers
+        # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
+        shortlist = model.precalc[index...]
+        dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
+        dest_index = shortlist[dest_id].ind
+        # Disperse to the cell
+        update_cell!(model, data, state, dest_index)
+    end
+    # TODO make method for boolean and float
+    data.dest[index...] -= dispersers
+    data.dest[index...]
 end
 
 update_cell!(model::AbstractHumanDispersal, data, state, dest_index) =

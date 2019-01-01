@@ -2,10 +2,9 @@ using Dispersal: precalc_human_dispersal, populate!
 using Random
 
 @testset "Human dispersal" begin
-    Random.seed!(1234)
     global human = setup(ones(5, 5))
     global init = zero(human)
-    init[3, 3] = 1.0
+    init[3, 3] = 10.0
     global cellsize = 1
     global take = 9
     global human_exponent = 1
@@ -56,9 +55,20 @@ using Random
                 0 1 1 1 0;
                 0 0 0 0 0]
 
-
-    global model = Models(HumanDispersal(prob_threshold=0.5, precalc=precalc))
+    global par_a = 1
+    global model = Models(HumanDispersal(precalc, human, par_a))
     global output = ArrayOutput(init, 3)
+    Random.seed!(1234)
     sim!(output, model, init; tstop=3)
-    output[3]
+
+    model.models[1].human_dispersal_probs[3,3] # probability of a long distance migrant at centre
+    single = populate(precalc[3, 3], size(init))
+    single # long distance dispersal kernal at centre 
+    @test sum(init) == sum(output[3])
+    @test output[3] ==  [0.0  1.0  0.0  0.0  0.0;
+                         0.0  2.0  2.0  0.0  0.0;
+                         0.0  1.0  3.0  0.0  0.0;
+                         0.0  0.0  0.0  0.0  0.0;
+                         0.0  1.0  0.0  0.0  0.0]
+
 end
