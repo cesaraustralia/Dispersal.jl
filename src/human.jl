@@ -79,44 +79,50 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, shortlist_len, huma
     props = similar(human)
 
     # Precalculate human dispersal shortlist for every cell in the grid
+    function build_cell_precalc(index)
+        # Calculate the gravityfor all cells in the grid
+        broadcast(build_gravity_index, gravitys, i, j, indices, (human,), (dist,)) # 4
+
+        # Arrange gravitys in a vector for 1 dimensional sorting
+        for n = 1:size(gravitys, 1) * size(gravitys, 2)
+            gravity_vector[n] = gravitys[n]
+        end
+        # Sort the top shortlist_len gravitys in-place, highest first.
+        partialsort!(gravity_vector, shortlist_len, rev=true)
+        # Copy sorted gravitys to the shortlist
+        gravity_shortlist .= gravity_vector[1:shortlist_len]
+
+        # Sum gravitys in the shortlist
+        shortlist_sum::Float32 = sum(gravity_shortlist)
+        # Sum all gravitys
+        total_sum::Float32 = sum(gravitys)
+
+        # Create a list of intervals from the sorted list of gravitys.
+        # This will be used to choose to randomly select cells from the 
+        # distribution of gravitys
+        cumprop = 0.0f0
+        for (n, m) = enumerate(reverse(gravity_shortlist))
+            # Calculaate proportion of current gravity in the complete shortlist
+            prop = m.gravity / shortlist_sum
+            # Track cumulative proportion for use with `searchsortedfirst()`
+            cumprop += prop
+            interval_shortlist[n] = CellInterval(cumprop, prop, m.gravity, m.index)
+        end
+        prop = shortlist_sum / total_sum
+        index, interval_shortlist, prop
+    end
+
     for j = 1:size(human, 2)
+        index, precalc, prop = build_cell_precalc((i, j))
         println("Precalculating column : ", j)
         for i = 1:size(human, 1)
-            # Calculate the gravityfor all cells in the grid
-            broadcast(build_gravity_index, gravitys, i, j, indices, (human,), (dist,)) # 4
-
-            # Arrange gravitys in a vector for 1 dimensional sorting
-            for n = 1:size(gravitys, 1) * size(gravitys, 2)
-                gravity_vector[n] = gravitys[n]
-            end
-            # Sort the top shortlist_len gravitys in-place, highest first.
-            partialsort!(gravity_vector, shortlist_len, rev=true)
-            # Copy sorted gravitys to the shortlist
-            gravity_shortlist .= gravity_vector[1:shortlist_len]
-
-            # Sum gravitys in the shortlist
-            shortlist_sum::Float32 = sum(gravity_shortlist)
-            # Sum all gravitys
-            total_sum::Float32 = sum(gravitys)
-
-            # Create a list of intervals from the sorted list of gravitys.
-            # This will be used to choose to randomly select cells from the 
-            # distribution of gravitys
-            cumprop = 0.0f0
-            for (n, m) = enumerate(reverse(gravity_shortlist))
-                # Calculaate proportion of current gravity in the complete shortlist
-                prop = m.gravity / shortlist_sum
-                # Track cumulative proportion for use with `searchsortedfirst()`
-                cumprop += prop
-                interval_shortlist[n] = CellInterval(cumprop, prop, m.gravity, m.index)
-            end
-
             # Update output matrix
-            precalc[i, j] .= interval_shortlist
+            precalc[i, j] .= precalc
             # Update shortlist proportion matrix to check coverage of the distribution
-            props[i, j] = shortlist_sum / total_sum
+            props[i, j] = prop
         end
     end
+
     precalc, props
 end
 
