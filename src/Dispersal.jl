@@ -73,7 +73,9 @@ export AbstractDispersal,
        DispersalGrid,
        Layer,
        Sequence,
-       exponential
+       exponential,
+       populate,
+       populate!
 
 function __init__()
     @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
