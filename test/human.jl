@@ -6,14 +6,13 @@ using Random
     global init = zero(human)
     init[3, 3] = 10.0
     global cellsize = 1
-    global take = 9
+    global shortlist_len = 9
     global human_exponent = 1
     global dist_exponent = 1
-    global precalc, prop = precalc_human_dispersal(human, cellsize, take,
+    global precalc, prop = precalc_human_dispersal(human, cellsize, shortlist_len,
                                                    human_exponent, dist_exponent)
     @test length(precalc) == 25
-    @test length(precalc[1, 1]) == take
-
+    @test length(precalc[1, 1]) == shortlist_len
 
     a = zeros(5, 5)
     b = zeros(5, 5)

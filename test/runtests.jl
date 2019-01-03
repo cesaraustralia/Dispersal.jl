@@ -1,9 +1,7 @@
-using Revise,
-      Cellular,
+using Distributed, Revise
+@everywhere using Cellular,
       Dispersal,
       Test
-using Dispersal: get_layers, cyclic, sequence_interpolate, neighbors
-
 setup(x) = x
 
 # For manual testing on CUDA

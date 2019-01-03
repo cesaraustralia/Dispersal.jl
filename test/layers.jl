@@ -1,3 +1,4 @@
+using Dispersal: get_layers, cyclic
 
 @testset "layers returns 1.0 by default" begin
     @test get_layers(nothing, (1, 1), 10) == 1.0
