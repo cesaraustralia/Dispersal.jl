@@ -1,22 +1,51 @@
-using Distributed
-
 "Extend to modify [`HumanDispersal`](@ref)"
 abstract type AbstractHumanDispersal <: AbstractPartialModel end
 
-# "Human dispersal model."
-@limits @flattenable struct HumanDispersal{PC,H,A,D} <: AbstractHumanDispersal
-    precalc::PC              | false | _
-    human::H                 | false | _
-    par_a::A                 | true  | (0.0, 1.0)
-    human_dispersal_probs::D | false | _
+
+" Human dispersal model."
+@limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP} <: AbstractHumanDispersal
+    human_pop::HP          | false              | _
+    cellsize::CS           | false              | _
+    scale::S               | false              | _
+    aggregator::AG         | false              | _
+    human_exponent::HE     | true               | (0.0, 3.0)
+    dist_exponent::DE      | true               | (0.0, 3.0)
+    par_a::PA              | true               | (0.0, 0.001)
+    shortlist_len::SL      | false              | _
+    precalc::PC            | false              | _
+    proportion_covered::PR | false              | _
+    dispersal_probs::DP    | false              | _
+    function HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
+                    human_exponent::HE, dist_exponent::DE, par_a::PA, shortlist_len::SL, 
+                    precalc::PC, proportion_covered::PR, dispersal_probs::DP
+                  ) where {HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}
+        precalc, proportion_covered = precalc_human_dispersal(human_pop, cellsize, scale, aggregator,
+                                          human_exponent, dist_exponent, shortlist_len)
+        dispersal_probs = precalc_dispersal_probs(human_pop, par_a)
+        pc, pr, dp = typeof.((precalc, proportion_covered, dispersal_probs))
+        new{HP,CS,S,AG,HE,DE,PA,SL,pc,pr,dp}(human_pop, cellsize, scale, aggregator, human_exponent, 
+                                     dist_exponent, par_a, shortlist_len, precalc, 
+                                     proportion_covered, dispersal_probs)
+    end
 end
 
-HumanDispersal(precalc, human, par_a = 1e-5) = begin
-    human_dispersal_probs = precalc_human_dispersal_probs(human, par_a)
-    HumanDispersal(precalc, human, par_a, human_dispersal_probs)
+function HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
+                human_exponent::HE, dist_exponent::DE, par_a::PA, shortlist_len::SL, 
+                precalc::PC, proportion_covered::PR, dispersal_probs::DP
+              ) where {HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}
+    HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent, 
+                                 dist_exponent, par_a, shortlist_len, precalc, 
+                                 proportion_covered, dispersal_probs)
 end
 
-precalc_human_dispersal_probs(human, par_a) = 1 .- 1 ./ exp.(par_a .* human)
+HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=MeanDownsampling(),
+               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3, shortlist_len=100
+              ) = begin
+    precalc, proportion_covered, dispersal_probs = [], [], []
+    HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent, dist_exponent, 
+                   par_a, shortlist_len, precalc, proportion_covered, dispersal_probs)
+end
+
 
 abstract type AbstractCell end
 
@@ -57,21 +86,67 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 const Interval = CellInterval{Float32,Float32,Tuple{Int32,Int32}}
 const Gravity = CellGravity{Float32,Tuple{Int32,Int32}}
 const Index = Tuple{Int64,Int64}
+const Precalc = Union{Vector{Interval},Missing}
+const Prop = Union{Float32,Missing}
 
 const jobs = RemoteChannel(()->Channel(10))
-const results = RemoteChannel(()->Channel{Tuple{Index,Vector{Vector{Interval}},Vector{Float32}}}(10))
+const results = RemoteChannel(()->Channel{Tuple{Index,Vector{Precalc},Vector{Prop}}}(10))
 
 """
 Precalculate a dispersal shortlist for each cell
+
+Uses RemoteChannels to share data with worker processes.
 """
-precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, shortlist_len, human_exponent, dist_exponent) = begin
+precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, scale, aggregator,
+                        human_exponent, dist_exponent, shortlist_len) = begin
+    downsampled_pop = downsample(human_pop, aggregator, scale)
+    # Get matrix dimensions
+    h, w = size(downsampled_pop)
+
+    # Prepare all data and memory for processing
+    data = setup_data(downsampled_pop, cellsize, shortlist_len, human_exponent, dist_exponent)
+    # Allocate the final precalc array to be returned
+    precalcs = Precalc[Vector{Interval}(undef, shortlist_len) for i in 1:h, j in 1:w]
+    # Allocate a matrix of shortlist coverage proportions, for diagnostics
+    proportion_covered = Prop[0 for i in 1:h, j in 1:w]
+
+    # @async for j = 1:w
+    #     put!(jobs, (j, data))
+    # end
+
+    # for p in workers()
+    #     remote_do(assign_columns, p, jobs, results)
+    # end
+
+    # n = 1
+    # while n <= w
+    #     j, precalc_col, prop_col = take!(results)
+    #     for i = 1:h
+    #         precalcs[i, j] = precalc_col[i]
+    #         portion_covered[i, j] = prop_col[i]
+    #     end
+    #     n += 1
+    # end
+
+    for j = 1:w
+        _, precalc_col, prop_col = build_precalc_col(j, data)
+        for i = 1:h
+            precalcs[i, j] = precalc_col[i]
+            proportion_covered[i, j] = prop_col[i]
+        end
+    end
+
+    precalcs, proportion_covered
+end
+
+" Prepare all data and allocated required memory "
+function setup_data(human_pop, cellsize, shortlist_len, human_exponent, dist_exponent)
+    h, w = size(human_pop)
     # Precalculate exponentiation of human population matrix
     human = human_pop .^ human_exponent
     # Precalculated distances matrix
     dist = (distances(human) .* cellsize) .^ dist_exponent
     dist[1] = cellsize/6 * (sqrt(2) + log(1 + sqrt(2))) # mean distance from cell centre
-    # Get matrix dimensions
-    h, w = size(human)
     # Get indices to broadcast over
     indices = broadcastable_indices(Int32, human)
 
@@ -84,61 +159,55 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, shortlist_len, huma
     gravity_vector = Vector{Gravity}(undef, h * w)
     gravity_shortlist = Vector{Gravity}(undef, shortlist_len)
     interval_shortlist = Vector{Interval}(undef, shortlist_len)
-    precalc_col = [Vector{Interval}(undef, shortlist_len) for i in 1:h]
-    prop_col = [0.0f0 for i in 1:h]
-    data = shortlist_len, indices, human, dist, gravities, gravity_vector, gravity_shortlist, interval_shortlist, precalc_col, prop_col
+    precalc_col = Precalc[Vector{Interval}(undef, shortlist_len) for i in 1:h]
+    prop_col = Prop[0.0f0 for i in 1:h]
 
-    # Final precalc array to be returned
-    precalcs = [Vector{Interval}(undef, shortlist_len) for i in 1:h, j in 1:w]
-    # Matrix of Proportions
-    props = similar(human)
-
-
-    @async for j = 1:w
-        put!(jobs, (j, data))
-    end
-
-    for p in workers()
-        remote_do(do_work, p, jobs, results)
-    end
-
-    n = 1
-    while n <= w
-        j, precalc_col, prop_col = take!(results)
-        for i = 1:h
-            precalcs[i, j] .= precalc_col[i]
-            props[i, j] = prop_col[i]
-        end
-        n += 1
-    end
-
-    precalcs, props
+    shortlist_len, indices, human, dist, gravities, gravity_vector, gravity_shortlist, interval_shortlist, precalc_col, prop_col
 end
 
 
-function do_work(jobs, results) # define work function everywhere
+" Assign columns as jobs to a worker cpu for processing "
+function assign_columns(jobs, results)
     while true
         j, data = take!(jobs)
-        put!(results, build_cell_precalc(j, data))
+        put!(results, build_precalc_col(j, data))
     end
 end
 
-
-# Precalculate human dispersal shortlist for every cell in the grid
-function build_cell_precalc(j, data)
+"""
+Precalculate human dispersal shortlist for every cell in a column.
+Working on columns are the cleanest way to separate the work accross multiple processors.
+"""
+function build_precalc_col(j, data)
     shortlist_len, indices, human, dist, gravities, gravity_vector, gravity_shortlist, interval_shortlist, precalc_col, prop_col = data
-    for i = 1:size(human, 1)
-        # Calculate the gravityfor all cells in the grid
-        broadcast(build_gravity_index, gravities, i, j, indices, (human,), (dist,)) # 4
+    h, w = size(human)
+    for i = 1:h
+        cumprop = 0.0f0
+        if ismissing(human[i, j])
+            @inbounds precalc_col[i] = missing
+            # Update shortlist proportion matrix to check coverage of the distribution
+            @inbounds prop_col[i] = missing
+            continue
+        end
+        # Calculate the gravity for all cells in the grid
+        for ii = 1:h, jj = 1:w
+            @inbounds gravities[ii, jj].gravity = if ismissing(human[ii, jj])
+                # Missing values ared assigned a negative gravity to miss the shortlist
+                @inbounds -1one(gravities[1, 1].gravity)
+            else
+                build_gravity_index(i, j, ii, jj, human, dist)
+            end
+        end
+        # broadcast(build_gravity_index, gravities, i, j, indices, (human,), (dist,)) # 4
 
         # Arrange gravities in a vector for 1 dimensional sorting
         for n = 1:size(gravities, 1) * size(gravities, 2)
-            gravity_vector[n] = gravities[n]
+            @inbounds gravity_vector[n] = gravities[n]
         end
         # Sort the top shortlist_len gravities in-place, highest first.
         partialsort!(gravity_vector, shortlist_len, rev=true)
         # Copy sorted gravities to the shortlist
-        gravity_shortlist .= gravity_vector[1:shortlist_len]
+        gravity_shortlist .= @inbounds gravity_vector[1:shortlist_len]
 
         # Sum gravities in the shortlist
         shortlist_sum::Float32 = sum(gravity_shortlist)
@@ -146,21 +215,20 @@ function build_cell_precalc(j, data)
         total_sum::Float32 = sum(gravities)
 
         # Create a list of intervals from the sorted list of gravities.
-        # This will be used to choose to randomly select cells from the 
+        # This will be used to choose to randomly select cells from the
         # distribution of gravities
-        cumprop = 0.0f0
         for (n, m) = enumerate(reverse(gravity_shortlist))
             # Calculaate proportion of current gravity in the complete shortlist
             prop = m.gravity / shortlist_sum
             # Track cumulative proportion for use with `searchsortedfirst()`
             cumprop += prop
-            interval_shortlist[n] = CellInterval(cumprop, prop, m.gravity, m.index)
+            @inbounds interval_shortlist[n] = CellInterval(cumprop, prop, m.gravity, m.index)
         end
         prop = shortlist_sum / total_sum
         # Update output matrix
-        precalc_col[i] .= interval_shortlist
+        @inbounds precalc_col[i] = deepcopy(interval_shortlist)
         # Update shortlist proportion matrix to check coverage of the distribution
-        prop_col[i] = prop
+        @inbounds prop_col[i] = prop
     end
 
     j, precalc_col, prop_col
@@ -172,8 +240,8 @@ end
 # This is a combination of the distance and population of the cell.
 # """
 
-build_gravity_index(m, i, j, (ii, jj), human, dist) = begin
-    @inbounds m.gravity = (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
+build_gravity_index(i, j, ii, jj, human, dist) = begin
+    @inbounds (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
 end
 
 """
@@ -184,21 +252,20 @@ This lets you view the contents of a cell in an AbstractOutput display.
 `a`: A matrix of the same size the precalculation was performed on
 `cells`: A vector of [`CellInterval`](@ref)
 """
-populate!(a::AbstractMatrix, cells::AbstractVector{<:CellInterval}) = begin
+populate!(a::AbstractMatrix, cells::Missing, scale) = a
+populate!(a::AbstractMatrix, cells::AbstractVector{<:CellInterval}, scale) = begin
     for cell in cells
-        a[cell.index...] = cell.fraction
-    end
-    a
-end
-populate!(a::AbstractMatrix{<:Integer}, cells::AbstractVector{<:CellInterval}) = begin
-    for cell in cells
-        a[cell.index...] = 1
+        a[upsample_index(cell.index, scale)...] = populate_val(a, cell)
     end
     a
 end
 
-populate(cells::AbstractVector{<:CellInterval}, sze) = populate!(zeros(sze...), cells)
+populate_val(a::AbstractMatrix{<:Integer}, cell) = 1
+populate_val(a::AbstractMatrix, cell) = cell.fraction
 
+populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
+
+precalc_dispersal_probs(human_pop, par_a) = 1 .- 1 ./ exp.(human_pop .* par_a)
 
 """
     rule(model::AbstractHumanDispersal, state, index, t, source, dest, args...)
@@ -209,26 +276,37 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     # Ignore empty cells
     state > zero(state) || return
 
-    dispersalprob = model.human_dispersal_probs[index...]
-    meandispersers = round(dispersalprob * state)
+    dispersalprob = model.dispersal_probs[index...]
 
-    dispersers = meandispersers # deterministic
-    # dispersers = Rand.Poisson(meandispersers) # random
+    @inbounds ismissing(dispersalprob) && return data.dest[index...]
+    @inbounds shortlist = model.precalc[downsample_index(index, model.scale)...]
+    @inbounds ismissing(shortlist) && return data.dest[index...]
 
-    for i = 1:dispersers
+    meandispersers = round(Int, dispersalprob * state)
+    meandispersers == zero(meandispersers) && return data.dest[index...]
+    total_dispersers = meandispersers # deterministic
+    # total_dispersers = rand(Poisson(meandispersers))
+
+    n = 0
+    max_dispersers = 50
+    while n < total_dispersers
+        # Select random subset of dispersers for an individual dispersal event
+        dispersers = min(rand(1:max_dispersers), total_dispersers - n)
         # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
-        shortlist = model.precalc[index...]
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
-        dest_index = shortlist[dest_id].index
-        # Disperse to the cell
-        update_cell!(model, data, state, dest_index)
+        # Randomise cell destination within upsampled cells
+        dest_index = upsample_index(shortlist[dest_id].index, model.scale) .+ 
+                              (rand(0:model.scale-1), rand(0:model.scale-1))
+        # Disperse to the celP
+        update_cell!(model, data, state, dest_index, dispersers)
+        n += dispersers
     end
     # TODO make method for boolean and float
-    data.dest[index...] -= dispersers
-    data.dest[index...]
+    @inbounds data.dest[index...] -= total_dispersers
+    @inbounds data.dest[index...]
 end
 
-update_cell!(model::AbstractHumanDispersal, data, state, dest_index) =
-    data.dest[dest_index...] += oneunit(state)
-update_cell!(model::AbstractHumanDispersal, data, state::Bool, dest_index) =
-    data.dest[dest_index...] = oneunit(state)
+update_cell!(model::AbstractHumanDispersal, data, state, dest_index, num) =
+    return data.dest[dest_index...] += num * oneunit(state)
+update_cell!(model::AbstractHumanDispersal, data, state::Bool, dest_index, num) =
+    return data.dest[dest_index...] = oneunit(state)
