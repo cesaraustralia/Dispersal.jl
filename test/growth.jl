@@ -9,7 +9,7 @@
 
 
     @testset "exponential growth" begin
-        global model = Models(ExactExponentialGrowth(intrinsicrate = log(2.0), timestep = 1))
+        global model = Models(ExactExponentialGrowth(intrinsicrate = log(2.0)))
         sim!(output, model, init; tstop=3)
         @test output[1] == [ 1.0  4.0  7.0;
                              2.0  5.0  8.0;
@@ -52,7 +52,7 @@
     end
 
     @testset "logistic growth" begin
-        global model = Models(ExactLogisticGrowth(intrinsicrate = log(2.0), carrycap = 10, timestep = 1))
+        global model = Models(ExactLogisticGrowth(intrinsicrate = log(2.0), carrycap = 10))
         global init =  setup([1.0 4.0 7.0;
                               2.0 5.0 8.0;
                               3.0 6.0 9.0])

@@ -8,7 +8,7 @@ Inwards dispersal calculates dispersal *to* the current cell from cells in the n
 """
 @Probabilistic @Kernel struct InwardsBinaryDispersal{} <: AbstractInwardsDispersal end
 
-@Fraction @Kernel struct InwardsPopulationDispersal{} <: AbstractInwardsDispersal end
+@Kernel struct InwardsPopulationDispersal{} <: AbstractInwardsDispersal end
 
 Cellular.radius(model::AbstractInwardsDispersal) = radius(model.neighborhood)
 Cellular.temp_neighborhood(model::AbstractInwardsDispersal) = temp_neighborhood(model.neighborhood)

@@ -21,7 +21,8 @@ using Cellular,
       Flatten,
       Requires,
       FieldMetadata,
-      Distributions
+      Distributions,
+      Distributed
 
 import Cellular: rule, rule!, neighbors, inbounds, radius, temp_neighborhood
 import Base: getindex, setindex!, lastindex, size, length, push!
@@ -42,6 +43,7 @@ include("local/common.jl")
 include("local/inwards.jl")
 include("local/outwards.jl")
 include("growth.jl")
+include("mask.jl")
 include("human.jl")
 include("jump.jl")
 include("allee.jl")
@@ -63,6 +65,7 @@ export AbstractDispersal,
        ExactExponentialGrowth,
        ExactLogisticGrowth,
        AlleeExtinction,
+       Mask,
        SuitabilityMask,
        SuitabilityEulerExponentialGrowth,
        SuitabilityEulerLogisticGrowth,

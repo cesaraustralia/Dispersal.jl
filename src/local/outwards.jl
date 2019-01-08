@@ -12,7 +12,7 @@ proportion of the grid is occupied.
 """
 @Probabilistic @Kernel struct OutwardsBinaryDispersal{} <: AbstractOutwardsDispersal end
 
-@Fraction @Kernel struct OutwardsPopulationDispersal{} <: AbstractOutwardsDispersal end
+@Kernel struct OutwardsPopulationDispersal{} <: AbstractOutwardsDispersal end
 
 Cellular.radius(model::AbstractOutwardsDispersal) = radius(model.neighborhood)
 Cellular.temp_neighborhood(model::AbstractOutwardsDispersal) = temp_neighborhood(model.neighborhood)

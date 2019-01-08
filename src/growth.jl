@@ -1,20 +1,19 @@
 # Mixins
 
-@premix @columns struct InstrinsicGrowthRate{GR, TS}
-    intrinsicrate::GR = 0.1 | true | (0.0, 10.0)
-    timestep::TS = 1 | true | (1, 365.0)
+@premix @columns struct InstrinsicGrowthRate{GR}
+    intrinsicrate::GR = 0.1 | true  | (0.0, 10.0)
 end
 
 @premix @columns struct CarryCap{CC}
-    carrycap::CC = 100 | true | (0.0, 10.0)
+    carrycap::CC = 100000   | true  | (0.0, 1000000.0)
 end
 
-@premix @columns struct Layers{L, TS}
-    layers::L = () | false | _
-    timestep::TS = 1 | true  | (0.0, 365.0)
+@premix @columns struct Layers{L}
+    layers::L    = ()       | false | _
 end
 
 # Type declarations
+
 # Euler method solvers
 
 " Simple fixed exponential growth rate solved with Euler method "
@@ -50,50 +49,51 @@ end
 end
 
 # Rules
-# euler solver rules
-@inline rule(model::EulerExponentialGrowth, data, state, args...) = state + state * model.intrinsicrate * model.timestep
+
+# Euler solver rules
+@inline rule(model::EulerExponentialGrowth, data, state, args...) = state + state * model.intrinsicrate * data.timestep
 
 @inline rule(model::SuitabilityEulerExponentialGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(model.layers, index, data.t)
-    state + intrinsicrate * state * model.timestep # dN = rN * dT
+    state + intrinsicrate * state * data.timestep # dN = rN * dT
     # max(min(state * intrinsicrate, model.max), model.min)
 end
 
 # TODO: fix and test logistic growth
 @inline rule(model::EulerLogisticGrowth, data, state, args...) =
-    state + state * model.intrinsicrate * (1 - state / model.carrycap) * model.timestep # dN = (1-N/K)rN dT
+    state + state * model.intrinsicrate * (1 - state / model.carrycap) * data.timestep # dN = (1-N/K)rN dT
 
 @inline rule(model::SuitabilityEulerLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(model.layers, index, data.t)
     saturation =  intrinsicrate > 0 ? (1 - state / model.carrycap) : 1
-    state + state * saturation * intrinsicrate * model.timestep
+    state + state * saturation * intrinsicrate * data.timestep
 end
 
-# exact solution rules
+# Exact solution rules
 
-@inline rule(model::ExactExponentialGrowth, data, state, args...) = state * exp(model.intrinsicrate * model.timestep)
+@inline rule(model::ExactExponentialGrowth, data, state, args...) = state * exp(model.intrinsicrate * data.timestep)
 
 @inline rule(model::SuitabilityExactExponentialGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(model.layers, index, data.t)
-    state * exp(intrinsicrate * model.timestep)
+    state * exp(intrinsicrate * data.timestep)
     # max(min(state * intrinsicrate, model.max), model.min)
 end
 
 @inline rule(model::ExactLogisticGrowth, data, state, args...) =
     (state * model.carrycap) /
-    (state + (model.carrycap - state) * exp(-model.intrinsicrate * model.timestep))
+    (state + (model.carrycap - state) * exp(-model.intrinsicrate * data.timestep))
 
 @inline rule(model::SuitabilityExactLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(model.layers, index, data.t)
     if intrinsicrate > 0
         (state * model.carrycap) /
-        (state + (model.carrycap - state) * exp(-intrinsicrate * model.timestep))
+        (state + (model.carrycap - state) * exp(-intrinsicrate * data.timestep))
     else
-        state * exp(intrinsicrate * model.timestep)
+        state * exp(intrinsicrate * data.timestep)
     end
 end
 

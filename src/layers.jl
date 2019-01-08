@@ -9,6 +9,7 @@ firstindex(s::AbstractSequence) = firstindex(s.data)
 lastindex(s::AbstractSequence) = lastindex(s.data)
 Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T = 
     getindex(s.data, i...)
+show(s::AbstractSequence) = show(s.data)
 
 struct Sequence{T,TS} <: AbstractSequence{T}
     "Any 2-dimensional AbstractArray matching the coordinates of the init array"

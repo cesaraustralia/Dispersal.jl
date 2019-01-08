@@ -1,4 +1,4 @@
-using Distributed, Revise
+using Revise, Distributed
 @everywhere using Cellular,
       Dispersal,
       Test
@@ -15,3 +15,4 @@ setup(x) = x
 @testset "outwards" begin include("outwards.jl") end
 @testset "integration" begin include("integration.jl") end
 @testset "allee" begin include("allee.jl") end
+@testset "mask" begin include("mask.jl") end

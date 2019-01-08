@@ -137,7 +137,7 @@ end
 
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin
         global hood = DispersalKernel(; f=(d,a)->1.0, radius=r)
-        global outwards = OutwardsPopulationDispersal(neighborhood=hood, fraction=1)
+        global outwards = OutwardsPopulationDispersal(neighborhood=hood)
         global model = Models(outwards, suitmask)
         global output = ArrayOutput(init, 3)
         sim!(output, model, init; tstop=3)

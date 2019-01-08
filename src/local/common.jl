@@ -1,7 +1,7 @@
 "Kernel neighbourhoods for dispersal"
 abstract type AbstractDispersalKernel <: AbstractNeighborhood end
 
-@mix struct Kernel{N}
+@mix @columns struct Kernel{N}
     "Neighborhood to disperse to or from"
     neighborhood::N = DispersalKernel() | true  | _
 end
@@ -12,23 +12,24 @@ Can be built directly by passing in the array, radius and overflow
 arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 """
-@limits @flattenable struct DispersalKernel{F,P,K,C,I,O} <: AbstractDispersalKernel
+@limits @flattenable struct DispersalKernel{F,P,K,C,I} <: AbstractDispersalKernel
     f::F        | false | _
     param::P    | true  | (0.0, 10.0)
     kernel::K   | false | _
     temp::K     | false | _
     cellsize::C | false | (0.0, 10.0)
     radius::I   | false | (1, 10)
-    overflow::O | false | _
-    function DispersalKernel{F,P,K,C,I,O}(f::F, param::P, init_kernel::K, 
-                                                  cellsize::C, radius::I, overflow::O
-                                                 ) where {T,F,P,K,C,I,O}
+    function DispersalKernel{F,P,K,C,I}(f::F, param::P, init_kernel::K, temp_kernel::K, 
+                    cellsize::C, radius::I) where {F,P,K,C,I} 
         kernel = build_dispersal_kernel(f, param, init_kernel, cellsize, radius)
-        temp = similar(kernel)
+        temp_kernel = similar(kernel)
         k = typeof(kernel)
-        new{F,P,k,C,I,O}(f, param, kernel, temp, cellsize, radius, overflow)
+        new{F,P,k,C,I}(f, param, kernel, temp_kernel, cellsize, radius)
     end
 end
+
+DispersalKernel(f::F, param::P, kernel::K, cellsize::C, radius::I) where {F,P,K,C,I} =
+    DispersalKernel{F,P,K,C,I}(f, param, kernel, similar(kernel), cellsize, radius)
 
 """
     DispersalKernel(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, radius=Int64(3), overflow=Skip())
@@ -39,11 +40,8 @@ Constructor for neighborhoods, using a dispersal kernel function and a cell radi
 - `radius::Integer`: a positive integer
 - `overflow = Skip()
 """
-DispersalKernel(; f=exponential, param=1.0, init=[], cellsize=1.0, 
-                      radius=Int64(3), overflow=Skip()) = begin
-    DispersalKernel{typeof.((f, param, init, cellsize, radius, overflow))...
-                         }(f, param, init, cellsize, radius, overflow)
-end
+DispersalKernel(; f=exponential, param=1.0, init=[], cellsize=1.0, radius=3) = 
+    DispersalKernel(f, param, init, cellsize, radius)
 
 
 Cellular.radius(hood::DispersalKernel) = hood.radius
