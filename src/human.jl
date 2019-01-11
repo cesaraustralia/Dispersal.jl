@@ -295,7 +295,7 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
         # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
         # Randomise cell destination within upsampled cells
-        dest_index = upsample_index(shortlist[dest_id].index, model.scale) .+ 
+        dest_index = @inbounds upsample_index(shortlist[dest_id].index, model.scale) .+ 
                               (rand(0:model.scale-1), rand(0:model.scale-1))
         # Disperse to the celP
         update_cell!(model, data, state, dest_index, dispersers)
@@ -307,6 +307,6 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
 end
 
 update_cell!(model::AbstractHumanDispersal, data, state, dest_index, num) =
-    return data.dest[dest_index...] += num * oneunit(state)
+    @inbounds return data.dest[dest_index...] += num * oneunit(state)
 update_cell!(model::AbstractHumanDispersal, data, state::Bool, dest_index, num) =
-    return data.dest[dest_index...] = oneunit(state)
+    @inbounds return data.dest[dest_index...] = oneunit(state)

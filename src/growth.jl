@@ -67,7 +67,7 @@ end
 @inline rule(model::SuitabilityEulerLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(model.layers, index, data.t)
-    saturation =  intrinsicrate > 0 ? (1 - state / model.carrycap) : 1
+    saturation = intrinsicrate > 0 ? (1 - state / model.carrycap) : 1
     state + state * saturation * intrinsicrate * data.timestep
 end
 
@@ -89,6 +89,7 @@ end
 @inline rule(model::SuitabilityExactLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(model.layers, index, data.t)
+    # Saturation only applies with positive growth
     if intrinsicrate > 0
         (state * model.carrycap) /
         (state + (model.carrycap - state) * exp(-intrinsicrate * data.timestep))
