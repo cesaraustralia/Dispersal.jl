@@ -3,7 +3,7 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
 
 
 " Human dispersal model."
-@limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,TS,PC,PR,DP} <: AbstractHumanDispersal
+@limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP} <: AbstractHumanDispersal
     human_pop::HP          | false              | _
     cellsize::CS           | false              | _
     scale::S               | false              | _
@@ -11,7 +11,7 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
     human_exponent::HE     | true               | (0.0, 3.0)
     dist_exponent::DE      | true               | (0.0, 3.0)
     par_a::PA              | true               | (0.0, 0.00001)
-    max_dispersers         | true               | (0.0, 1000.0) 
+    max_dispersers::MD     | true               | (0.0, 1000.0) 
     shortlist_len::SL      | false              | _
     timestep::TS           | false              | _
     precalc::PC            | false              | _
@@ -26,26 +26,28 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
         dispersal_probs = precalc_dispersal_probs(human_pop, par_a, timestep)
         pc, pr, dp = typeof.((precalc, proportion_covered, dispersal_probs))
         new{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,pc,pr,dp}(human_pop, cellsize, scale, aggregator, human_exponent, 
-                                     dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
-                                     proportion_covered, dispersal_probs)
+                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
+                                 proportion_covered, dispersal_probs)
     end
 end
 
 function HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
-                human_exponent::HE, dist_exponent::DE, par_a::PA, shortlist_len::SL, timestep::TS,
+                human_exponent::HE, dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, timestep::TS,
                 precalc::PC, proportion_covered::PR, dispersal_probs::DP
-              ) where {HP,CS,S,AG,HE,DE,PA,SL,TS,PC,PR,DP}
-    HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,TS,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent, 
-                                 dist_exponent, par_a, shortlist_len, timestep, precalc, 
+              ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}
+    HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent, 
+                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
                                  proportion_covered, dispersal_probs)
 end
 
 HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=MeanDownsampling(),
-               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3, shortlist_len=100, timestep=1
+               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3, 
+               max_dispersers=100.0, shortlist_len=100, timestep=1
               ) = begin
     precalc, proportion_covered, dispersal_probs = [], [], []
-    HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent, dist_exponent, 
-                   par_a, shortlist_len, timestep, precalc, proportion_covered, dispersal_probs)
+    HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent, 
+                   dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
+                   proportion_covered, dispersal_probs)
 end
 
 
@@ -293,7 +295,7 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     # TODO this is a parameter
     while n < total_dispersers
         # Select random subset of dispersers for an individual dispersal event
-        dispersers = min(rand(1:max_dispersers), total_dispersers - n)
+        dispersers = min(rand(1:model.max_dispersers), total_dispersers - n)
         # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
         # Randomise cell destination within upsampled cells
