@@ -36,7 +36,7 @@ The current cell is invaded by surrounding cells.
 """
 @inline rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = begin
     p = neighbors(model.neighborhood, model, data, state, args...)
-    typeof(state)(rand(Poisson(p)))
+    p > zero(p) ? typeof(state)(rand(Poisson(p))) : state
 end
 
 """

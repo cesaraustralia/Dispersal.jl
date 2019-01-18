@@ -3,47 +3,49 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
 
 
 " Human dispersal model."
-@limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP} <: AbstractHumanDispersal
+@limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,TS,PC,PR,DP} <: AbstractHumanDispersal
     human_pop::HP          | false              | _
     cellsize::CS           | false              | _
     scale::S               | false              | _
     aggregator::AG         | false              | _
     human_exponent::HE     | true               | (0.0, 3.0)
     dist_exponent::DE      | true               | (0.0, 3.0)
-    par_a::PA              | true               | (0.0, 0.001)
+    par_a::PA              | true               | (0.0, 0.00001)
+    max_dispersers         | true               | (0.0, 1000.0) 
     shortlist_len::SL      | false              | _
+    timestep::TS           | false              | _
     precalc::PC            | false              | _
     proportion_covered::PR | false              | _
     dispersal_probs::DP    | false              | _
-    function HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
-                    human_exponent::HE, dist_exponent::DE, par_a::PA, shortlist_len::SL, 
+    function HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
+                    human_exponent::HE, dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, timestep::TS,
                     precalc::PC, proportion_covered::PR, dispersal_probs::DP
-                  ) where {HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}
+                  ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}
         precalc, proportion_covered = precalc_human_dispersal(human_pop, cellsize, scale, aggregator,
                                           human_exponent, dist_exponent, shortlist_len)
-        dispersal_probs = precalc_dispersal_probs(human_pop, par_a)
+        dispersal_probs = precalc_dispersal_probs(human_pop, par_a, timestep)
         pc, pr, dp = typeof.((precalc, proportion_covered, dispersal_probs))
-        new{HP,CS,S,AG,HE,DE,PA,SL,pc,pr,dp}(human_pop, cellsize, scale, aggregator, human_exponent, 
-                                     dist_exponent, par_a, shortlist_len, precalc, 
+        new{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,pc,pr,dp}(human_pop, cellsize, scale, aggregator, human_exponent, 
+                                     dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
                                      proportion_covered, dispersal_probs)
     end
 end
 
 function HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
-                human_exponent::HE, dist_exponent::DE, par_a::PA, shortlist_len::SL, 
+                human_exponent::HE, dist_exponent::DE, par_a::PA, shortlist_len::SL, timestep::TS,
                 precalc::PC, proportion_covered::PR, dispersal_probs::DP
-              ) where {HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}
-    HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent, 
-                                 dist_exponent, par_a, shortlist_len, precalc, 
+              ) where {HP,CS,S,AG,HE,DE,PA,SL,TS,PC,PR,DP}
+    HumanDispersal{HP,CS,S,AG,HE,DE,PA,SL,TS,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent, 
+                                 dist_exponent, par_a, shortlist_len, timestep, precalc, 
                                  proportion_covered, dispersal_probs)
 end
 
 HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=MeanDownsampling(),
-               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3, shortlist_len=100
+               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3, shortlist_len=100, timestep=1
               ) = begin
     precalc, proportion_covered, dispersal_probs = [], [], []
     HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent, dist_exponent, 
-                   par_a, shortlist_len, precalc, proportion_covered, dispersal_probs)
+                   par_a, shortlist_len, timestep, precalc, proportion_covered, dispersal_probs)
 end
 
 
@@ -265,7 +267,7 @@ populate_val(a::AbstractMatrix, cell) = cell.fraction
 
 populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
 
-precalc_dispersal_probs(human_pop, par_a) = 1 .- 1 ./ exp.(human_pop .* par_a)
+precalc_dispersal_probs(human_pop, par_a, timestep) = (1 .- 1 ./ exp.(human_pop .* par_a)) ./ timestep
 
 """
     rule(model::AbstractHumanDispersal, state, index, t, source, dest, args...)
@@ -282,13 +284,13 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     @inbounds shortlist = model.precalc[downsample_index(index, model.scale)...]
     @inbounds ismissing(shortlist) && return data.dest[index...]
 
-    meandispersers = round(Int, dispersalprob * state)
-    meandispersers == zero(meandispersers) && return data.dest[index...]
-    total_dispersers = meandispersers # deterministic
-    # total_dispersers = rand(Poisson(meandispersers))
+    meandispersers = round(Int, state * dispersalprob * data.timestep)
+    meandispersers > zero(meandispersers) || return data.dest[index...]
+    # total_dispersers = meandispersers # deterministic
+    total_dispersers = rand(Poisson(meandispersers)) # randomised
 
     n = 0
-    max_dispersers = 50
+    # TODO this is a parameter
     while n < total_dispersers
         # Select random subset of dispersers for an individual dispersal event
         dispersers = min(rand(1:max_dispersers), total_dispersers - n)

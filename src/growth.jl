@@ -5,7 +5,7 @@
 end
 
 @premix @columns struct CarryCap{CC}
-    carrycap::CC = 100000   | true  | (0.0, 1000000.0)
+    carrycap::CC = 100000   | false  | (0.0, 1000000.0)
 end
 
 @premix @columns struct Layers{L}
@@ -55,19 +55,19 @@ end
 
 @inline rule(model::SuitabilityEulerExponentialGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
-    intrinsicrate = get_layers(model.layers, index, data.t)
+    intrinsicrate = get_layers(model, data, index)
     state + intrinsicrate * state * data.timestep # dN = rN * dT
     # max(min(state * intrinsicrate, model.max), model.min)
 end
 
 # TODO: fix and test logistic growth
 @inline rule(model::EulerLogisticGrowth, data, state, args...) =
-    state + state * model.intrinsicrate * (1 - state / model.carrycap) * data.timestep # dN = (1-N/K)rN dT
+    state + state * model.intrinsicrate * (oneunit(state) - state / model.carrycap) * data.timestep # dN = (1-N/K)rN dT
 
 @inline rule(model::SuitabilityEulerLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
-    intrinsicrate = get_layers(model.layers, index, data.t)
-    saturation = intrinsicrate > 0 ? (1 - state / model.carrycap) : 1
+    intrinsicrate = get_layers(model, data, index)
+    saturation = intrinsicrate > zero(intrinsicrate) ? (oneunit(state) - state / model.carrycap) : oneunit(state)
     state + state * saturation * intrinsicrate * data.timestep
 end
 
@@ -77,7 +77,7 @@ end
 
 @inline rule(model::SuitabilityExactExponentialGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
-    intrinsicrate = get_layers(model.layers, index, data.t)
+    intrinsicrate = get_layers(model, data, index)
     state * exp(intrinsicrate * data.timestep)
     # max(min(state * intrinsicrate, model.max), model.min)
 end
@@ -88,9 +88,9 @@ end
 
 @inline rule(model::SuitabilityExactLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
-    intrinsicrate = get_layers(model.layers, index, data.t)
+    intrinsicrate = get_layers(model, data, index)
     # Saturation only applies with positive growth
-    if intrinsicrate > 0
+    if intrinsicrate > zero(intrinsicrate)
         (state * model.carrycap) /
         (state + (model.carrycap - state) * exp(-intrinsicrate * data.timestep))
     else
@@ -100,5 +100,5 @@ end
 
 @inline rule(model::SuitabilityMask, data, state, index, args...) = begin
     state == zero(state) && return zero(state)
-    get_layers(model.layers, index, data.t) >= model.threshold ? state : zero(state)
+    get_layers(model, data, model.layers, index, data.t) >= model.threshold ? state : zero(state)
 end

@@ -3,4 +3,4 @@
 @Layers struct Mask{} <: AbstractCellModel end
 
 @inline rule(model::Mask, data, state, index, args...) = 
-    state * get_layers(model.layers, index, data.t)
+    state * get_layers(model, data, index)
