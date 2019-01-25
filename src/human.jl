@@ -11,13 +11,13 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
     human_exponent::HE     | true               | (0.0, 3.0)
     dist_exponent::DE      | true               | (0.0, 3.0)
     par_a::PA              | true               | (0.0, 0.00001)
-    max_dispersers::MD     | true               | (0.0, 1000.0) 
+    max_dispersers::MD     | true               | (0.0, 1000.0)
     shortlist_len::SL      | false              | _
     timestep::TS           | false              | _
     precalc::PC            | false              | _
     proportion_covered::PR | false              | _
     dispersal_probs::DP    | false              | _
-    function HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
+    function HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
                     human_exponent::HE, dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, timestep::TS,
                     precalc::PC, proportion_covered::PR, dispersal_probs::DP
                   ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}
@@ -25,28 +25,27 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
                                           human_exponent, dist_exponent, shortlist_len)
         dispersal_probs = precalc_dispersal_probs(human_pop, par_a, timestep)
         pc, pr, dp = typeof.((precalc, proportion_covered, dispersal_probs))
-        new{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,pc,pr,dp}(human_pop, cellsize, scale, aggregator, human_exponent, 
-                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
+        new{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,pc,pr,dp}(human_pop, cellsize, scale, aggregator, human_exponent,
+                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc,
                                  proportion_covered, dispersal_probs)
     end
 end
 
-function HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, 
-                human_exponent::HE, dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, timestep::TS,
-                precalc::PC, proportion_covered::PR, dispersal_probs::DP
-              ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}
-    HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent, 
-                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
+HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, human_exponent::HE, 
+               dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, 
+               timestep::TS, precalc::PC, proportion_covered::PR, dispersal_probs::DP
+              ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP} = begin
+    HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent,
+                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc,
                                  proportion_covered, dispersal_probs)
 end
 
 HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
-               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3, 
-               max_dispersers=100.0, shortlist_len=100, timestep=1
-              ) = begin
+               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3,
+               max_dispersers=100.0, shortlist_len=100, timestep=1) = begin
     precalc, proportion_covered, dispersal_probs = [], [], []
-    HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent, 
-                   dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc, 
+    HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent,
+                   dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc,
                    proportion_covered, dispersal_probs)
 end
 
@@ -114,24 +113,6 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, scale, aggregator,
     # Allocate a matrix of shortlist coverage proportions, for diagnostics
     proportion_covered = Prop[0 for i in 1:h, j in 1:w]
 
-    # @async for j = 1:w
-    #     put!(jobs, (j, data))
-    # end
-
-    # for p in workers()
-    #     remote_do(assign_columns, p, jobs, results)
-    # end
-
-    # n = 1
-    # while n <= w
-    #     j, precalc_col, prop_col = take!(results)
-    #     for i = 1:h
-    #         precalcs[i, j] = precalc_col[i]
-    #         portion_covered[i, j] = prop_col[i]
-    #     end
-    #     n += 1
-    # end
-
     for j = 1:w
         _, precalc_col, prop_col = build_precalc_col(j, data)
         for i = 1:h
@@ -169,14 +150,6 @@ function setup_data(human_pop, cellsize, shortlist_len, human_exponent, dist_exp
     shortlist_len, indices, human, dist, gravities, gravity_vector, gravity_shortlist, interval_shortlist, precalc_col, prop_col
 end
 
-
-" Assign columns as jobs to a worker cpu for processing "
-function assign_columns(jobs, results)
-    while true
-        j, data = take!(jobs)
-        put!(results, build_precalc_col(j, data))
-    end
-end
 
 """
 Precalculate human dispersal shortlist for every cell in a column.
@@ -244,9 +217,8 @@ end
 # This is a combination of the distance and population of the cell.
 # """
 
-build_gravity_index(i, j, ii, jj, human, dist) = begin
-    @inbounds (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
-end
+build_gravity_index(i, j, ii, jj, human, dist) =
+    @inbounds return (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
 
 """
 Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
@@ -299,7 +271,7 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
         # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
         # Randomise cell destination within upsampled cells
-        dest_index = @inbounds upsample_index(shortlist[dest_id].index, model.scale) .+ 
+        dest_index = @inbounds upsample_index(shortlist[dest_id].index, model.scale) .+
                               (rand(0:model.scale-1), rand(0:model.scale-1))
         # Disperse to the celP
         update_cell!(model, data, state, dest_index, dispersers)
