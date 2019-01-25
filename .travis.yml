@@ -34,9 +34,9 @@ script:
                  Pkg.test("Dispersal"; coverage=true)'
 after_success:
   # push coverage results to Coveralls
-  - julia -e 'cd(Pkg.dir("Dispersal")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+  - julia -e 'using Pkg cd(Pkg.dir("Dispersal")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
   # push coverage results to Codecov
-  - julia -e 'cd(Pkg.dir("Dispersal")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  - julia -e 'using Pkg cd(Pkg.dir("Dispersal")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
   # update docs
-  - julia -e 'Pkg.add("Documenter"); Pkg.checkout("Documenter")'
-  - $TESTCMD -e 'cd(Pkg.dir("Dispersal")); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'
+  - julia -e 'using Pkg Pkg.add("Documenter"); Pkg.checkout("Documenter")'
+  - $TESTCMD -e 'using Pkg cd(Pkg.dir("Dispersal")); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'
