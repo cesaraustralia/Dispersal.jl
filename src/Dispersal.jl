@@ -22,7 +22,8 @@ using Cellular,
       Requires,
       FieldMetadata,
       Distributions,
-      Distributed
+      Distributed,
+      Statistics
 
 import Cellular: rule, rule!, neighbors, inbounds, radius, temp_neighborhood
 import Base: getindex, setindex!, lastindex, size, length, push!

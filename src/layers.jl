@@ -3,19 +3,6 @@ An abstract type for for sequences of suitability layers.
 """
 abstract type AbstractSequence{T} <: AbstractVector{T} end
 
-length(s::AbstractSequence) = length(s.data)
-
-size(s::AbstractSequence) = size(s.data, 1)
-
-firstindex(s::AbstractSequence) = firstindex(s.data)
-
-lastindex(s::AbstractSequence) = lastindex(s.data)
-
-Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T =
-    getindex(s.data, i...)
-
-show(s::AbstractSequence) = show(s.data)
-
 struct Sequence{T,TS} <: AbstractSequence{T}
     "Tuple of 2-dimensional AbstractArray matching the coordinates of the init array"
     data::T
@@ -23,8 +10,17 @@ struct Sequence{T,TS} <: AbstractSequence{T}
     timestep::TS
 end
 
-import Cellular: timestep
 
+length(s::AbstractSequence) = length(s.data)
+size(s::AbstractSequence) = size(s.data, 1)
+firstindex(s::AbstractSequence) = firstindex(s.data)
+lastindex(s::AbstractSequence) = lastindex(s.data)
+Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T =
+    getindex(s.data, i...)
+show(s::AbstractSequence) = show(s.data)
+
+
+import Cellular: timestep
 timestep(s::Sequence) = s.timestep
 
 
@@ -46,7 +42,7 @@ get_layers(model, data, index) = get_layers(data, model.layers, index, data.t)
 
 get_layers(data, layers::Tuple, index, t::Number) =
     get_layers(data, layers[1], index, t) *
-    get_layer(data, Base.tail(layers), index, t::Number)
+    get_layers(data, Base.tail(layers), index, t)
 get_layers(data, layers::Tuple{}, index, t::Number) = 1
 
 Base.@propagate_inbounds get_layers(data, layer::Matrix, index, t::Number) = 

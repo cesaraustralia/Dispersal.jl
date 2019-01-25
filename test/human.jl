@@ -1,5 +1,5 @@
-using Cellular, Dispersal, Test, Random
-using Dispersal: precalc_human_dispersal, populate!, MeanDownsampling, upsample_index
+using Cellular, Dispersal, Test, Random, Statistics
+using Dispersal: precalc_human_dispersal, populate!, upsample_index
 
 human_pop = Union{Float32,Missing}[1 for i = 1:5, j = 1:5]
 human_pop[4, 1] = missing

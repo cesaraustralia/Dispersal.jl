@@ -49,23 +49,20 @@ end
 update_state(model, data, state::AbstractFloat, index, propagules) = data.dest[index...] -= propagules
 update_state(model, data, state, index, propagules) = nothing
 
-@inline update_cell!(hood, model, data, state::AbstractFloat,
-                   hood_index, dest_index, args...) = begin
+@inline update_cell!(hood, model, data, state::AbstractFloat, hood_index, dest_index, args...) = begin
     @inbounds propagules = state * hood.kernel[hood_index...]
     @inbounds data.dest[dest_index...] += propagules
     propagules
 end
 
-@inline update_cell!(hood, model, data, state::Integer,
-                   hood_index, dest_index, args...) = begin
+@inline update_cell!(hood, model, data, state::Integer, hood_index, dest_index, args...) = begin
     @inbounds rand() * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
 
     @inbounds data.dest[dest_index...] += oneunit(state)
     oneunit(state)
 end
 
-@inline update_cell!(hood, model, data, state::Bool,
-                   hood_index, dest_index, args...) = begin
+@inline update_cell!(hood, model, data, state::Bool, hood_index, dest_index, args...) = begin
     @inbounds rand() * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
 
     @inbounds data.dest[dest_index...] |= oneunit(state)
