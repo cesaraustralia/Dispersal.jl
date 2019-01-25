@@ -1,5 +1,6 @@
 using SafeTestsets
 
+@time @safetestset "downsampling" begin include("downsampling.jl") end
 @time @safetestset "layers" begin include("layers.jl") end
 @time @safetestset "human dispersal" begin include("human.jl") end
 @time @safetestset "jump dispersal" begin include("jump.jl") end

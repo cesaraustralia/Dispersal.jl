@@ -40,7 +40,7 @@ function HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
                                  proportion_covered, dispersal_probs)
 end
 
-HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=MeanDownsampling(),
+HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
                human_exponent=1.0, dist_exponent=1.0, par_a=1e-3, 
                max_dispersers=100.0, shortlist_len=100, timestep=1
               ) = begin

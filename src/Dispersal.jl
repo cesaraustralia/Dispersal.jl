@@ -37,8 +37,8 @@ import FieldMetadata: @description, @limits, description, limits
     """
 
 include("types.jl")
+include("downsampling.jl")
 include("layers.jl")
-include("utils.jl")
 include("kernel/common.jl")
 include("kernel/inwards.jl")
 include("kernel/outwards.jl")
