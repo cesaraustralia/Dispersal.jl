@@ -81,12 +81,5 @@ export AbstractDispersal,
        populate,
        populate!
 
-function __init__()
-    @require CuArrays="3a865a2d-5b23-5a0f-bc46-62713ec82fae" begin
-        include("cuda.jl")
-    end
-end
-
-
 
 end # module
