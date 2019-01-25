@@ -58,7 +58,7 @@ end
 
 @inline update_cell!(hood, model, data, state::Integer,
                    hood_index, dest_index, args...) = begin
-    @inbounds spec_rand(source, Float64, args...) * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
+    @inbounds rand() * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
 
     @inbounds data.dest[dest_index...] += oneunit(state)
     oneunit(state)
@@ -66,7 +66,7 @@ end
 
 @inline update_cell!(hood, model, data, state::Bool,
                    hood_index, dest_index, args...) = begin
-    @inbounds spec_rand(source, Float64, args...) * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
+    @inbounds rand() * hood.kernel[hood_index...] > model.prob_threshold || return zero(state)
 
     @inbounds data.dest[dest_index...] |= oneunit(state)
     oneunit(state)

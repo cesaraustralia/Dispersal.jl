@@ -1,23 +1,23 @@
-@testset "mask" begin
-    global init =  setup([1.0 4.0 7.0;
-                          2.0 5.0 8.0;
-                          3.0 6.0 9.0])
+using Cellular, Dispersal, Test
 
-    global mask =  setup([0.0 1.0 0.0;
-                          0.0 1.0 1.0;
-                          1.0 1.0 0.0])
+init = [1.0 4.0 7.0;
+        2.0 5.0 8.0;
+        3.0 6.0 9.0]
 
-    global output = ArrayOutput(init, 2)
+mask = [0.0 1.0 0.0;
+        0.0 1.0 1.0;
+        1.0 1.0 0.0]
 
-    global model = Models(Mask(layers=mask))
+output = ArrayOutput(init, 2)
 
-    sim!(output, model, init; tstop=2)
+model = Models(Mask(layers=mask))
 
-    @test output[1] == [1.0 4.0 7.0;
-                        2.0 5.0 8.0;
-                        3.0 6.0 9.0]
+sim!(output, model, init; tstop=2)
 
-    @test output[2] == [0.0 4.0 0.0;
-                        0.0 5.0 8.0;
-                        3.0 6.0 0.0]
-end
+@test output[1] == [1.0 4.0 7.0;
+                    2.0 5.0 8.0;
+                    3.0 6.0 9.0]
+
+@test output[2] == [0.0 4.0 0.0;
+                    0.0 5.0 8.0;
+                    3.0 6.0 0.0]

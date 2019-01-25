@@ -1,11 +1,9 @@
 
-spec_rand(source, typ, args...) = rand(typ)
-
-
 abstract type AbstractDownsampling end
 
 struct MeanDownsampling <: AbstractDownsampling end
 struct SumDownsampling <: AbstractDownsampling end
+
 
 aggregate(::MeanDownsampling, xs) = mean(xs)
 aggregate(::SumDownsampling, xs) = sum(xs)

@@ -10,6 +10,9 @@ Inwards dispersal calculates dispersal *to* the current cell from cells in the n
 
 @Kernel struct InwardsPopulationDispersal{} <: AbstractInwardsDispersal end
 
+@Kernel struct PoissonInwardsPopulationDispersal{} <: AbstractInwardsDispersal end
+
+
 Cellular.radius(model::AbstractInwardsDispersal) = radius(model.neighborhood)
 Cellular.temp_neighborhood(model::AbstractInwardsDispersal) = temp_neighborhood(model.neighborhood)
 
@@ -34,7 +37,16 @@ Runs rule for of [`InwardsPopulationDispersal`](@ref) dispersal.
 
 The current cell is invaded by surrounding cells.
 """
-@inline rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = begin
+@inline rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = 
+    neighbors(model.neighborhood, model, data, state, args...)
+
+"""
+    rule(model::PoissonInwardsPopulationDispersal, state::AbstractFloat, args...)
+Runs rule for of [`InwardsPopulationDispersal`](@ref) dispersal.
+
+The current cell is invaded by surrounding cells.
+"""
+@inline rule(model::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, args...) = begin
     p = neighbors(model.neighborhood, model, data, state, args...)
     p > zero(p) ? typeof(state)(rand(Poisson(p))) : state
 end

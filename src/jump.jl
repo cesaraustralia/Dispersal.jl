@@ -17,10 +17,10 @@ within the spotrange is invaded if it is suitable.
     state > zero(state) || return state
 
     # Random dispersal events
-    spec_rand(data.source, Float64, args...) < model.prob_threshold || return state
+    rand() < model.prob_threshold || return state
 
     # Randomly select spotting distance
-    rnge = spec_rand.((data.source,), (Float64, Float64), tuple.(args)...) .* (model.spotrange / data.cellsize)
+    rnge = rand(2) .* (model.spotrange / data.cellsize)
     spot = tuple(unsafe_trunc.(Int64, rnge .+ index)...)
     spot, is_inbounds = inbounds(spot, data.dims, Skip())
 

@@ -47,9 +47,7 @@ end
     # "Minimum habitat suitability index."
     threshold::ST = 0.7 | true  | (0.0, 1.0)
 end
-
-# Rules
-
+# Rules 
 # Euler solver rules
 @inline rule(model::EulerExponentialGrowth, data, state, args...) = state + state * model.intrinsicrate * data.timestep
 
@@ -100,5 +98,5 @@ end
 
 @inline rule(model::SuitabilityMask, data, state, index, args...) = begin
     state == zero(state) && return zero(state)
-    get_layers(model, data, model.layers, index, data.t) >= model.threshold ? state : zero(state)
+    get_layers(model, data, index) >= model.threshold ? state : zero(state)
 end

@@ -1,18 +1,10 @@
-using Revise, Distributed
-@everywhere using Cellular,
-      Dispersal,
-      Test
-setup(x) = x
+using SafeTestsets
 
-# For manual testing on CUDA
-# using CuArrays, CUDAnative
-# setup(x) = CuArray(x)
-
-@testset "layers" begin include("layers.jl") end
-@testset "growth" begin include("growth.jl") end
-@testset "human" begin include("human.jl") end
-@testset "inwards" begin include("inwards.jl") end
-@testset "outwards" begin include("outwards.jl") end
-@testset "integration" begin include("integration.jl") end
-@testset "allee" begin include("allee.jl") end
-@testset "mask" begin include("mask.jl") end
+@time @safetestset "layers" begin include("layers.jl") end
+@time @safetestset "human dispersal" begin include("human.jl") end
+@time @safetestset "jump dispersal" begin include("jump.jl") end
+@time @safetestset "kernels" begin include("kernels.jl") end
+@time @safetestset "allee effects" begin include("allee.jl") end
+@time @safetestset "growth" begin include("growth.jl") end
+@time @safetestset "mask" begin include("mask.jl") end
+@time @safetestset "integration" begin include("integration.jl") end
