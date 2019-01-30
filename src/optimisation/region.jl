@@ -6,6 +6,7 @@ import Cellular: store_frame!, show_frame, allocate_frames!,
 @Ok @Frames struct SumOutput{DI,SF} <: AbstractArrayOutput{T} where DI <: AbstractOutput disp::DI
     frames_per_step::SF
 end
+
 SumOutput(frames::AbstractVector, frames_per_step::Number, steps::Number, disp::AbstractOutput) = begin
     o = SumOutput{typeof.((frames, disp, frames_per_step))...}(frames, [false], disp, frames_per_step)
     allocate_frames!(o, frames[1], 2:steps)
@@ -21,7 +22,7 @@ show_frame(output::SumOutput, t::Number) = nothing
 store_frame!(o::SumOutput, frame, t) = begin
     sze = size(o[1])
     # Determine the timestep being summed to
-    ts = step_from_frame(o, t)
+    ts = step_from_frame(o.frames_per_step, t)
     # Add frame to current sum frame
     for j in 1:sze[2]
         for i in 1:sze[1]
