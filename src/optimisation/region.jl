@@ -53,9 +53,9 @@ end
     names = fieldnameflatten(p.model.models)
     println("Parameters: ", collect(zip(names, params)))
     p.model.models = Flatten.reconstruct(p.model.models, params)
-    steps, regions = size(occurance)
-    tstop = steps * frames_per_step
-    s = zeros(Bool, p.occurance)
+    steps, regions = size(p.occurance)
+    tstop = steps * p.frames_per_step
+    s = zeros(Bool, size(p.occurance))
 
     cumsum = @distributed (+) for i = 1:p.num_replicates
         o = deepcopy(p.output)
@@ -98,7 +98,6 @@ struct ColorRegionFit{S,OC,CR,TN,FN,M} <: AbstractImageProcessor
 end
 
 process_image(p::ColorRegionFit, o, frame, t) = begin
-    print
     step = step_from_frame(p.frames_per_step, t)
     frame = normalize_frame(o, frame)
     img = similar(frame, RGB24) 
