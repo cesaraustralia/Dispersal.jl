@@ -22,12 +22,43 @@ using Cellular,
       FieldMetadata,
       Distributions,
       Distributed,
-      Statistics
+      Statistics,
+      Colors
+
+
+import Base: getindex, setindex!, lastindex, size, length, push!
 
 import Cellular: rule, rule!, neighbors, inbounds, radius, temp_neighborhood
-import Base: getindex, setindex!, lastindex, size, length, push!
-import Flatten: flattenable
-import FieldMetadata: @description, @limits, description, limits
+
+import FieldMetadata: @description, @limits, @flattenable, description, limits, flattenable
+
+
+
+export AbstractDispersal
+
+export AbstractInwardsDispersal, InwardsBinaryDispersal, InwardsPopulationDispersal
+
+export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDispersal
+
+export AbstractJumpDispersal, JumpDispersal
+
+export AbstractHumanDispersal, HumanDispersal, populate, populate!
+
+export EulerExponentialGrowth, EulerLogisticGrowth, ExactExponentialGrowth, ExactLogisticGrowth
+
+export SuitabilityMask, SuitabilityEulerExponentialGrowth, SuitabilityEulerLogisticGrowth,
+       SuitabilityExactExponentialGrowth, SuitabilityExactLogisticGrowth
+
+export AlleeExtinction, AlleeExtinction
+
+export Mask
+
+export AbstractDispersalKernel, DispersalKernel, exponential 
+ 
+export Sequence
+
+export RegionParametriser, SumOutput, ColorRegionFit
+
 
 # Documentation templates
 @template TYPES =
@@ -36,49 +67,20 @@ import FieldMetadata: @description, @limits, description, limits
     $(FIELDS)
     """
 
-include("types.jl")
+
 include("downsampling.jl")
 include("layers.jl")
-include("kernel/common.jl")
-include("kernel/inwards.jl")
-include("kernel/outwards.jl")
-include("growth.jl")
-include("mask.jl")
-include("human.jl")
-include("jump.jl")
-include("allee.jl")
-
-export AbstractDispersal,
-       AbstractInwardsDispersal,
-       InwardsBinaryDispersal,
-       InwardsPopulationDispersal,
-       AbstractOutwardsDispersal,
-       OutwardsBinaryDispersal,
-       OutwardsPopulationDispersal,
-       HudginsDispersal,
-       AbstractJumpDispersal,
-       JumpDispersal,
-       AbstractHumanDispersal,
-       HumanDispersal,
-       EulerExponentialGrowth,
-       EulerLogisticGrowth,
-       ExactExponentialGrowth,
-       ExactLogisticGrowth,
-       AlleeExtinction,
-       Mask,
-       SuitabilityMask,
-       SuitabilityEulerExponentialGrowth,
-       SuitabilityEulerLogisticGrowth,
-       SuitabilityExactExponentialGrowth,
-       SuitabilityExactLogisticGrowth,
-       AbstractDispersalKernel,
-       DispersalKernel,
-       DispersalGrid,
-       Layer,
-       Sequence,
-       exponential,
-       populate,
-       populate!
+include("models/mixins.jl")
+include("models/kernel/common.jl")
+include("models/kernel/inwards.jl")
+include("models/kernel/outwards.jl")
+include("models/growth.jl")
+include("models/mask.jl")
+include("models/human.jl")
+include("models/jump.jl")
+include("models/allee.jl")
+include("optimisation/region.jl")
+include("optimisation/cell.jl")
 
 
 end # module
