@@ -67,11 +67,14 @@ end
               RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0)  RGB24(0.0,1.0,1.0)]
 
     frames_per_step = 2
-    truenegativecolor =  RGB24(1.0, 0.0, 1.0)
-    falsenegativecolor = RGB24(1.0, 1.0, 0.0)
-    maskcolor = RGB24(0.0, 1.0, 1.0)
+    truepostivecolor =   (1.0, 1.0, 1.0)
+    falsepositivecolor = (1.0, 0.0, 0.0)
+    truenegativecolor =  (1.0, 0.0, 1.0)
+    falsenegativecolor = (1.0, 1.0, 0.0)
+    maskcolor =          (0.0, 1.0, 1.0)
 
     processor = ColorRegionFit(frames_per_step, occurance, region_lookup, 
+                               truepostivecolor, falsepositivecolor,
                                truenegativecolor, falsenegativecolor, maskcolor)
     output = GtkOutput(init, processor=processor; fps=1, store=true)
 

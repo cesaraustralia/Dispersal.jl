@@ -88,10 +88,12 @@ step_from_frame(frames_per_step, t) = (t - one(t)) ÷ frames_per_step + one(t)
 
 
 " An image procesor to visualise the model fit "
-struct ColorRegionFit{S,OC,CR,TN,FN,M} <: AbstractImageProcessor 
+struct ColorRegionFit{S,OC,CR,TP,FP,TN,FN,M} <: AbstractImageProcessor 
     frames_per_step::S
     occurance::OC
     region_lookup::CR
+    truepositivecolor::TP
+    falsepositivecolor::FP
     truenegativecolor::TN
     falsenegativecolor::FN
     maskcolor::M
@@ -106,9 +108,9 @@ process_image(p::ColorRegionFit, o, frame, t) = begin
         img[i] = if region > zero(region) 
             x = frame[i]
             if p.occurance[region, step]
-                x == zero(x) ? RGB24(p.falsenegativecolor) : RGB24(x)
+                x == zero(x) ? RGB24(p.falsenegativecolor) : RGB24((x .* p.truepositivecolor)...)
             else
-                x == zero(x) ? RGB24(p.truenegativecolor) : RGB24(x, 0.0, 0.0)
+                x == zero(x) ? RGB24(p.truenegativecolor) : RGB24((x .* p.falsepositivecolor)...)
             end
         else
            RGB24(p.maskcolor)
