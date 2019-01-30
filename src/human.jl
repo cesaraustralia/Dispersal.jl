@@ -1,8 +1,18 @@
-"Extend to modify [`HumanDispersal`](@ref)"
+
+" Extends AbstractPartialModel fr human driven dispersal models "
 abstract type AbstractHumanDispersal <: AbstractPartialModel end
 
+"""
+HumanDispersal Models human-driven dispersal patterns using population data.
 
-" Human dispersal model."
+Transport connections between grid cells are calculated using distance and human population,
+modified with the `human_exponent` and `dist_exponent` parameters. A shortlist of the most 
+connected cells is selected for use in the simulation. 
+
+The time taken for precalulation will depend on the `scale` argument. Values above 1 
+will downsample the grid to improve precalulation time and runtime performance. A high 
+scale value is good for use in a live interface.
+"""
 @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP} <: AbstractHumanDispersal
     human_pop::HP          | false              | _
     cellsize::CS           | false              | _
@@ -31,8 +41,8 @@ abstract type AbstractHumanDispersal <: AbstractPartialModel end
     end
 end
 
-HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, human_exponent::HE, 
-               dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, 
+HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, human_exponent::HE,
+               dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL,
                timestep::TS, precalc::PC, proportion_covered::PR, dispersal_probs::DP
               ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP} = begin
     HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent,
@@ -50,14 +60,18 @@ HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
 end
 
 
-abstract type AbstractCell end
 
-mutable struct CellGravity{M,I} <: AbstractCell
+" CellGravity allows sorting on gravity while keeping records of the original cell coordinate "
+mutable struct CellGravity{M,I}
     gravity::M
     index::I
 end
 
-struct CellInterval{P,M,I} <: AbstractCell
+"""
+CellGravity allows ordering a list by the cumulative proportion of the total gravity,
+and plotting based on the fraction of total gravity.
+"""
+struct CellInterval{P,M,I}
     cumprop::P
     fraction::P
     gravity::M
@@ -86,24 +100,22 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 +(x, y::CellGravity) = +(x, y.gravity)
 +(x::CellGravity, y) = +(x.gravity, y)
 
+
+# Define types used in the precalculation
 const Interval = CellInterval{Float32,Float32,Tuple{Int32,Int32}}
 const Gravity = CellGravity{Float32,Tuple{Int32,Int32}}
 const Index = Tuple{Int64,Int64}
 const Precalc = Union{Vector{Interval},Missing}
 const Prop = Union{Float32,Missing}
 
-const jobs = RemoteChannel(()->Channel(10))
-const results = RemoteChannel(()->Channel{Tuple{Index,Vector{Precalc},Vector{Prop}}}(10))
-
 """
 Precalculate a dispersal shortlist for each cell
-
-Uses RemoteChannels to share data with worker processes.
 """
 precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, scale, aggregator,
                         human_exponent, dist_exponent, shortlist_len) = begin
+
+    # Downsample and get final matrix dimensions
     downsampled_pop = downsample(human_pop, aggregator, scale)
-    # Get matrix dimensions
     h, w = size(downsampled_pop)
 
     # Prepare all data and memory for processing
@@ -124,7 +136,7 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, scale, aggregator,
     precalcs, proportion_covered
 end
 
-" Prepare all data and allocated required memory "
+" Prepare all data and allocated required memory for precalculation "
 function setup_data(human_pop, cellsize, shortlist_len, human_exponent, dist_exponent)
     h, w = size(human_pop)
     # Precalculate exponentiation of human population matrix
@@ -211,12 +223,12 @@ function build_precalc_col(j, data)
     j, precalc_col, prop_col
 end
 
-# """
-# Calculate the gravity of an individual cell relative to the current cell.
 
-# This is a combination of the distance and population of the cell.
-# """
+"""
+Calculate the gravity of an individual cell relative to the current cell.
 
+This is a combination of the distance and population of the cell.
+"""
 build_gravity_index(i, j, ii, jj, human, dist) =
     @inbounds return (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
 
@@ -241,6 +253,8 @@ populate_val(a::AbstractMatrix, cell) = cell.fraction
 
 populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
 
+
+" Prealculate dispersal probailities for use in the rule "
 precalc_dispersal_probs(human_pop, par_a, timestep) = (1 .- 1 ./ exp.(human_pop .* par_a)) ./ timestep
 
 """

@@ -1,8 +1,10 @@
-"""
-An abstract type for for sequences of suitability layers.
-"""
+" An abstract type for for sequences of layers "
 abstract type AbstractSequence{T} <: AbstractVector{T} end
 
+""" 
+A sequences of layers with a timestep length. 
+Unitful units for time will propagate correctly. 
+"""
 struct Sequence{T,TS} <: AbstractSequence{T}
     "Tuple of 2-dimensional AbstractArray matching the coordinates of the init array"
     data::T
@@ -25,37 +27,29 @@ timestep(s::Sequence) = s.timestep
 
 
 """
-    suitability(layers, index, t::Number)
-Returns a scalar representing cell suitability from one or multiple layers.
+    get_layers
+Returns the value of a single layer or interplated value from a sequence of layers.
 
-For multiple layers the product of each individual scalar is returned.
-
-Layers of type other than AbstractLayer return 1.0.
-
-### Arguments
-- `layers` : a single layer or tuple of layers of any type
-- `index` : a tuple containing 2 grid coordinates
-- `t::Number` : current timestep for interploating layere sequences.
+If multiple layers are available the product will be returned.
 """
 function get_layers end
-get_layers(model, data, index) = get_layers(data, model.layers, index, data.t)
-
-get_layers(data, layers::Tuple, index, t::Number) =
+Base.@propagate_inbounds get_layers(model, data, index) = get_layers(data, model.layers, index, data.t)
+Base.@propagate_inbounds get_layers(data, layers::Tuple, index, t::Number) =
     get_layers(data, layers[1], index, t) *
     get_layers(data, Base.tail(layers), index, t)
-get_layers(data, layers::Tuple{}, index, t::Number) = 1
+Base.@propagate_inbounds get_layers(data, layers::Tuple{}, index, t::Number) = 1
 
 Base.@propagate_inbounds get_layers(data, layer::Matrix, index, t::Number) = 
     return layer[index...]
 
-get_layers(data, sequence::AbstractSequence, index, t::Number) =
+Base.@propagate_inbounds get_layers(data, sequence::AbstractSequence, index, t::Number) =
     sequence_interpolate(data, sequence, index, t)
 
 """
     sequence_interpolate(layer, index, t)
 Interpolates between layers in a sequence.
 """
-@inline sequence_interpolate(data, seq, index, t::Number) = begin
+Base.@propagate_inbounds @inline sequence_interpolate(data, seq, index, t::Number) = begin
     # Linear interpolation between layers in the sequence.
     tf = calc_timestep(data, seq, t)
     tr = unsafe_trunc(Int64, tf)

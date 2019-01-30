@@ -1,7 +1,12 @@
 "Extend to modify [`JumpDispersal`](@ref)"
 abstract type AbstractJumpDispersal <: AbstractPartialModel end
 
-"Jump dispersal within a [`DispersalNeighborhood`](@ref)] or other neighborhoods."
+"""
+Jump dispersal simulates random long distance dispersal events. 
+Dispersal is not modified by any characteristics of the grid, such as suitability or 
+human population. A [`Mask`](@ref) model may be useful aftwerwards, as dispersal events 
+may be to anywhere on the grid within the given range.
+"""
 @Probabilistic struct JumpDispersal{SR} <: AbstractJumpDispersal 
     "A number or Unitful.jl distance with the same units as cellsize"
     spotrange::SR = 30.0 | true | (0.0, 100.0)
