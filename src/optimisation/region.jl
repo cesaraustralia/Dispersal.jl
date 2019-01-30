@@ -53,7 +53,7 @@ end
     names = fieldnameflatten(p.model.models)
     println("Parameters: ", collect(zip(names, params)))
     p.model.models = Flatten.reconstruct(p.model.models, params)
-    steps, regions = size(p.occurance)
+    regions, steps = size(p.occurance)
     tstop = steps * p.frames_per_step
     s = zeros(Bool, size(p.occurance))
 
