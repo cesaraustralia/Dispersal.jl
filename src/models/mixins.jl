@@ -1,6 +1,3 @@
-"Neighborhoods for dispersal"
-abstract type AbstractDispersalNeighborhood <: AbstractNeighborhood end
-
 # Model mixins
 
 @chain columns @limits @flattenable @with_kw 
