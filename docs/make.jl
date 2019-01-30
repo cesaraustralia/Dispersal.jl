@@ -1,5 +1,5 @@
 using Documenter, Dispersal
-using Dispersal: rule, neighbors, build_dispersal_kernel, pressure, suitability, human_impact, cyclic
+using Dispersal: rule, neighbors
 
 makedocs(
     modules = [Dispersal],
