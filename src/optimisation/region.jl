@@ -108,13 +108,17 @@ process_image(p::ColorRegionFit, o, frame, t) = begin
         img[i] = if region > zero(region) 
             x = frame[i]
             if p.occurance[region, step]
-                x == zero(x) ? RGB24(p.falsenegativecolor) : RGB24((x .* p.truepositivecolor)...)
+                x == zero(x) ? rgb(p.falsenegativecolor) : rgb((x .* p.truepositivecolor))
             else
-                x == zero(x) ? RGB24(p.truenegativecolor) : RGB24((x .* p.falsepositivecolor)...)
+                x == zero(x) ? rgb(p.truenegativecolor) : rgb((x .* p.falsepositivecolor))
             end
         else
-           RGB24(p.maskcolor)
+           rgb(p.maskcolor)
         end
     end
     img
 end
+
+rgb(c::RGB24) = c
+rgb(c::Tuple) = RGB24(c...)
+rgb(c::Number) = RGB24(c)
