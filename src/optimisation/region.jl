@@ -1,36 +1,38 @@
-import Cellular: store_frame!, show_frame, allocate_frames!, 
-       @Ok, @Frames, is_async, process_image, normalize_frame
+using Cellular: @Ok, @Frames, allocate_frames!, normalize_frame
+
+import Cellular: store_frame!, show_frame, process_image
 
 
-" An output that sums frames for a number of frames "
-@Ok @Frames struct SumOutput{DI,SF} <: AbstractArrayOutput{T} where DI <: AbstractOutput disp::DI
+" An output that condenses a given span of frames to a single frame"
+@Ok @Frames struct SumOutput{DI,SF} <: AbstractArrayOutput{T} where DI <: AbstractOutput 
+    disp::DI
     frames_per_step::SF
 end
 
 SumOutput(frames::AbstractVector, frames_per_step::Number, steps::Number, disp::AbstractOutput) = begin
-    o = SumOutput{typeof.((frames, disp, frames_per_step))...}(frames, [false], disp, frames_per_step)
-    allocate_frames!(o, frames[1], 2:steps)
-    map(f -> f .= 0, o.frames)
-    o
+    output = SumOutput{typeof.((frames, disp, frames_per_step))...}(frames, [false], disp, frames_per_step)
+    allocate_frames!(output, frames[1], 2:steps)
+    map(f -> f .= 0, output.frames)
+    output
 end
 
-# Add Cellular.jl methods
-
-show_frame(output::SumOutput, t::Number) = nothing
+Cellular.show_frame(output::SumOutput, t::Number) = nothing
 
 " Sums frames on the fly to reduce storage "
-store_frame!(o::SumOutput, frame, t) = begin
-    sze = size(o[1])
+Cellular.store_frame!(output::SumOutput, frame, t) = begin
+    sze = size(output[1])
     # Determine the timestep being summed to
-    ts = step_from_frame(o.frames_per_step, t)
+    ts = step_from_frame(output.frames_per_step, t)
     # Add frame to current sum frame
     for j in 1:sze[2]
         for i in 1:sze[1]
-            @inbounds o[ts][i, j] += frame[i, j]
+            @inbounds output[ts][i, j] += frame[i, j]
         end
     end
-    show_frame(o.disp, o[ts], t)
+    show_frame(output.disp, output[ts], t)
 end
+
+step_from_frame(frames_per_step, t) = (t - one(t)) ÷ frames_per_step + one(t)
 
 
 
@@ -78,17 +80,30 @@ end
     loss
 end
 
+# TODO use LossFunctions.jl so this is modular and other methods can be used
 crossentropy(y, p, minprob = 1e-9) = begin
     p = min.(p, 1 - minprob)
     p = max.(p, minprob)
     -sum( y  .* log.(p) .+ (ones(size(y)) .- y) .* log.(ones(size(p)) .- p))
 end
 
-step_from_frame(frames_per_step, t) = (t - one(t)) ÷ frames_per_step + one(t)
 
 
-" An image procesor to visualise the model fit "
-struct ColorRegionFit{S,OC,CR,TP,FP,TN,FN,M} <: AbstractImageProcessor 
+""" 
+An image procesor to visualise the model fit, for a live version of 
+the region fitting optimiser.  
+
+Fields:
+`frames_per_step` : The number of frames summed to a single frame
+`occurance` : A table of occurrance for each summed step
+`region_lookup` : A lookup table matching the occurrance table 
+`truepositivecolor` : color of true positive fit, etc.
+`falsepositivecolor` 
+`truenegativecolor`
+`falsenegativecolor`
+`maskcolor` : color when a cell region of zero or lower
+"""
+struct ColorRegionFit{S,OC,CR,TP,FP,TN,FN,M} <: AbstractFrameProcessor 
     frames_per_step::S
     occurance::OC
     region_lookup::CR
@@ -99,9 +114,9 @@ struct ColorRegionFit{S,OC,CR,TP,FP,TN,FN,M} <: AbstractImageProcessor
     maskcolor::M
 end
 
-process_image(p::ColorRegionFit, o, frame, t) = begin
+Cellular.process_image(p::ColorRegionFit, output, frame, t) = begin
     step = step_from_frame(p.frames_per_step, t)
-    frame = normalize_frame(o, frame)
+    frame = normalize_frame(output, frame)
     img = similar(frame, RGB24) 
     for i in CartesianIndices(frame)
         region = p.region_lookup[i]

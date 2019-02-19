@@ -1,15 +1,16 @@
 # Mixins
 
 @premix @columns struct InstrinsicGrowthRate{GR}
-    intrinsicrate::GR = 0.1 | true  | (0.0, 10.0)
+    # Field           | Def | Flatn | Limits      | Description
+    intrinsicrate::GR | 0.1 | true  | (0.0, 10.0) | "Intrinsic rate of growth"
 end
 
 @premix @columns struct CarryCap{CC}
-    carrycap::CC = 100000   | false  | (0.0, 1000000.0)
+    carrycap::CC | 100000   | false | (0.0, 1000000.0) | "Carrying capacity for each cell. Not currently scaled by area."
 end
 
 @premix @columns struct Layers{L}
-    layers::L    = ()       | false | _
+    layers::L    | ()       | false | _ | "Additional data layers"
 end
 
 
@@ -26,37 +27,63 @@ abstract type AbstractGrowthModel <: AbstractCellModel end
 
 # Euler method solvers
 
-" Simple fixed exponential growth rate solved with Euler method "
+"""
+Simple fixed exponential growth rate solved with Euler method 
+$(FIELDDOCTABLE)
+"""
 @InstrinsicGrowthRate struct EulerExponentialGrowth{} <: AbstractGrowthModel end
 
-" Simple fixed logistic growth rate solved with Euler method "
+""" 
+Simple fixed logistic growth rate solved with Euler method
+$(FIELDDOCTABLE)
+"""
 @CarryCap @InstrinsicGrowthRate struct EulerLogisticGrowth{} <: AbstractGrowthModel end
 
-" Exponential growth based on a suitability layer solved with Euler method "
+""" 
+Exponential growth based on a suitability layer solved with Euler method
+$(FIELDDOCTABLE)
+"""
 @Layers struct SuitabilityEulerExponentialGrowth{} <: AbstractGrowthModel end
 
-" Logistic growth based on a suitability layer solved with Euler method "
+""" 
+Logistic growth based on a suitability layer solved with Euler method
+$(FIELDDOCTABLE)
+"""
 @CarryCap @Layers struct SuitabilityEulerLogisticGrowth{} <: AbstractGrowthModel end
 
 
 # Exact growth solutions
 
-" Simple fixed exponential growth rate using exact solution "
+""" 
+Simple fixed exponential growth rate using exact solution
+$(FIELDDOCTABLE)
+"""
 @InstrinsicGrowthRate struct ExactExponentialGrowth{} <: AbstractGrowthModel end
 
-" Simple fixed logistic growth rate using exact solution "
+""" 
+Simple fixed logistic growth rate using exact solution
+$(FIELDDOCTABLE)
+"""
 @CarryCap @InstrinsicGrowthRate struct ExactLogisticGrowth{} <: AbstractGrowthModel end
 
-" Exponential growth based on a suitability layer using exact solution "
+""" 
+Exponential growth based on a suitability layer using exact solution
+$(FIELDDOCTABLE)
+"""
 @Layers struct SuitabilityExactExponentialGrowth{} <: AbstractGrowthModel end
 
-" Logistic growth based on a suitability layer using exact solution "
+""" 
+Logistic growth based on a suitability layer using exact solution
+$(FIELDDOCTABLE)
+"""
 @CarryCap @Layers struct SuitabilityExactLogisticGrowth{} <: AbstractGrowthModel end
 
-" Simple suitability layer mask "
+""" 
+Simple suitability layer mask
+$(FIELDDOCTABLE)
+"""
 @Layers struct SuitabilityMask{ST} <: AbstractGrowthModel
-    # "Minimum habitat suitability index."
-    threshold::ST = 0.7 | true  | (0.0, 1.0)
+    threshold::ST | 0.7 | true  | (0.0, 1.0) | "Minimum habitat suitability index."
 end
 
 

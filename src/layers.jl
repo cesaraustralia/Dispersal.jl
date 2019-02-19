@@ -5,11 +5,9 @@ abstract type AbstractSequence{T} <: AbstractVector{T} end
 A sequences of layers with a timestep length. 
 Unitful units for time will propagate correctly. 
 """
-struct Sequence{T,TS} <: AbstractSequence{T}
-    "Tuple of 2-dimensional AbstractArray matching the coordinates of the init array"
-    data::T
-    "The length in time of each layer in the sequence."
-    timestep::TS
+@description struct Sequence{T,TS} <: AbstractSequence{T}
+    data::T | "Tuple of 2-dimensional AbstractArray matching the coordinates of the init array"
+    timestep::TS | "The length in time of each layer in the sequence."
 end
 
 

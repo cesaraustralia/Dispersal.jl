@@ -1,22 +1,17 @@
-"Extend to modify [`JumpDispersal`](@ref)"
+"Extends AbstractPartialModel for jump dispersal models"
 abstract type AbstractJumpDispersal <: AbstractPartialModel end
 
 """
-Jump dispersal simulates random long distance dispersal events. 
-Dispersal is not modified by any characteristics of the grid, such as suitability or 
-human population. A [`Mask`](@ref) model may be useful aftwerwards, as dispersal events 
-may be to anywhere on the grid within the given range.
+Jump dispersal simulates random long distance dispersal events. A random cell within 
+the spotrange is invaded if it is suitable.  A [`Mask`](@ref) model may be useful 
+aftwer this model, as dispersal events may be to anywhere on the grid within the given range.
+$(FIELDDOCTABLE)
 """
 @Probabilistic struct JumpDispersal{SR} <: AbstractJumpDispersal 
-    "A number or Unitful.jl distance with the same units as cellsize"
-    spotrange::SR = 30.0 | true | (0.0, 100.0)
+    # Field       | Def  | Flatten | Limits       | Description
+    spotrange::SR | 30.0 | true    | (0.0, 100.0) | "A number or Unitful.jl distance with the same units as cellsize"
 end
 
-"""
-    rule(model::AbstractJumpDispersal, data, state, index, args...)
-Long range rule for [`AbstractJumpDispersal`](@ref). A random cell
-within the spotrange is invaded if it is suitable.
-"""
 @inline rule!(model::AbstractJumpDispersal, data, state, index, args...) = begin
     # Ignore empty cells
     state > zero(state) || return state

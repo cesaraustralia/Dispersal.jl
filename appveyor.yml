@@ -29,7 +29,8 @@ install:
 
 build_script:
   - C:\julia\bin\julia -e "using Pkg; Pkg.add(PackageSpec(url=\"https://github.com/ChristianKurz/REPLGamesBase.jl.git\")); Pkg.build(\"REPLGamesBase\")"
-  - C:\julia\bin\julia -e "using Pkg; Pkg.add(PackageSpec(url=\"https://github.com/rafaqz/Cellular.jl.git\")); Pkg.build(\"REPLGamesBase\")"
+  - C:\julia\bin\julia -e "using Pkg; Pkg.add(PackageSpec(url=\"https://github.com/rafaqz/Cellular.jl.git\")); Pkg.build(\"Cellular\")"
+  - C:\julia\bin\julia -e "using Pkg; Pkg.add(PackageSpec(url=\"https://github.com/rafaqz/FielddocTable.jl.git\")); Pkg.build(\"FielddocTable\")"
   - echo "%JL_BUILD_SCRIPT%"
   - C:\julia\bin\julia -e "%JL_BUILD_SCRIPT%"
 

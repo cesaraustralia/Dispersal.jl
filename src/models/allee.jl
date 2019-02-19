@@ -1,11 +1,14 @@
-# Type declarations
+"Extends AbstractCellModel for allee extinction models"
 abstract type AbstractAlleeExtinction <: AbstractCellModel end
 
 """ 
-Minimum individuals required for cell colonisation 
+Enforces extinction in a cell without th minimum number of individuals 
+required for cell colonisation. 
+$(FIELDDOCTABLE)
 """
 @columns struct AlleeExtinction{MF} <: AbstractAlleeExtinction
-    minfounders::MF = 5.0 | true | (0.0, 200.0)
+    # Field         | Def | Flatten | Limits       | Description
+    minfounders::MF | 5.0 | true    | (0.0, 200.0) | "Minimum founding individuals required to to start an ongoing population"
 end
 
 # Rules

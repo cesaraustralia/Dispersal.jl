@@ -3,10 +3,9 @@
 Simple masking layers. Initialize with a layer of 1s and 0s, 
 matching your init matrix dimensions.
 
-Missing cannot be used in simulation frames as it will be propagated by 
+`Missing` cannot be used in simulation frames as it will be propagated by 
 neighborhood and jump style models, so active masking is the alternative.
-
-Use this model at the end of a chain of [@`AbstractCellModel`]
+$(FIELDDOCTABLE)
 """
 @Layers struct Mask{} <: AbstractCellModel end
 
