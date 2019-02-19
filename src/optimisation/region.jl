@@ -4,7 +4,7 @@ import Cellular: store_frame!, show_frame, process_image
 
 
 " An output that condenses a given span of frames to a single frame"
-@Ok @Frames struct SumOutput{DI,SF} <: AbstractArrayOutput{T} where DI <: AbstractOutput 
+@Ok @Frames struct SumOutput{DI,SF} <: AbstractOutput{T} where DI <: AbstractOutput 
     disp::DI
     frames_per_step::SF
 end
