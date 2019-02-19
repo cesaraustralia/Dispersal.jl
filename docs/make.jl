@@ -1,4 +1,4 @@
-using Documenter, DocStringExtensions, Dispersal
+using Documenter, Dispersal
 using Dispersal: rule, neighbors
 
 makedocs(
