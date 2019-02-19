@@ -30,6 +30,10 @@ before_script:
   - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/rafaqz/FielddocTables.jl")); Pkg.build("FielddocTables")'
   - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/rafaqz/Cellular.jl.git")); Pkg.build("Cellular")'
 
+script:
+  - $TESTCMD -e 'using Pkg;
+                 Pkg.test("Dispersal"; coverage=true)'
+
 after_success:
   # push coverage results to Coveralls
   - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
@@ -41,15 +45,8 @@ jobs:
     - stage: "Documentation"
       julia: 1.0
       os: linux
-      # disable global before_script in order not to install Compose twice
-      before_script:
       script:
-        - |
-          julia --color=yes --project=docs/ -e'
-            using Pkg
-            Pkg.add(PackageSpec(name="Compose", rev="master"))
-            Pkg.develop(PackageSpec(path=pwd()))
-            Pkg.instantiate()
-            include("docs/make.jl")
-          '
-          after_success: skip
+        - xvfb-run julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); 
+                                             Pkg.instantiate(); 
+                                             include("docs/make.jl")'
+      after_success: skip
