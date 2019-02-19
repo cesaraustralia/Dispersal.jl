@@ -1,4 +1,4 @@
-using Documenter, Dispersal
+using Documenter, DocStringExtensions, Dispersal
 using Dispersal: rule, neighbors
 
 makedocs(
@@ -6,7 +6,7 @@ makedocs(
     doctest = false,
     clean = false,
     sitename = "Dispersal.jl",
-    format = :html,
+    format = Documenter.HTML(),
     pages = Any[
         "Dispersal" => "index.md",
     ]

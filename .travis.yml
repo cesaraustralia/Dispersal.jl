@@ -27,7 +27,7 @@ script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - if [[ `uname` = "Linux" ]]; then TESTCMD="xvfb-run julia"; else TESTCMD="julia"; fi
   - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/ChristianKurz/REPLGamesBase.jl.git")); Pkg.build("REPLGamesBase")'
-  - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/rafaqz/FielddocTables.jl")); Pkg.build("FielddocTable")'
+  - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/rafaqz/FielddocTables.jl")); Pkg.build("FielddocTables")'
   - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/rafaqz/Cellular.jl.git")); Pkg.build("Cellular")'
   - $TESTCMD -e 'using Pkg;
                  Pkg.add(PackageSpec(url=pwd())); 

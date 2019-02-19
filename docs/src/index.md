@@ -8,12 +8,9 @@ CurrentModule = Dispersal
 Dispersal
 ```
 
-```@contents
-```
+## Examples
 
-## Example
-
-This is the general pattern of running model in Dispersal.jl. 
+This is the general pattern of running model in Dispersal.jl.
 
 We define initial conditions. Then we run a dispersal
 simulation that combines local and jump dispersal, for three timesteps.
@@ -46,7 +43,7 @@ suitability = [0.5 0.0 0.3 0.0 0.0 0.3 0.0;
 f = d -> e^-d
 
 # Define the neighborhood, using the dispersal kernel and a radius
-hood = DispersalNeighborhood(; f=f, radius=2, init=init)
+hood = DispersalKernel(; f=f, radius=2, init=init)
 
 # Define disersal models
 localdisp = InwardsLocalDispersal(neighborhood=hood)
@@ -57,23 +54,49 @@ growth = SuitabilityExactLogisticGrowth(suitability)
 output = ArrayOutput(init)
 
 # Run the simulation
-sim!(output, Models(localdisp, jumpdisp, ), init, layers; time=1:3) 
+sim!(output, Models(localdisp, jumpdisp, ), init, layers; time=1:3)
 
 output.frames[3]
 ```
 
-## Kernels
+## Neighborhood Models
+
+Models that consider the neighborhood of cells surrounding the current cell.
+These disperse inwards to the current cell from the surrounding cell.
 
 ```@docs
 AbstractInwardsDispersal
 InwardsBinaryDispersal
 InwardsPopulationDispersal
+PoissonInwardsPopulationDispersal
+```
+
+### Partial Neighborhood Models
+
+Neighborhood model that only operate on non-zero cells, dispersing outwards.
+
+```@docs
 AbstractOutwardsDispersal
 OutwardsBinaryDispersal
 OutwardsPopulationDispersal
 ```
 
-## Growth models
+#### Neighborhoods
+
+Kernel use neighborhoods, and extend Cellular.AbstractNeighborhood and `neighbors()` methods.
+
+```@docs
+AbstractDispersalKernel
+DispersalKernel
+DispersalKernel(; f=exponential, param=1.0, init=[], cellsize=1.0, radius=3)
+```
+
+## Cell Models
+
+Models that simply transform the state of a single cell, ignoring the rest of the grid.
+
+
+### Growth models
 
 ```@docs
 AbstractGrowthModel
@@ -88,30 +111,34 @@ SuitabilityExactLogisticGrowth
 SuitabilityMask
 ```
 
-Mask layers:
+
+### Mask layers
 
 ```@docs
 Mask
 ```
 
-Allee effects:
+
+### Allee effects
 
 ```@docs
 AbstractAlleeExtinction
 AlleeExtinction
 ```
 
+## Partial Models
 
 These models trigger rules that only partially update the grid.
-Many dispersal functions only operate on cells that are currently occupied.
+The often operate only on cells that are currently occupied.
 
+### Jump dispersal
 
 ```@docs
 AbstractJumpDispersal
 JumpDispersal
 ```
 
-# Human driven dispersal
+### Human driven dispersal
 
 ```@docs
 AbstractHumanDispersal
@@ -119,27 +146,7 @@ HumanDispersal
 ```
 
 
-## Neighborhoods
 
-Extend Cellular.AbstractNeighborhood, and add `neighbors()` methods.
-
-
-
-### Other Types and Constructors
-
-```@docs
-AbstractDispersalNeighborhood
-DispersalNeighborhood
-DispersalNeighborhood(; dir=:inwards, f=exponential, param=1.0, init=[], cellsize=1.0, radius=3, overflow=Skip())
-```
-
-### Methods
-
-```@docs
-neighbors
-neighbors(hood::DispersalNeighborhood, model, state, row, col, t, source, dest, args...) = begin
-pressure
-```
 
 ## Layers
 
@@ -153,11 +160,11 @@ outputs.
 ### Types
 
 ```@docs
-AbstractSequence 
+AbstractSequence
 Sequence
 ```
 
-### Methods 
+### Methods
 
 ```@docs
 sequence_interpolate
