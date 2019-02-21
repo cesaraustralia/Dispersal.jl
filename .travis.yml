@@ -45,6 +45,7 @@ jobs:
     - stage: "Documentation"
       julia: 1.0
       os: linux
+      before_script:
       script:
         - xvfb-run julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); 
                                              Pkg.instantiate(); 
