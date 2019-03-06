@@ -47,7 +47,7 @@ jobs:
       os: linux
       before_script:
       script:
-        - xvfb-run julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); 
-                                             Pkg.instantiate(); 
+        - xvfb-run julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
+                                             Pkg.instantiate();
                                              include("docs/make.jl")'
       after_success: skip
