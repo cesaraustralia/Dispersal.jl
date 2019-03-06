@@ -2,17 +2,16 @@ using Cellular, Dispersal, Test, Colors, Flatten
 using Dispersal: step_from_frame 
 
 @testset "step from frame" begin
-    step_from_frame(1, 1) == 1
-    step_from_frame(1, 5) == 5
-
-    step_from_frame(2, 1) == 1
-    step_from_frame(2, 2) == 1
-    step_from_frame(2, 3) == 2
-    step_from_frame(2, 4) == 2
-    step_from_frame(2, 5) == 3
-
-    step_from_frame(3, 4) == 2
-    step_from_frame(3, 5) == 3
+    # step_from_frame(frames_per_step, t)
+    @test step_from_frame(1, 1) == 1
+    @test step_from_frame(1, 5) == 5
+    @test step_from_frame(2, 1) == 1
+    @test step_from_frame(2, 2) == 1
+    @test step_from_frame(2, 3) == 2
+    @test step_from_frame(2, 4) == 2
+    @test step_from_frame(2, 5) == 3
+    @test step_from_frame(3, 4) == 2
+    @test step_from_frame(3, 5) == 2
 end
 
 @testset "SumOutput sums frames" begin
@@ -78,12 +77,12 @@ end
                                truenegativecolor, falsenegativecolor, maskcolor)
     output = GtkOutput(init, processor=processor; fps=1, store=true)
 
-    @test image1 == Cellular.process_image(output, init, 1) 
-    @test image1 == Cellular.process_image(output, init, 2) 
-    @test image2 == Cellular.process_image(output, init, 3) 
-    @test image2 == Cellular.process_image(output, init, 4) 
-    @test image3 == Cellular.process_image(output, init, 5) 
-    @test image3 == Cellular.process_image(output, init, 6) 
+    @test image1 == Cellular.process_frame(output, init, 1) 
+    @test image1 == Cellular.process_frame(output, init, 2) 
+    @test image2 == Cellular.process_frame(output, init, 3) 
+    @test image2 == Cellular.process_frame(output, init, 4) 
+    @test image3 == Cellular.process_frame(output, init, 5) 
+    @test image3 == Cellular.process_frame(output, init, 6) 
 
 end
 

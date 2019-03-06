@@ -1,16 +1,13 @@
 using Cellular: @Ok, @Frames, allocate_frames!, normalize_frame
 
-import Cellular: store_frame!, show_frame, process_image
-
-
 " An output that condenses a given span of frames to a single frame"
-@Ok @Frames struct SumOutput{DI,SF} <: AbstractOutput{T} where DI <: AbstractOutput 
+@Ok @Frames mutable struct SumOutput{DI,SF} <: AbstractOutput{T} where DI <: AbstractOutput 
     disp::DI
     frames_per_step::SF
 end
 
 SumOutput(frames::AbstractVector, frames_per_step::Number, steps::Number, disp::AbstractOutput) = begin
-    output = SumOutput{typeof.((frames, disp, frames_per_step))...}(frames, [false], disp, frames_per_step)
+    output = SumOutput{typeof.((frames, disp, frames_per_step))...}(frames, false, disp, frames_per_step)
     allocate_frames!(output, frames[1], 2:steps)
     map(f -> f .= 0, output.frames)
     output
@@ -114,7 +111,7 @@ struct ColorRegionFit{S,OC,CR,TP,FP,TN,FN,M} <: AbstractFrameProcessor
     maskcolor::M
 end
 
-Cellular.process_image(p::ColorRegionFit, output, frame, t) = begin
+Cellular.process_frame(p::ColorRegionFit, output, frame, t) = begin
     step = step_from_frame(p.frames_per_step, t)
     frame = normalize_frame(output, frame)
     img = similar(frame, RGB24) 
@@ -137,3 +134,4 @@ end
 rgb(c::RGB24) = c
 rgb(c::Tuple) = RGB24(c...)
 rgb(c::Number) = RGB24(c)
+
