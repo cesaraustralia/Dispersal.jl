@@ -1,7 +1,7 @@
 using Cellular: @Ok, @Frames, allocate_frames!, normalize_frame
-
+using LossFunctions
 " An output that condenses a given span of frames to a single frame"
-@Ok @Frames mutable struct SumOutput{DI,SF} <: AbstractOutput{T} where DI <: AbstractOutput 
+@Ok @Frames mutable struct SumOutput{DI,SF} <: AbstractOutput{T} where DI <: AbstractOutput
     disp::DI
     frames_per_step::SF
 end
@@ -45,7 +45,9 @@ struct RegionParametriser{OP,M,I,OC,RL,FS,NR,DT}
     detection_threshold::DT
 end
 
-
+testfun() = begin
+    "test"
+end
 " Objective function for the parametriser "
 (p::RegionParametriser)(params) = begin
     # Rebuild the model with the current parameters
@@ -71,8 +73,10 @@ end
     end
     # then build and array of s array means
     probs = cumsum ./ p.num_replicates
-    loss = crossentropy(p.occurance, probs)
-    println("cross-entropy loss: ", loss, "\n")
+    # so there is an issue around loss functions.
+    # if using probabilities (0, 1) then you need
+    loss = value(ZeroOneLoss(), replace(p.occurance, 0=>-1), prob2predictor(probs), AggMode.Sum())
+    println("loss function: ", loss, "\n")
 
     loss
 end
@@ -84,23 +88,26 @@ crossentropy(y, p, minprob = 1e-9) = begin
     -sum( y  .* log.(p) .+ (ones(size(y)) .- y) .* log.(ones(size(p)) .- p))
 end
 
+prob2predictor(p) = begin
+    2 .* (p .- 0.5)
+end
 
 
-""" 
-An image procesor to visualise the model fit, for a live version of 
-the region fitting optimiser.  
+"""
+An image procesor to visualise the model fit, for a live version of
+the region fitting optimiser.
 
 Fields:
 `frames_per_step` : The number of frames summed to a single frame
 `occurance` : A table of occurrance for each summed step
-`region_lookup` : A lookup table matching the occurrance table 
+`region_lookup` : A lookup table matching the occurrance table
 `truepositivecolor` : color of true positive fit, etc.
-`falsepositivecolor` 
+`falsepositivecolor`
 `truenegativecolor`
 `falsenegativecolor`
 `maskcolor` : color when a cell region of zero or lower
 """
-struct ColorRegionFit{S,OC,CR,TP,FP,TN,FN,M} <: AbstractFrameProcessor 
+struct ColorRegionFit{S,OC,CR,TP,FP,TN,FN,M} <: AbstractFrameProcessor
     frames_per_step::S
     occurance::OC
     region_lookup::CR
@@ -114,10 +121,10 @@ end
 Cellular.process_frame(p::ColorRegionFit, output, frame, t) = begin
     step = step_from_frame(p.frames_per_step, t)
     frame = normalize_frame(output, frame)
-    img = similar(frame, RGB24) 
+    img = similar(frame, RGB24)
     for i in CartesianIndices(frame)
         region = p.region_lookup[i]
-        img[i] = if region > zero(region) 
+        img[i] = if region > zero(region)
             x = frame[i]
             if p.occurance[region, step]
                 x == zero(x) ? rgb(p.falsenegativecolor) : rgb((x .* p.truepositivecolor))
@@ -134,4 +141,3 @@ end
 rgb(c::RGB24) = c
 rgb(c::Tuple) = RGB24(c...)
 rgb(c::Number) = RGB24(c)
-
