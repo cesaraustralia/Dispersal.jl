@@ -45,9 +45,6 @@ struct RegionParametriser{OP,M,I,OC,RL,FS,NR,DT}
     detection_threshold::DT
 end
 
-testfun() = begin
-    "test"
-end
 " Objective function for the parametriser "
 (p::RegionParametriser)(params) = begin
     # Rebuild the model with the current parameters
@@ -69,16 +66,16 @@ end
         end
         val = sum((s .== p.occurance)) / prod(size(p.occurance))
         println("replicate: ", i, " - accuracy: ", val)
-        s
+        loss = value(ZeroOneLoss(), replace(p.occurance, 0=>-1), prob2predictor(s), AggMode.Sum())
+        loss
     end
     # then build and array of s array means
-    probs = cumsum ./ p.num_replicates
+    meanloss = cumsum ./ p.num_replicates
     # so there is an issue around loss functions.
     # if using probabilities (0, 1) then you need
-    loss = value(ZeroOneLoss(), replace(p.occurance, 0=>-1), prob2predictor(probs), AggMode.Sum())
-    println("loss function: ", loss, "\n")
 
-    loss
+    println("mean loss: ", meanloss, "\n")
+    meanloss
 end
 
 # TODO use LossFunctions.jl so this is modular and other methods can be used
