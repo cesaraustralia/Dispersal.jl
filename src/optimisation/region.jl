@@ -32,17 +32,16 @@ end
 step_from_frame(frames_per_step, t) = (t - one(t)) ÷ frames_per_step + one(t)
 
 
-
 " Parametrizer to use with Optim.jl or similar "
-struct RegionParametriser{OP,M,I,OC,RL,FS,NR,DT}
+struct RegionParametriser{OP,M,I,FS,NR,P,TA,LF}
     output::OP
     model::M
-    init::I
-    occurance::OC
-    region_lookup::RL
+    init::I # move to model struct in Cellular
     frames_per_step::FS
     num_replicates::NR
-    detection_threshold::DT
+    predictor::P
+    targets::TA
+    loss::LF
 end
 
 " Objective function for the parametriser "
@@ -51,42 +50,43 @@ end
     names = fieldnameflatten(p.model.models)
     println("Parameters: ", collect(zip(names, params)))
     p.model.models = Flatten.reconstruct(p.model.models, params)
-    regions, steps = size(p.occurance)
     tstop = steps * p.frames_per_step
-    s = zeros(Bool, size(p.occurance))
-
     cumsum = @distributed (+) for i = 1:p.num_replicates
         o = deepcopy(p.output)
         sim!(o, p.model, p.init; tstop=tstop)
-        for t in 1:steps
-            for r in 1:regions
-                s[r, t] = (sum((p.region_lookup .== r) .& (o[t] .> 0)) ./
-                           sum((p.region_lookup .== r))) > p.detection_threshold
-            end
-        end
-        val = sum((s .== p.occurance)) / prod(size(p.occurance))
-        println("replicate: ", i, " - accuracy: ", val)
-        loss = value(ZeroOneLoss(), replace(p.occurance, 0=>-1), prob2predictor(s), AggMode.Sum())
-        loss
+        predoutputs = buildpredoutputs(p, output)
+        loss = value(p.loss, p.targets, predoutputs, AggMode.Sum())
+        println("replicate: ", i, " - loss: ", loss)
+        return loss
     end
     # then build and array of s array means
     meanloss = cumsum ./ p.num_replicates
     # so there is an issue around loss functions.
-    # if using probabilities (0, 1) then you need
+    # if using probabilities (0, 1) then a value of 1 or 0 will cause infinite values in the log liklihood
 
     println("mean loss: ", meanloss, "\n")
     meanloss
 end
 
-# TODO use LossFunctions.jl so this is modular and other methods can be used
-crossentropy(y, p, minprob = 1e-9) = begin
-    p = min.(p, 1 - minprob)
-    p = max.(p, minprob)
-    -sum( y  .* log.(p) .+ (ones(size(y)) .- y) .* log.(ones(size(p)) .- p))
+"""
+Map model to an prediction values
+"""
+abstract type AbstractPrediction end
+struct Prediction{DT,RL,OC} <: AbstractPrediction
+    detection_threshold::DT
+    region_lookup::RL
+    occurance::OC
 end
-
-prob2predictor(p) = begin
-    2 .* (p .- 0.5)
+buildpredoutputs(p::Prediction, output) = begin
+    regions, steps = size(p.occurance)
+    s = zeros(Bool, size(p.occurance))
+    for t in 1:steps
+        for r in 1:regions
+            s[r, t] = (sum((p.region_lookup .== r) .& (output[t] .> 0)) ./
+                       sum((p.region_lookup .== r))) > p.detection_threshold
+        end
+    end
+    prediction = 2 .* (s .- 0.5)
 end
 
 

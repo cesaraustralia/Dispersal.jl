@@ -17,6 +17,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Mixers = "2a8e4939-dab8-5edc-8f64-72a8776f13de"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+LossFunctions = "30fc2ffe-d236-52d8-8643-a9d8f7c094a7"
 
 [extras]
 FieldDefaults = "49426c49-986f-5969-8844-d5cc96441cfc"
