@@ -66,7 +66,7 @@ export AbstractDispersalKernel, DispersalKernel, exponential
 
 export Sequence
 
-export RegionParametriser, SumOutput, ColorRegionFit
+export Parametriser, RegionObjective, SumOutput, ColorRegionFit
 
 const FIELDDOCTABLE = FielddocTable((:Description, :Default, :Limits),
                                     (description, default, limits);

@@ -33,63 +33,74 @@ step_from_frame(frames_per_step, t) = (t - one(t)) ÷ frames_per_step + one(t)
 
 
 " Parametrizer to use with Optim.jl or similar "
-struct RegionParametriser{OP,M,I,FS,NR,P,TA,LF}
+struct Parametriser{OP,M,I,NR,OB,LF,TS}
     output::OP
     model::M
     init::I # move to model struct in Cellular
-    frames_per_step::FS
     num_replicates::NR
-    predictor::P
-    targets::TA
+    objective::OB
     loss::LF
+    tstop::TS
+end
+
+Parametriser(output, model, init, num_replicates,
+             objective, loss) = begin
+    tstop = gettstop(predictor)
+    Parametriser(output, model, init, num_replicates,
+                 predictor, loss, tstop)
 end
 
 " Objective function for the parametriser "
-(p::RegionParametriser)(params) = begin
+(p::Parametriser)(params) = begin
     # Rebuild the model with the current parameters
     names = fieldnameflatten(p.model.models)
     println("Parameters: ", collect(zip(names, params)))
     p.model.models = Flatten.reconstruct(p.model.models, params)
-    tstop = steps * p.frames_per_step
     cumsum = @distributed (+) for i = 1:p.num_replicates
         o = deepcopy(p.output)
-        sim!(o, p.model, p.init; tstop=tstop)
-        predoutputs = buildpredoutputs(p, output)
-        loss = value(p.loss, p.targets, predoutputs, AggMode.Sum())
-        println("replicate: ", i, " - loss: ", loss)
-        return loss
+        sim!(o, p.model, p.init; tstop = p.tstop)
+        predoutputs = buildpredoutputs(p.objective, o)
+        lossvalue = value(p.loss, gettargets(p.objective),
+                          predoutputs, AggMode.Sum())
+        println("replicate: ", i, " - loss: ", lossvalue)
+        return lossvalue
     end
     # then build and array of s array means
     meanloss = cumsum ./ p.num_replicates
-    # so there is an issue around loss functions.
-    # if using probabilities (0, 1) then a value of 1 or 0 will cause infinite values in the log liklihood
-
     println("mean loss: ", meanloss, "\n")
-    meanloss
+    return meanloss
 end
+
 
 """
 Map model to an prediction values
 """
-abstract type AbstractPrediction end
-struct Prediction{DT,RL,OC} <: AbstractPrediction
+abstract type AbstractObjective end
+
+struct RegionObjective{DT,RL,OC} <: AbstractObjective
     detection_threshold::DT
     region_lookup::RL
     occurance::OC
 end
-buildpredoutputs(p::Prediction, output) = begin
-    regions, steps = size(p.occurance)
-    s = zeros(Bool, size(p.occurance))
+
+buildpredoutputs(pred::RegionObjective, output) = begin
+    regions, steps = size(pred.occurance)
+    s = zeros(Bool, size(pred.occurance))
     for t in 1:steps
         for r in 1:regions
-            s[r, t] = (sum((p.region_lookup .== r) .& (output[t] .> 0)) ./
-                       sum((p.region_lookup .== r))) > p.detection_threshold
+            s[r, t] = (sum((pred.region_lookup .== r) .& (output[t] .> 0)) ./
+                       sum((pred.region_lookup .== r))) > pred.detection_threshold
         end
     end
     prediction = 2 .* (s .- 0.5)
 end
 
-
+gettargets(objective::RegionObjective) = objective.occurance
+gettstop(x) = throw(ArgumentError)
+gettstop(p::RegionObjective) = begin
+    regions, steps = size(p.occurance)
+    steps * p.frames_per_step
+end
 """
 An image procesor to visualise the model fit, for a live version of
 the region fitting optimiser.
