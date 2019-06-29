@@ -1,5 +1,5 @@
-"Extends AbstractCellModel for allee extinction models"
-abstract type AbstractAlleeExtinction <: AbstractCellModel end
+"Extends AbstractCellRule for allee extinction models"
+abstract type AbstractAlleeExtinction <: AbstractCellRule end
 
 """ 
 Enforces extinction in a cell without th minimum number of individuals 
@@ -12,5 +12,5 @@ $(FIELDDOCTABLE)
 end
 
 # Rules
-@inline rule(model::AbstractAlleeExtinction, data, state, args...) =
+@inline applyrule(model::AbstractAlleeExtinction, data, state, args...) =
     (state >= model.minfounders ? state : zero(state))

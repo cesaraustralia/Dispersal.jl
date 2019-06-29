@@ -1,4 +1,4 @@
-using Cellular, Dispersal, Test
+using CellularAutomataBase, Dispersal, Test
 using Dispersal: get_layers, cyclic
 
 @testset "layers returns 1.0 for an empty tuple" begin
@@ -47,7 +47,7 @@ end
 
 @testset "sequence of layers" begin
     timestep = 1
-    data = Cellular.FrameData(nothing, nothing, nothing, nothing, timestep, nothing)
+    data = CellularAutomataBase.SimData([], nothing, nothing, nothing, nothing, nothing, nothing, timestep, nothing)
 
     @testset "layers sequences are interpolated over timespans" begin
         ind = ((1, 1),(1, 2),(2, 1),(2, 2))

@@ -20,8 +20,7 @@ Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T =
 show(s::AbstractSequence) = show(s.data)
 
 
-import Cellular: timestep
-timestep(s::Sequence) = s.timestep
+CellularAutomataBase.timestep(s::Sequence) = s.timestep
 
 
 """

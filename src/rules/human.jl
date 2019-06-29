@@ -1,9 +1,7 @@
-
-" Extends AbstractPartialModel fr human driven dispersal models "
-abstract type AbstractHumanDispersal <: AbstractPartialModel end
+abstract type AbstractHumanDispersal <: AbstractPartialRule end
 
 """
-HumanDispersal Models human-driven dispersal patterns using population data.
+HumanDispersal Rules human-driven dispersal patterns using population data.
 
 Transport connections between grid cells are calculated using distance and human population,
 modified with the `human_exponent` and `dist_exponent` parameters. A shortlist of the most 
@@ -260,18 +258,18 @@ populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
 precalc_dispersal_probs(human_pop, par_a, timestep) = (1 .- 1 ./ exp.(human_pop .* par_a)) ./ timestep
 
 """
-    rule(model::AbstractHumanDispersal, state, index, t, source, dest, args...)
+    applyrule(rule::AbstractHumanDispersal, state, index, t, source, dest, args...)
 Simulates human dispersal, weighting dispersal probability based on human
 population in the source cell.
 """
-rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
+applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     # Ignore empty cells
     state > zero(state) || return
 
-    dispersalprob = model.dispersal_probs[index...]
+    dispersalprob = rule.dispersal_probs[index...]
 
     @inbounds ismissing(dispersalprob) && return data.dest[index...]
-    @inbounds shortlist = model.precalc[downsample_index(index, model.scale)...]
+    @inbounds shortlist = rule.precalc[downsample_index(index, rule.scale)...]
     @inbounds ismissing(shortlist) && return data.dest[index...]
 
     meandispersers = round(Int, state * dispersalprob * data.timestep)
@@ -283,14 +281,14 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     # TODO this is a parameter
     while n < total_dispersers
         # Select random subset of dispersers for an individual dispersal event
-        dispersers = min(rand(1:model.max_dispersers), total_dispersers - n)
+        dispersers = min(rand(1:rule.max_dispersers), total_dispersers - n)
         # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
         # Randomise cell destination within upsampled cells
-        dest_index = @inbounds upsample_index(shortlist[dest_id].index, model.scale) .+
-                              (rand(0:model.scale-1), rand(0:model.scale-1))
+        dest_index = @inbounds upsample_index(shortlist[dest_id].index, rule.scale) .+
+                              (rand(0:rule.scale-1), rand(0:rule.scale-1))
         # Disperse to the celP
-        update_cell!(model, data, state, dest_index, dispersers)
+        update_cell!(rule, data, state, dest_index, dispersers)
         n += dispersers
     end
     # TODO make method for boolean and float
@@ -298,7 +296,7 @@ rule!(model::AbstractHumanDispersal, data, state, index, args...) = begin
     @inbounds data.dest[index...]
 end
 
-update_cell!(model::AbstractHumanDispersal, data, state, dest_index, num) =
+update_cell!(rule::AbstractHumanDispersal, data, state, dest_index, num) =
     @inbounds return data.dest[dest_index...] += num * oneunit(state)
-update_cell!(model::AbstractHumanDispersal, data, state::Bool, dest_index, num) =
+update_cell!(rule::AbstractHumanDispersal, data, state::Bool, dest_index, num) =
     @inbounds return data.dest[dest_index...] = oneunit(state)

@@ -1,4 +1,4 @@
-using Cellular, Dispersal, Test
+using CellularAutomataBase, Dispersal, Test
 
 init = [1.0 4.0 7.0;
         2.0 5.0 8.0;
@@ -10,9 +10,9 @@ mask = [0.0 1.0 0.0;
 
 output = ArrayOutput(init, 2)
 
-model = Models(Mask(layers=mask))
+rules = Ruleset(Mask(layers=mask); init=init)
 
-sim!(output, model, init; tstop=2)
+sim!(output, rules; tstop=2)
 
 @test output[1] == [1.0 4.0 7.0;
                     2.0 5.0 8.0;

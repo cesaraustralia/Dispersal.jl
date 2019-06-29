@@ -1,7 +1,7 @@
-using Cellular, Dispersal, Test
-using Cellular: rule, FrameData
+using CellularAutomataBase, Dispersal, Test
+using CellularAutomataBase: applyrule, SimData
 
-data = FrameData(nothing, nothing, nothing, nothing, nothing, 1)
+data = SimData([], nothing, nothing, nothing, nothing, nothing, nothing, nothing, 1)
 
 @testset "exponential growth" begin
     init =  [1.0 4.0 7.0;
@@ -9,8 +9,8 @@ data = FrameData(nothing, nothing, nothing, nothing, nothing, 1)
              3.0 6.0 9.0]
 
     output = ArrayOutput(init, 3)
-    model = Models(ExactExponentialGrowth(intrinsicrate = log(2.0)))
-    sim!(output, model, init; tstop=3)
+    rule = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
+    sim!(output, rule; tstop=3)
 
     @test output[1] == [ 1.0  4.0  7.0;
                          2.0  5.0  8.0;
@@ -33,8 +33,8 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init, 3)
-    model = Models(SuitabilityExactExponentialGrowth(layers = suit))
-    sim!(output, model, init; tstop=3)
+    rule = Ruleset(SuitabilityExactExponentialGrowth(layers = suit); init=init)
+    sim!(output, rule; tstop=3)
 
     @test output[1] == [1.0 1.0 1.0;
                         1.0 1.0 1.0;
@@ -46,9 +46,9 @@ end
                         4.0 1.0 0.25;
                         1.0 1.0 0.25]
 
-    @test Cellular.normalize_frame(output[3], 0.25, 4) == [0.2  0.2  1.0;
-                                                           1.0  0.2  0.0;
-                                                           0.2  0.2  0.0]
+    @test CellularAutomataBase.normalize_frame(output[3], 0.25, 4) == [0.2  0.2  1.0;
+                                                                       1.0  0.2  0.0;
+                                                                       0.2  0.2  0.0]
 
 end
 
@@ -70,10 +70,10 @@ end
              5.0      8.0      9.41176;
              6.31579  8.57143  9.72973]
 
-    model = Models(ExactLogisticGrowth(intrinsicrate = log(2.0), carrycap = 10))
+    rule = Ruleset(ExactLogisticGrowth(intrinsicrate = log(2.0), carrycap = 10); init=init)
     output = ArrayOutput(init, 3)
 
-    sim!(output, model, init; tstop=3)
+    sim!(output, rule; tstop=3)
 
     @test output[1] == test1
     @test output[2] ≈ test2 atol=1e-4
@@ -103,8 +103,8 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init, 3)
-    model = Models(SuitabilityExactLogisticGrowth(layers = suit, carrycap = 10))
-    sim!(output, model, init; tstop=3)
+    rule = Ruleset(SuitabilityExactLogisticGrowth(layers = suit, carrycap = 10); init=init)
+    sim!(output, rule; tstop=3)
 
     @test output[1] == test1
     @test output[2] ≈ test2 atol=1e-4
@@ -132,13 +132,13 @@ end
     output = ArrayOutput(init, 3)
     mask = SuitabilityMask(layers=suit, threshold=1.1)
 
-    @test rule(mask, data, 5, (1, 1)) === 0
-    @test rule(mask, data, 5, (2, 2)) === 5
+    @test applyrule(mask, data, 5, (1, 1)) === 0
+    @test applyrule(mask, data, 5, (2, 2)) === 5
 
-    @test rule(mask, data, 5.0, (1, 1)) === 0.0
-    @test rule(mask, data, 5.0, (2, 2)) === 5.0
+    @test applyrule(mask, data, 5.0, (1, 1)) === 0.0
+    @test applyrule(mask, data, 5.0, (2, 2)) === 5.0
 
-    sim!(output, Models(mask), init; tstop=3)
+    sim!(output, Ruleset(mask; init=init); tstop=3)
 
     @test output[1] == test1
     @test output[2] == test2

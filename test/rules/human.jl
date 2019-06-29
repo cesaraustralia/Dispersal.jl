@@ -1,5 +1,5 @@
-using Cellular, Dispersal, Test, Random, Statistics
-using Dispersal: precalc_human_dispersal, populate!, upsample_index, CellGravity, 
+using CellularAutomataBase, Dispersal, Test, Random, Statistics
+using Dispersal: precalc_human_dispersal, populate!, upsample_index, CellGravity,
                  CellInterval
 
 @testset "CellGravity sums and compares gravisty" begin
@@ -34,7 +34,7 @@ precalc, prop = precalc_human_dispersal(human_pop, cellsize, scale, aggregator,
                     human_exponent, dist_exponent, shortlist_len)
 
 
-skipmissing(prop) .> 0.0 
+skipmissing(prop) .> 0.0
 
 @test length(precalc) == 25
 @test length(precalc[1, 1]) == shortlist_len
@@ -51,7 +51,7 @@ end
 
     populate!(a, precalc[1, 1], scale)
     populate!(b, precalc[5, 5], scale)
-    @test reverse(a, dims=1) == reverse(b, dims=2) 
+    @test reverse(a, dims=1) == reverse(b, dims=2)
 end
 
 @testset "human dispersal simulaition maintains total populaition" begin
@@ -97,14 +97,14 @@ end
                 0 0 0 0 0]
 
     par_a = 1
-    model = Models(HumanDispersal(human_pop, par_a=par_a, cellsize=cellsize, scale=scale,
+    rules = Ruleset(HumanDispersal(human_pop, par_a=par_a, cellsize=cellsize, scale=scale,
                                   aggregator=aggregator, human_exponent=human_exponent,
-                                  dist_exponent=dist_exponent, shortlist_len=shortlist_len))
+                                  dist_exponent=dist_exponent, shortlist_len=shortlist_len); init=init)
     output = ArrayOutput(init, 3)
 
     for i = 1:100
-        sim!(output, model, init; tstop=3)
-        model.models[1].dispersal_probs[3,3] # probability of a long distance migrant at centre
+        sim!(output, rules; init=init, tstop=3)
+        rules.rules[1].dispersal_probs[3,3] # probability of a long distance migrant at centre
         single = populate(precalc[3, 3], size(init), scale)
 
         @test sum(init) == sum(output[3])

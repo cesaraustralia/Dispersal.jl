@@ -1,10 +1,12 @@
-using Cellular, Dispersal, Test
+using CellularAutomataBase, Dispersal, Test
 
+struct TestFormulation <: AbstractKernelFormulation end
+Dispersal.dispersalatdistance(::TestFormulation, d) = 1.0
 
 @testset "dispersal kernel array matches passed in function" begin
     init = [0 1 0; 
             1 0 1]
-    dk = DispersalKernel(f=exponential, cellsize=1, init=init, radius=2, param=(1.0,)).kernel
+    dk = DispersalKernel(formulation=ExponentialKernel(1.0), cellsize=1, init=init, radius=2).kernel
 
     @test size(dk) == (5, 5)
     @test sum(dk) ≈ 1.0
@@ -20,13 +22,13 @@ end
                         [0.5 0.6; 
                          0.7 0.8]), 
                        10);
-    model = Models(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0), 
-                          SuitabilityMask(layers=suitseq, threshold=0.4))
+    rules = Ruleset(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0), 
+                          SuitabilityMask(layers=suitseq, threshold=0.4); init=init)
     output = ArrayOutput(init, 25)
 
-    @test Dispersal.pressure(model.models[1], init, 1) 
+    @test Dispersal.pressure(rules.rules[1], init, 1) 
 
-    sim!(output, model, init; tstop=25)
+    sim!(output, rules; tstop=25)
 
     # All offset by one, because 1 = t0
     @test output[1]  == [0 0; 0 1]
@@ -80,25 +82,25 @@ end
 
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-        model = Models(inwards, suitmask)
+        rules = Ruleset(inwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, model, init; tstop=3)
+        sim!(output, rules; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
 
-        # As submodels
-        model = Models((inwards, suitmask))
-        sim!(output, model, init; tstop=3)
+        # As subrules
+        rules = Ruleset((inwards, suitmask); init=init)
+        sim!(output, rules; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
     end
     @testset "outwards dispersal fills the grid where reachable and suitable" begin
         outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-        model = Models(outwards, suitmask)
+        rules = Ruleset(outwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, model, init; tstop=3)
+        sim!(output, rules; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
@@ -153,29 +155,29 @@ end
     r = 2
 
     @testset "inwards population dispersal fills the grid where reachable suitable" begin
-        hood = DispersalKernel(; f=(d,a)->1.0, radius=r)
+        hood = DispersalKernel(; formulation=TestFormulation(), radius=r)
         inwards = InwardsPopulationDispersal(neighborhood=hood)
-        model = Models(inwards, suitmask)
+        rules = Ruleset(inwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, model, init; tstop=3)
+        sim!(output, rules; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3
 
-        # As submodels
-        model = Models((inwards, suitmask))
-        sim!(output, model, init; tstop=3)
+        # As subrules
+        rules = Ruleset((inwards, suitmask); init=init)
+        sim!(output, rules; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3
     end
 
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin
-        hood = DispersalKernel(; f=(d,a)->1.0, radius=r)
+        hood = DispersalKernel(; formulation=TestFormulation(), radius=r)
         outwards = OutwardsPopulationDispersal(neighborhood=hood)
-        model = Models(outwards, suitmask)
+        rules = Ruleset(outwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, model, init; tstop=3)
+        sim!(output, rules; tstop=3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3

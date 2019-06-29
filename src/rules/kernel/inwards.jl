@@ -1,6 +1,9 @@
 
 "Extend to modify [`InwardsBinaryDispersal`](@ref)"
-abstract type AbstractInwardsDispersal <: AbstractNeighborhoodModel end
+abstract type AbstractInwardsDispersal <: AbstractNeighborhoodRule end
+
+CellularAutomataBase.radius(rule::AbstractInwardsDispersal) = 
+    radius(rule.neighborhood)
 
 """
 Binary present/absent dispersal within a [`DispersalKernel`](@ref). 
@@ -29,29 +32,27 @@ $(FIELDDOCTABLE)
 @Kernel struct PoissonInwardsPopulationDispersal{} <: AbstractInwardsDispersal end
 
 
-Cellular.radius(model::AbstractInwardsDispersal) = radius(model.neighborhood)
-
-Cellular.temp_neighborhood(model::AbstractInwardsDispersal) = temp_neighborhood(model.neighborhood)
 
 
-@inline rule(model::InwardsBinaryDispersal, data, state::Integer, args...) = begin
+@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, args...) = begin
     # Combine neighborhood cells into a single scalar
-    cc = neighbors(model.neighborhood, model, data, state, args...)
+    cc = neighbors(rule.neighborhood, rule, data, state, args...)
 
     # Set to occupied if enough pressure from neighbors
-    pressure(model, data.source, cc, args...) ? oneunit(state) : state
+    pressure(rule, data.source, cc, args...) ? oneunit(state) : state
 end
 
-@inline rule(model::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = 
-    neighbors(model.neighborhood, model, data, state, args...)
+@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = 
+    neighbors(rule.neighborhood, rule, data, state, args...)
 
-@inline rule(model::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, args...) = begin
-    p = neighbors(model.neighborhood, model, data, state, args...)
+@inline applyrule(rule::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, args...) = begin
+    p = neighbors(rule.neighborhood, rule, data, state, args...)
     p > zero(p) ? typeof(state)(rand(Poisson(p))) : state
 end
 
 
-@inline neighbors(hood::AbstractDispersalKernel, model::AbstractNeighborhoodModel, data, state,
-                  index, args...) = @inbounds return hood.temp ⋅ hood.kernel
+@inline neighbors(hood::AbstractDispersalKernel, rule::AbstractNeighborhoodRule, data, state,
+                  index, args...) = @inbounds return buffer(data) ⋅ hood.kernel
 
-@inline pressure(model, source, cc, args...) = rand() ^ model.prob_threshold > (one(cc) - cc) / one(cc)
+@inline pressure(rule, source, cc, args...) = 
+    rand() ^ rule.prob_threshold > (one(cc) - cc) / one(cc)
