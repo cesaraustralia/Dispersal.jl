@@ -1,4 +1,4 @@
-using CellularAutomataBase: @Ok, @Frames, allocate_frames!, normalize_frame
+using CellularAutomataBase: normalizeframe
 
 " Parametrizer to use with Optim.jl or similar "
 struct Parametriser{R,OB,L,NR,TS,OP}
@@ -22,9 +22,9 @@ end
     p.ruleset.rules = Flatten.reconstruct(p.ruleset.rules, params)
     cumsum = @distributed (+) for i = 1:p.nreplicates
         output = deepcopy(p.output)
-        # sim!(output, p.ruleset; tstop = p.tstop)
+        sim!(output, p.ruleset; tstop = p.tstop)
         prediction = outputtoprediction(p.objective, output)
-        loss = value(p.loss, targets(p.objective), prediction, AggMode.Sum())
+        loss = value(p.loss, target(p.objective), prediction, AggMode.Sum())
         println("replicate: ", i, " - loss: ", loss)
         loss
     end
@@ -35,16 +35,42 @@ end
 
 
 """
-Map model to an prediction values
+AbstractObjectives map simulation outputs to predictions that 
+can be compared to target data using a loss function.
+
+THey must implement `outputtoprediction` and `targets` methods.
 """
 abstract type AbstractObjective end
 
+
+"""
+    outputtoprediction(obj::AbstractObjective, output::AbstractOutput)
+Methods that map an objective object and a simulation output to a 
+prediction array.
+"""
+function outputtoprediction end
+
+"""
+    target(obj::AbstractObjective)
+Returns a target array given an AbstractObjective. The target must match the size and 
+dimensions of the prediction array returned by `outputtoprediction`.
+"""
+function target end
+
+
+
+"""
+Implementation of a loss objective that converts cell data to regional
+presence/absence and compares to a target of regional occurance data.
+"""
 struct RegionObjective{DT,RL,OC,FS} <: AbstractObjective
     detectionthreshold::DT
     regionlookup::RL
     occurance::OC
     framesperstep::FS
 end
+
+target(obj::RegionObjective) = obj.occurance
 
 outputtoprediction(obj::RegionObjective, output) = begin
     regions, steps = size(obj.occurance)
@@ -72,8 +98,6 @@ outputtoprediction(obj::RegionObjective, output) = begin
     prediction 
 end
 
-targets(obj::RegionObjective) = obj.occurance
-
 stepfromframe(framesperstep, t) = (t - one(t)) ÷ framesperstep + one(t)
 
 
@@ -82,9 +106,7 @@ An image procesor to visualise the model fit, for a live version of
 the region fitting optimiser.
 
 Fields:
-`framesperstep` : The number of frames summed to a single frame
-`occurance` : A table of occurrance for each summed step
-`region_lookup` : A lookup table matching the occurrance table
+`objective` : a RegionObjective object
 `truepositivecolor` : color of true positive fit, etc.
 `falsepositivecolor`
 `truenegativecolor`
@@ -100,12 +122,11 @@ struct ColorRegionFit{O<:RegionObjective,TP,FP,TN,FN,M} <: AbstractFrameProcesso
     maskcolor::M
 end
 
-CellularAutomataBase.process_frame(p::ColorRegionFit, output, frame, t) = begin
+CellularAutomataBase.processframe(p::ColorRegionFit, output, frame, t) = begin
     step = stepfromframe(p.objective.framesperstep, t)
-    frame = normalize_frame(output, frame)
     img = similar(frame, RGB24)
     for i in CartesianIndices(frame)
-        region = p.objective.region_lookup[i]
+        region = p.objective.regionlookup[i]
         img[i] = if region > zero(region)
             x = frame[i]
             if p.objective.occurance[region, step]

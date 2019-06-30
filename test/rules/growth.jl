@@ -46,9 +46,9 @@ end
                         4.0 1.0 0.25;
                         1.0 1.0 0.25]
 
-    @test CellularAutomataBase.normalize_frame(output[3], 0.25, 4) == [0.2  0.2  1.0;
-                                                                       1.0  0.2  0.0;
-                                                                       0.2  0.2  0.0]
+    @test CellularAutomataBase.normalizeframe(output[3], 0.25, 4) == [0.2  0.2  1.0;
+                                                                      1.0  0.2  0.0;
+                                                                      0.2  0.2  0.0]
 
 end
 
