@@ -14,19 +14,19 @@ $(FIELDDOCTABLE)
 """
 @description @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP} <: AbstractHumanDispersal
     # Field                | Flatten | Limits
-    human_pop::HP          | false   | _              | _
-    cellsize::CS           | false   | _              | _
-    scale::S               | false   | _              | _
-    aggregator::AG         | false   | _              | "A function that aggregates scaled down cells"
-    human_exponent::HE     | true    | (0.0, 3.0)     | "Human population exponent"
-    dist_exponent::DE      | true    | (0.0, 3.0)     | "Distance exponent"
-    par_a::PA              | true    | (0.0, 0.00001) | "Parameter to scale human population in source and dest cells"
-    max_dispersers::MD     | true    | (0.0, 1000.0)  | "Maximum number of dispersers in a dispersal events"
-    shortlist_len::SL      | false   | _              | "Length of precalc shortlist"
-    timestep::TS           | false   | _              | _
-    precalc::PC            | false   | _              | _
-    proportion_covered::PR | false   | _              | _
-    dispersal_probs::DP    | false   | _              | _
+    human_pop::HP          | false   | _               | _
+    cellsize::CS           | false   | _               | _
+    scale::S               | false   | _               | _
+    aggregator::AG         | false   | _               | "A function that aggregates scaled down cells"
+    human_exponent::HE     | true    | (0.0, 3.0)      | "Human population exponent"
+    dist_exponent::DE      | true    | (0.0, 3.0)      | "Distance exponent"
+    par_a::PA              | true    | (0.0, 0.00001)  | "Parameter to scale human population in source and dest cells"
+    max_dispersers::MD     | true    | (50.0, 10000.0) | "Maximum number of dispersers in a dispersal events"
+    shortlist_len::SL      | false   | _               | "Length of precalc shortlist"
+    timestep::TS           | false   | _               | _
+    precalc::PC            | false   | _               | _
+    proportion_covered::PR | false   | _               | _
+    dispersal_probs::DP    | false   | _               | _
     function HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
                     human_exponent::HE, dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, timestep::TS,
                     precalc::PC, proportion_covered::PR, dispersal_probs::DP

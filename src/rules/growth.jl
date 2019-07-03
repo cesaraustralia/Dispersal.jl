@@ -2,11 +2,11 @@
 
 @premix @columns struct InstrinsicGrowthRate{GR}
     # Field           | Def | Flatn | Limits      | Description
-    intrinsicrate::GR | 0.1 | false  | (0.0, 10.0) | "Intrinsic rate of growth"
+    intrinsicrate::GR | 0.1 | true  | (0.0, 10.0) | "Intrinsic rate of growth"
 end
 
 @premix @columns struct CarryCap{CC}
-    carrycap::CC | 100000   | false | (0.0, 1000000.0) | "Carrying capacity for each cell. Not currently scaled by area."
+    carrycap::CC | 100000   | true  | (0.0, 1e9) | "Carrying capacity for each cell. Not currently scaled by area."
 end
 
 @premix @columns struct Layers{L}

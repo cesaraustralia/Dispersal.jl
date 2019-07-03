@@ -13,7 +13,7 @@ a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
 @description @limits @flattenable struct DispersalKernel{F,K,C,I} <: AbstractDispersalKernel
-    formulation::F | false | _           | "Kernel formulation object"
+    formulation::F | true  | _           | "Kernel formulation object"
     kernel::K      | false | _           | "Kernal matrix"
     cellsize::C    | false | (0.0, 10.0) | "Simulation cell size"
     radius::I      | false | (1, 10)     | "Kernel radius"

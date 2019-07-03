@@ -1,6 +1,6 @@
 using CellularAutomataBase, Dispersal, Test, Colors, Flatten, LossFunctions
 using Dispersal: stepfromframe 
-using CellularAutomataBase: processframe
+using CellularAutomataBase: frametoimage
 
 @testset "step from frame" begin
     # stepfromframe(framesperstep, frame)
@@ -29,17 +29,9 @@ end
                      1  0  1  # 2
                      1  1  0] # 3
 
-    image1 = [RGB24(1.0,0.0,0.0)  RGB24(1.0,1.0,1.0)  RGB24(0.502,0.502,0.502) 
-              RGB24(1.0,0.0,1.0)  RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0) 
-              RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0)  RGB24(0.0,1.0,1.0)]
-
-    image2 = [RGB24(1.0,1.0,1.0)  RGB24(1.0,0.0,0.0)  RGB24(0.502,0.502,0.502) 
-              RGB24(1.0,1.0,0.0)  RGB24(1.0,0.0,1.0)  RGB24(1.0,1.0,0.0) 
-              RGB24(1.0,0.0,1.0)  RGB24(1.0,0.0,1.0)  RGB24(0.0,1.0,1.0)]
-
-    image3 = [RGB24(1.0,0.0,0.0)  RGB24(1.0,1.0,1.0)  RGB24(0.502,0.0,0.0) 
-              RGB24(1.0,0.0,1.0)  RGB24(1.0,1.0,0.0)  RGB24(1.0,0.0,1.0) 
-              RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0)  RGB24(0.0,1.0,1.0)]
+    image = [RGB24(1.0,0.0,0.0)  RGB24(1.0,1.0,1.0)  RGB24(0.502,0.502,0.502) 
+             RGB24(1.0,0.0,1.0)  RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0) 
+             RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0)  RGB24(0.0,1.0,1.0)]
 
     framesperstep = 2
     truepostivecolor =   (1.0, 1.0, 1.0)
@@ -47,19 +39,14 @@ end
     truenegativecolor =  (1.0, 0.0, 1.0)
     falsenegativecolor = (1.0, 1.0, 0.0)
     maskcolor =          (0.0, 1.0, 1.0)
+    objective = RegionObjective(0.0, regionlookup, occurance, framesperstep)
 
-    processor = ColorRegionFit(RegionObjective(0.0, occurance, regionlookup, framesperstep),
-                               truepostivecolor, falsepositivecolor,
+    processor = ColorRegionFit(objective, truepostivecolor, falsepositivecolor,
                                truenegativecolor, falsenegativecolor, maskcolor)
-    # TODO how to test this without GTK?
-    # output = GtkOutput(init, processor=processor; fps=1, store=true)
 
-    # @test image1 == processframe(output, init, 1) 
-    # @test image1 == processframe(output, init, 2) 
-    # @test image2 == processframe(output, init, 3) 
-    # @test image2 == processframe(output, init, 4) 
-    # @test image3 == processframe(output, init, 5) 
-    # @test image3 == processframe(output, init, 6) 
+    output = ArrayOutput(init, 1)
+
+    @test image == frametoimage(processor, output, init, 1) 
 
 end
 

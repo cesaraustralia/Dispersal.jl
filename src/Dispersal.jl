@@ -25,7 +25,7 @@ using CellularAutomataBase,
       Distributions,
       DocStringExtensions,
       FieldDefaults,
-      FielddocTables,
+      FieldDocTables,
       FieldMetadata,
       Flatten,
       LinearAlgebra,
@@ -73,7 +73,7 @@ export Parametriser, AbstractObjective, RegionObjective, ColorRegionFit
 
 
 
-const FIELDDOCTABLE = FielddocTable((:Description, :Default, :Limits),
+const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Limits),
                                     (description, default, limits);
                                     truncation=(100,40,100))
 

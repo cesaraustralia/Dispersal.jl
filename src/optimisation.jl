@@ -17,9 +17,9 @@ end
 " Objective function for the parametriser "
 (p::Parametriser)(params) = begin
     # Rebuild the rules with the current parameters
-    names = fieldnameflatten(p.ruleset.rules)
+    names = fieldnameflatten(p.ruleset.rules, Real)
     println("Parameters: ", collect(zip(names, params)))
-    p.ruleset.rules = Flatten.reconstruct(p.ruleset.rules, params)
+    p.ruleset.rules = Flatten.reconstruct(p.ruleset.rules, params, Real)
     cumsum = @distributed (+) for i = 1:p.nreplicates
         output = deepcopy(p.output)
         sim!(output, p.ruleset; tstop = p.tstop)
@@ -122,7 +122,7 @@ struct ColorRegionFit{O<:RegionObjective,TP,FP,TN,FN,M} <: AbstractFrameProcesso
     maskcolor::M
 end
 
-CellularAutomataBase.processframe(p::ColorRegionFit, output, frame, t) = begin
+CellularAutomataBase.frametoimage(p::ColorRegionFit, output, frame, t) = begin
     step = stepfromframe(p.objective.framesperstep, t)
     img = similar(frame, RGB24)
     for i in CartesianIndices(frame)
