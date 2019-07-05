@@ -6,7 +6,7 @@
 end
 
 @premix @columns struct CarryCap{CC}
-    carrycap::CC | 100000   | true  | (0.0, 1e9) | "Carrying capacity for each cell. Not currently scaled by area."
+    carrycap::CC | 100000.0 | true  | (0.0, 1e9) | "Carrying capacity for each cell. Not currently scaled by area."
 end
 
 @premix @columns struct Layers{L}

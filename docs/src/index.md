@@ -71,7 +71,7 @@ InwardsPopulationDispersal
 PoissonInwardsPopulationDispersal
 ```
 
-### Partial Neighborhood Models
+## Partial Neighborhood Models
 
 Neighborhood model that only operate on non-zero cells, dispersing outwards.
 
@@ -81,7 +81,7 @@ OutwardsBinaryDispersal
 OutwardsPopulationDispersal
 ```
 
-#### Neighborhoods
+### Neighborhoods
 
 Kernel use neighborhoods, and extend Cellular.AbstractNeighborhood and `neighbors()` methods.
 
@@ -146,8 +146,6 @@ HumanDispersal
 ```
 
 
-
-
 ## Layers
 
 Layers provide overlay grids of raster data to models. They can be simple
@@ -169,4 +167,20 @@ Sequence
 ```@docs
 sequence_interpolate
 cyclic
+```
+
+## Optimisation
+
+Dispersal.jl provides optimisation tools for optimising the parameters of
+arbitrary simulation rulesets. [`AbstractObjective`](@ref) can be extended
+to add specific objection functions to transform simulation outputs.
+
+```@docs
+Parametriser
+(p::Parametriser)(params)
+AbstractObjective
+SimpleObjective
+RegionObjective
+simpredictions
+targets
 ```

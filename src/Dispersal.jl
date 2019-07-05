@@ -1,18 +1,19 @@
 """
 [Dispersal.jl](https://github.com/rafaqz/Dispersal.jl) extends
-[Cellular.jl](https://github.com/rafaqz/Cellular.jl) to provides a range of
-dispersal modules that can be combined to build grid-based organism dispersal simulations.
+[Cellular.jl](https://github.com/rafaqz/CellularAutomataBase.jl) for grid-based organism dispersal simulations.
 
-Dispersal.jl aims to provide a set of rules than can be combined to develope complex organidm dispersal models.
-Growth rates, dispersal kernels, allee effects, and randomised jump and human assisted dispersal modes are provided.
+Dispersal.jl provides a range of simulation rules than can be combined to develop complex organism 
+dispersal models. Growth rates, dispersal kernels, allee effects, and randomised jump 
+and human assisted dispersal rules are provided.
 
-Rules can be chained arbitrarily, and cutom rules mixed with the provided set.
-The framework is flexible and extensible, and basically anything can be customised,
-from outputs, rules and optimisation methods.
+These rules can be chained arbitrarily, and custom rules combined with the provided set.
 
-Outputs from Cellular.jl include REPLOutput for live display in the REPL, Gtk output for a
-simple graphical window, and BlinkOuput and MuxServer for automatic desktop and served web applications.
-Web apps automatically provide realtime slider controls for model parameters, including custom rules.
+CellularAutomataBase.jl includes REPLOutput for live display in the REPL, while
+[CellularAutomataGtk](https://github.com/rafaqz/CellularAutomataGtk.jl) provides GtkOutput for a
+simple graphical viewer, and [CellularAutomataWeb](https://github.com/rafaqz/CellularAutomataWeb.jl)
+provides BlinkOuput and MuxServer for desktop and online web applications.
+These web apps automatically provide realtime slider controls for model parameters, 
+including for custom rules, customisable using [FieldMetadata.jl](https://github.com/rafaqz/FieldMetadata.jl).
 
 [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl) can efficiently generate
 the layers required for suitability growth rules based on temperature response and stress factors.

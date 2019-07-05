@@ -1,34 +1,52 @@
 using CellularAutomataBase: normalizeframe
 
-" Parametrizer to use with Optim.jl or similar "
-struct Parametriser{R,OB,L,NR,TS,OP}
+""" 
+Parametrizer object to use with Optim.jl or similar 
+
+# Arguments
+`ruleset::Ruleset`: simulation ruleset, with `init` array attached 
+`objective::AbstractObjective`: objective data
+`transform`: single argument function to transform targets and predictions before the loss function
+`loss`: LossFunctions.jl loss function
+`nreplicates`: number of replicate simulation 
+`tstop`: length of simulation
+`output`: optional output type. By default an ArrayOutput will be generated.
+"""
+struct Parametriser{R,OB,F,L,NR,TS,OP}
     ruleset::R
     objective::OB
+    transform::F
     loss::L
     nreplicates::NR
     tstop::TS
     output::OP
 end
-Parametriser(ruleset, objective, loss, nreplicates, tstop) = begin
+Parametriser(ruleset, objective, transform, loss, nreplicates, tstop) = begin
     output = ArrayOutput(ruleset.init, tstop)
-    Parametriser(ruleset, objective, loss, nreplicates, tstop, output)
+    Parametriser(ruleset, objective, transform, loss, nreplicates, tstop, output)
 end
 
-" Objective function for the parametriser "
+""" 
+    (p::Parametriser)(params)
+Provides an objective function for an optimiser like Optim.jl
+"""
 (p::Parametriser)(params) = begin
     # Rebuild the rules with the current parameters
     names = fieldnameflatten(p.ruleset.rules, Real)
-    println("Parameters: ", collect(zip(names, params)))
+    println("Parameters: ") 
+    display(collect(zip(names, params)))
     p.ruleset.rules = Flatten.reconstruct(p.ruleset.rules, params, Real)
+    i = 1
+    targs = p.transform.(targets(p.objective))
     cumsum = @distributed (+) for i = 1:p.nreplicates
         output = deepcopy(p.output)
         sim!(output, p.ruleset; tstop = p.tstop)
-        prediction = outputtoprediction(p.objective, output)
-        loss = value(p.loss, target(p.objective), prediction, AggMode.Sum())
+        predictions = p.transform.(simpredictions(p.objective, output))
+        loss = value(p.loss, targs, predictions, AggMode.Sum())
         println("replicate: ", i, " - loss: ", loss)
-        loss
+        cumsum += loss
     end
-    meanloss = cumsum ./ p.nreplicates
+    meanloss = cumsum / p.nreplicates
     println("mean loss: ", meanloss, "\n")
     return meanloss
 end
@@ -38,24 +56,36 @@ end
 AbstractObjectives map simulation outputs to predictions that 
 can be compared to target data using a loss function.
 
-THey must implement `outputtoprediction` and `targets` methods.
+They must implement [`simpredictions`](@ref)and [`targets`](@ref) methods.
 """
 abstract type AbstractObjective end
 
 
 """
-    outputtoprediction(obj::AbstractObjective, output::AbstractOutput)
+    simpredictions(obj::AbstractObjective, output::AbstractOutput)
 Methods that map an objective object and a simulation output to a 
 prediction array.
 """
-function outputtoprediction end
+function simpredictions end
 
 """
-    target(obj::AbstractObjective)
-Returns a target array given an AbstractObjective. The target must match the size and 
-dimensions of the prediction array returned by `outputtoprediction`.
+    targets(obj::AbstractObjective)
+Returns a targets array given an AbstractObjective. The targets must match the size and 
+dimensions of the prediction array returned by `simpredictions`.
 """
-function target end
+function targets end
+
+
+"""
+A basic objective that holds a target array uses the final frame of the 
+simulation as the prediction.
+""
+struct SimpleObjective{T} <: AbstractObjective
+    target::T
+end
+
+simpredictions(obj::SimpleObjective, output) = output.frames[end]
+targets(obj::SimpleObjective) = obj.target
 
 
 
@@ -70,9 +100,9 @@ struct RegionObjective{DT,RL,OC,FS} <: AbstractObjective
     framesperstep::FS
 end
 
-target(obj::RegionObjective) = obj.occurance
+targets(obj::RegionObjective) = obj.occurance
 
-outputtoprediction(obj::RegionObjective, output) = begin
+simpredictions(obj::RegionObjective, output) = begin
     regions, steps = size(obj.occurance)
     frames = length(output)
     # Allocate arrays for steps and set all cells to zero 

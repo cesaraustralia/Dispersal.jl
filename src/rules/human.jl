@@ -136,7 +136,9 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, scale, aggregator,
     precalcs, proportion_covered
 end
 
-" Prepare all data and allocated required memory for precalculation "
+""" 
+Prepare all data and allocated required memory for precalculation 
+"""
 function setup_data(human_pop, cellsize, shortlist_len, human_exponent, dist_exponent)
     h, w = size(human_pop)
     # Precalculate exponentiation of human population matrix
@@ -168,7 +170,8 @@ Precalculate human dispersal shortlist for every cell in a column.
 Working on columns are the cleanest way to separate the work accross multiple processors.
 """
 function build_precalc_col(j, data)
-    shortlist_len, indices, human, dist, gravities, gravity_vector, gravity_shortlist, interval_shortlist, precalc_col, prop_col = data
+    shortlist_len, indices, human, dist, gravities, gravity_vector, 
+        gravity_shortlist, interval_shortlist, precalc_col, prop_col = data
     h, w = size(human)
     for i = 1:h
         cumprop = 0.0f0
