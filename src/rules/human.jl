@@ -1,3 +1,6 @@
+"""
+Human driven dispersal rules
+"""
 abstract type AbstractHumanDispersal <: AbstractPartialRule end
 
 """

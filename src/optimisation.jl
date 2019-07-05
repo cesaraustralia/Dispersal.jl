@@ -79,7 +79,7 @@ function targets end
 """
 A basic objective that holds a target array uses the final frame of the 
 simulation as the prediction.
-""
+"""
 struct SimpleObjective{T} <: AbstractObjective
     target::T
 end

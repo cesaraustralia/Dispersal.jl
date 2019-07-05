@@ -12,11 +12,12 @@ arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct DispersalKernel{F,K,C,I} <: AbstractDispersalKernel
-    formulation::F | true  | _           | "Kernel formulation object"
-    kernel::K      | false | _           | "Kernal matrix"
-    cellsize::C    | false | (0.0, 10.0) | "Simulation cell size"
-    radius::I      | false | (1, 10)     | "Kernel radius"
+
+@columns struct DispersalKernel{F,K,C,I} <: AbstractDispersalKernel
+    formulation::F | _   | true  | _           | "Kernel formulation object"
+    kernel::K      | _   | false | _           | "Kernal matrix"
+    cellsize::C    | 1.0 | false | (0.0, 10.0) | "Simulation cell size"
+    radius::I      | 1   | false | (1, 10)     | "Kernel radius"
 
     DispersalKernel(formulation::F, init_kernel::K, cellsize::C, radius::I) where {F,K,C,I} = begin
         kernel = build_dispersal_kernel(formulation, init_kernel, cellsize, radius)

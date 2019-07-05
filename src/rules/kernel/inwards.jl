@@ -1,5 +1,7 @@
 
-"Extend to modify [`InwardsBinaryDispersal`](@ref)"
+"""
+Inwards neighborhood based dispersal models.
+"""
 abstract type AbstractInwardsDispersal <: AbstractNeighborhoodRule end
 
 CellularAutomataBase.radius(rule::AbstractInwardsDispersal) = 

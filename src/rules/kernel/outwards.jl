@@ -1,25 +1,24 @@
 
 """
-Extends AbstractPartialNeighborhoodRule for outwards dispersal
+Extends AbstractPartialNeighborhoodRule for outwards dispersal.
+
+Outwards dispersal calculates dispersal *from* the current cell to cells
+in its [`DispersalNeighborhood`](@ref). This should be more efficient than 
+inwards dispersal when a small number of cells are occupied, but less efficient 
+when a large proportion of the grid is occupied.
 """
 abstract type AbstractOutwardsDispersal <: AbstractPartialNeighborhoodRule end
 
 """
-Binary binary dispersal within a [`DispersalNeighborhood`](@ref)
-
-Outwards dispersal calculates dispersal *from* the current cell to cells
-in its neighborhood. This should be more efficient than inwards
-dispersal when a small number of cells are occupied, but less efficient when a large
-proportion of the grid is occupied.
-
-Surrounding cells are invaded if the current cell is occupied.
+Cells in the surrounding [`DispersalNeighborhood`](@ref) have some propability of 
+invasion if the current cell is occupied.
 $(FIELDDOCTABLE)
 """
 @Probabilistic @Kernel struct OutwardsBinaryDispersal{} <: AbstractOutwardsDispersal end
 
 """
-Disperses from the current cells population to the populations of the surrounding cells,
-using a dispersal kernel.
+Dispersal reduces the current cell population, increasing the populations of the 
+cells in the surrounding [`DispersalNeighborhood`](@ref).
 $(FIELDDOCTABLE)
 """
 @Kernel struct OutwardsPopulationDispersal{} <: AbstractOutwardsDispersal end

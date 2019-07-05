@@ -10,7 +10,7 @@ Dispersal
 
 ## Examples
 
-This is the general pattern of running model in Dispersal.jl.
+This is the general pattern of running rules in Dispersal.jl.
 
 We define initial conditions. Then we run a dispersal
 simulation that combines local and jump dispersal, for three timesteps.
@@ -45,7 +45,7 @@ f = d -> e^-d
 # Define the neighborhood, using the dispersal kernel and a radius
 hood = DispersalKernel(; f=f, radius=2, init=init)
 
-# Define disersal models
+# Define disersal rules
 localdisp = InwardsLocalDispersal(neighborhood=hood)
 jumpdisp = JumpDispersal()
 growth = SuitabilityExactLogisticGrowth(suitability)
@@ -54,14 +54,14 @@ growth = SuitabilityExactLogisticGrowth(suitability)
 output = ArrayOutput(init)
 
 # Run the simulation
-sim!(output, Models(localdisp, jumpdisp, ), init, layers; time=1:3)
+sim!(output, Rulesets(localdisp, jumpdisp, ), init, layers; time=1:3)
 
 output.frames[3]
 ```
 
-## Neighborhood Models
+## Neighborhood Rules
 
-Models that consider the neighborhood of cells surrounding the current cell.
+Rules that consider the neighborhood of cells surrounding the current cell.
 These disperse inwards to the current cell from the surrounding cell.
 
 ```@docs
@@ -71,9 +71,10 @@ InwardsPopulationDispersal
 PoissonInwardsPopulationDispersal
 ```
 
-## Partial Neighborhood Models
+## Partial Neighborhood Rules
 
-Neighborhood model that only operate on non-zero cells, dispersing outwards.
+Partial neighborhood rules that disperse outwards to the neighborhood 
+when local populations exist.
 
 ```@docs
 AbstractOutwardsDispersal
@@ -81,25 +82,24 @@ OutwardsBinaryDispersal
 OutwardsPopulationDispersal
 ```
 
-### Neighborhoods
+## Dispersal kernels 
 
-Kernel use neighborhoods, and extend Cellular.AbstractNeighborhood and `neighbors()` methods.
+Kernels extend `CellularAutomataBase.AbstractNeighborhood` and `neighbors()` methods.
 
 ```@docs
 AbstractDispersalKernel
 DispersalKernel
-DispersalKernel(; f=exponential, param=1.0, init=[], cellsize=1.0, radius=3)
 ```
 
-## Cell Models
+## Cell rules
 
-Models that simply transform the state of a single cell, ignoring the rest of the grid.
+Rules that simply transform the state of a single cell, ignoring the rest of the grid.
 
 
-### Growth models
+### Growth rules
 
 ```@docs
-AbstractGrowthModel
+AbstractGrowthRule
 EulerExponentialGrowth
 EulerLogisticGrowth
 SuitabilityEulerExponentialGrowth
@@ -126,10 +126,10 @@ AbstractAlleeExtinction
 AlleeExtinction
 ```
 
-## Partial Models
+## Partial Rules
 
-These models trigger rules that only partially update the grid.
-The often operate only on cells that are currently occupied.
+These rules only partially update the grid. They often operate only on cells that
+are currently occupied.
 
 ### Jump dispersal
 
@@ -148,10 +148,10 @@ HumanDispersal
 
 ## Layers
 
-Layers provide overlay grids of raster data to models. They can be simple
+Layers provide overlay grids of raster data to rules. They can be simple
 matrices, or sequences for time series data.
 
-Like models, than can be combined arbitrarily, in this case in a tuple. Methods
+Like rules, than can be combined arbitrarily, in this case in a tuple. Methods
 loop through all layers to return a scalar that is the product of their
 outputs.
 
@@ -171,9 +171,9 @@ cyclic
 
 ## Optimisation
 
-Dispersal.jl provides optimisation tools for optimising the parameters of
-arbitrary simulation rulesets. [`AbstractObjective`](@ref) can be extended
-to add specific objection functions to transform simulation outputs.
+Dispersal.jl provides optimisation tools for automatically optimising 
+the parameters of arbitrary rulesets given target data. [`AbstractObjective`](@ref) 
+can be extended to add specific objection functions to transform simulation outputs.
 
 ```@docs
 Parametriser
