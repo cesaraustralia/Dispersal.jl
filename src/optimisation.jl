@@ -44,7 +44,7 @@ Provides an objective function for an optimiser like Optim.jl
         predictions = p.transform.(simpredictions(p.objective, output))
         loss = value(p.loss, targs, predictions, AggMode.Sum())
         println("replicate: ", i, " - loss: ", loss)
-        cumsum += loss
+        loss
     end
     meanloss = cumsum / p.nreplicates
     println("mean loss: ", meanloss, "\n")
