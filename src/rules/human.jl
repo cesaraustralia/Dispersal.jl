@@ -147,7 +147,7 @@ function setup_data(human_pop, cellsize, shortlist_len, human_exponent, dist_exp
     # Precalculate exponentiation of human population matrix
     human = human_pop .^ human_exponent
     # Precalculated distances matrix
-    dist = (distances(human) .* cellsize) .^ dist_exponent
+    dist = (distances(human_pop) .* cellsize) .^ dist_exponent
     dist[1] = cellsize/6 * (sqrt(2) + log(1 + sqrt(2))) # mean distance from cell centre
     # Get indices to broadcast over
     indices = broadcastable_indices(Int32, human)

@@ -6,7 +6,7 @@ Dispersal.dispersalatdistance(::TestFormulation, d) = 1.0
 @testset "dispersal kernel array matches passed in function" begin
     init = [0 1 0; 
             1 0 1]
-    dk = DispersalKernel(formulation=ExponentialKernel(1.0), cellsize=1, init=init, radius=2).kernel
+    dk = DispersalKernel(formulation=ExponentialKernel(1.0), kernel=init, cellsize=1, radius=2).kernel
 
     @test size(dk) == (5, 5)
     @test sum(dk) ≈ 1.0
@@ -78,7 +78,7 @@ end
 
     # Dispersal in radius 1 neighborhood
     suitmask = SuitabilityMask(layers=suit)
-    hood = DispersalKernel(; init=init, radius=1)
+    hood = DispersalKernel(; formulation=ExponentialKernel(1.0), radius=1)
 
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
@@ -118,7 +118,7 @@ end
              1.0 0.0 0.0 0.0 0.0 0.0 0.0;
              1.0 1.0 1.0 1.0 1.0 1.0 1.0]
 
-    init =  [100.0 0.0 0.0 0.0   0.0 0.0 0.0;
+    init =  [100.0 0.0 0.0 0.0 0.0 0.0 0.0;
              0.0 0.0 0.0 0.0   0.0 0.0 0.0;
              0.0 0.0 0.0 0.0 100.0 0.0 0.0;
              0.0 0.0 0.0 0.0   0.0 0.0 0.0;
@@ -126,7 +126,7 @@ end
              0.0 0.0 0.0 0.0   0.0 0.0 0.0;
              0.0 0.0 0.0 0.0   0.0 0.0 0.0]
 
-    test1 = [100.0 0.0 0.0 0.0   0.0 0.0 0.0;
+    test1 = [100.0 0.0 0.0 0.0 0.0 0.0 0.0;
              0.0 0.0 0.0 0.0   0.0 0.0 0.0;
              0.0 0.0 0.0 0.0 100.0 0.0 0.0;
              0.0 0.0 0.0 0.0   0.0 0.0 0.0;

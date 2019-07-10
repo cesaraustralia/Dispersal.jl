@@ -34,6 +34,7 @@ Provides an objective function for an optimiser like Optim.jl
     # Rebuild the rules with the current parameters
     names = fieldnameflatten(p.ruleset.rules, Real)
     println("Parameters: ") 
+    println(ruletypes(typeof(ruleset.rules)))
     display(collect(zip(names, params)))
     p.ruleset.rules = Flatten.reconstruct(p.ruleset.rules, params, Real)
     i = 1
@@ -51,6 +52,9 @@ Provides an objective function for an optimiser like Optim.jl
     return meanloss
 end
 
+ruletypes(ruleset::Ruleset) = typeof(Ruleset.rules)
+ruletypes(t::Type) = t.name.wrapper
+ruletypes(ts::Type{<:Tuple}) = (ruletypes.(ts.parameters)...,)
 
 """
 AbstractObjectives map simulation outputs to predictions that 

@@ -8,7 +8,7 @@ $(FIELDDOCTABLE)
 """
 @columns struct AlleeExtinction{MF} <: AbstractAlleeExtinction
     # Field         | Def | Flatten | Limits       | Description
-    minfounders::MF | 5.0 | true    | (0.0, 200.0) | "Minimum founding individuals required to to start an ongoing population"
+    minfounders::MF | 5.0 | true    | (1.0, 200.0) | "Minimum founding individuals required to to start an ongoing population"
 end
 
 # Rules

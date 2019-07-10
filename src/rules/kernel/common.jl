@@ -14,27 +14,20 @@ $(FIELDDOCTABLE)
 """
 
 @columns struct DispersalKernel{F,K,C,I} <: AbstractDispersalKernel
-    formulation::F | _   | true  | _           | "Kernel formulation object"
-    kernel::K      | _   | false | _           | "Kernal matrix"
-    cellsize::C    | 1.0 | false | (0.0, 10.0) | "Simulation cell size"
-    radius::I      | 1   | false | (1, 10)     | "Kernel radius"
+    formulation::F | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
+    kernel::K      | []                     | false | _           | "Kernal matrix"
+    cellsize::C    | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
+    radius::I      | 3                      | false | (1, 10)     | "Kernel radius"
 
     DispersalKernel(formulation::F, init_kernel::K, cellsize::C, radius::I) where {F,K,C,I} = begin
-        kernel = build_dispersal_kernel(formulation, init_kernel, cellsize, radius)
+        # Convert kenel the type of the init array
+        inittype = typeof(init_kernel).name.wrapper
+        kernel = inittype(build_dispersal_kernel(formulation, cellsize, radius))
         new{F,typeof(kernel),C,I}(formulation, kernel, cellsize, radius)
     end
 end
 
-"""
-    DispersalKernel(; formulation=ExponentialKernel(1.0), init=[], cellsize=1.0, radius=3)
-
-Constructor for DispersalKernel, accepting keyword arguments.
-"""
-DispersalKernel(; formulation=ExponentialKernel(1.0), init=[], cellsize=1.0, radius=3) = 
-    DispersalKernel(formulation, init, cellsize, radius)
-
-
-build_dispersal_kernel(formulation, init, cellsize, r) = begin
+build_dispersal_kernel(formulation, cellsize, r) = begin
     # The radius doesn't include the center cell, so add it
     sze = 2r + 1
     kernel = zeros(Float64, sze, sze)
@@ -48,9 +41,6 @@ build_dispersal_kernel(formulation, init, cellsize, r) = begin
     end
     # Normalise
     kernel ./= sum(kernel)
-    # Convert to the type of the init array
-    inittype = typeof(init).name.wrapper
-    inittype(kernel)
 end
 
 CellularAutomataBase.radius(hood::DispersalKernel) = hood.radius
@@ -60,8 +50,9 @@ CellularAutomataBase.radius(hood::DispersalKernel) = hood.radius
 abstract type AbstractKernelFormulation end
 
 @description @limits @flattenable struct ExponentialKernel{P} <: AbstractKernelFormulation
-    param::P    | true  | (0.0, 10.0) | "Parameter for adjusting kernel spread"
+    param::P    | true  | (0.0, 100.0) | "Parameter for adjusting kernel spread"
 end
 
 # Paper: l. 96 
 dispersalatdistance(f::ExponentialKernel, distance) = exp(-distance / f.param)
+
