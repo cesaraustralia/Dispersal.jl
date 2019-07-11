@@ -34,11 +34,13 @@ Provides an objective function for an optimiser like Optim.jl
     # Rebuild the rules with the current parameters
     names = fieldnameflatten(p.ruleset.rules, Real)
     println("Parameters: ") 
-    println(ruletypes(typeof(ruleset.rules)))
+    println(ruletypes(typeof(p.ruleset.rules)))
     display(collect(zip(names, params)))
     p.ruleset.rules = Flatten.reconstruct(p.ruleset.rules, params, Real)
     i = 1
     targs = p.transform.(targets(p.objective))
+    # cumsum = 0.0
+    # for i = 1:p.nreplicates
     cumsum = @distributed (+) for i = 1:p.nreplicates
         output = deepcopy(p.output)
         sim!(output, p.ruleset; tstop = p.tstop)
