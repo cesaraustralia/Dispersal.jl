@@ -1,8 +1,8 @@
 "Extends AbstractNeighborhood for for dispersal kernel neighborhoods"
-abstract type AbstractDispersalKernel <: AbstractNeighborhood end
+abstract type AbstractDispersalKernel{R} <: AbstractNeighborhood{R} end
 
 @mix @columns struct Kernel{N}
-    neighborhood::N | DispersalKernel() | true  | _ | "Neighborhood to disperse to or from"
+    neighborhood::N | DispersalKernel{3}() | true  | _ | "Neighborhood to disperse to or from"
 end
 
 """
@@ -13,37 +13,65 @@ a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
 
-@columns struct DispersalKernel{F,K,C,I} <: AbstractDispersalKernel
+@columns struct DispersalKernel{R,F,K,C} <: AbstractDispersalKernel{R}
     formulation::F | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
-    kernel::K      | []                     | false | _           | "Kernal matrix"
+    kernel::K      | nothing                | false | _           | "Kernal matrix"
     cellsize::C    | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
-    radius::I      | 3                      | false | (1, 10)     | "Kernel radius"
 
-    DispersalKernel(formulation::F, init_kernel::K, cellsize::C, radius::I) where {F,K,C,I} = begin
+    DispersalKernel{R}(; kwargs...) where {R,F,K,C} = begin 
+        kwargs = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
+        DispersalKernel{R,typeof.(kwargs)...}(kwargs...)
+    end
+    DispersalKernel{R}(formulation::F, kernel::K, cellsize::C) where {R,F,K,C} = 
+        DispersalKernel{R,F,K,C}(formulation, kernel, cellsize)
+    DispersalKernel{R,F,K,C}(formulation::F, kernel::K, cellsize::C) where {R,F,K,C} = begin
         # Convert kenel the type of the init array
-        inittype = typeof(init_kernel).name.wrapper
-        kernel = inittype(build_dispersal_kernel(formulation, cellsize, radius))
-        new{F,typeof(kernel),C,I}(formulation, kernel, cellsize, radius)
+        kernel = build_dispersal_kernel(formulation, CentroidToCentroid(), cellsize, R)
+        kernel = K <: Nothing ? kernel : K(kernel) 
+        new{R,F,typeof(kernel),C}(formulation, kernel, cellsize)
     end
 end
 
-build_dispersal_kernel(formulation, cellsize, r) = begin
+
+build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
     # The radius doesn't include the center cell, so add it
     sze = 2r + 1
     kernel = zeros(Float64, sze, sze)
     # Paper: l. 97
     for x = -r:r, y = -r:r
         # Calculate the distance from the center cell to this cell
-        distance = sqrt(x^2 + y^2) * cellsize
+        dist = distance(distancemethod, x, y, cellsize)
         # Update the kernel value based on the formulation and distance
         kernel[x + r + one(x), y + r + one(y)] = 
-            dispersalatdistance(formulation, distance)
+            dispersalatdistance(formulation, dist)
     end
     # Normalise
     kernel ./= sum(kernel)
 end
 
-CellularAutomataBase.radius(hood::DispersalKernel) = hood.radius
+CellularAutomataBase.radius(hood::DispersalKernel{R}) where R = R
+
+Flatten.constructor_of(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
+
+
+abstract type AbstractDistanceMethod end
+
+
+struct CentroidToCentroid <: AbstractDistanceMethod end
+
+distance(::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize
+
+struct CentroidToArea <: AbstractDistanceMethod end
+
+distance(::CentroidToArea, x, y, cellsize) = error("not implemented yet")
+
+struct AreaToArea <: AbstractDistanceMethod end
+
+distance(::AreaToArea, x, y, cellsize) = error("not implemented yet")
+
+struct AreaToCentroid <: AbstractDistanceMethod end
+
+distance(::AreaToCentroid, x, y, cellsize) = error("not implemented yet")
 
 
 

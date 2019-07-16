@@ -4,9 +4,10 @@ struct TestFormulation <: AbstractKernelFormulation end
 Dispersal.dispersalatdistance(::TestFormulation, d) = 1.0
 
 @testset "dispersal kernel array matches passed in function" begin
-    init = [0 1 0; 
-            1 0 1]
-    dk = DispersalKernel(formulation=ExponentialKernel(1.0), kernel=init, cellsize=1, radius=2).kernel
+    init = [0.0 1.0 0.0; 
+            1.0 0.0 1.0]
+    radius = 2
+    dk = DispersalKernel{radius}(formulation=ExponentialKernel(1.0), kernel=init, cellsize=1).kernel
 
     @test size(dk) == (5, 5)
     @test sum(dk) ≈ 1.0
@@ -15,7 +16,8 @@ end
 @testset "binary dispersal and suitability mask" begin
     init = [0 0; 
             0 1]
-    hood = DispersalKernel(; radius=1)
+    radius = 1
+    hood = DispersalKernel{radius}()
     # sequence of layers
     suitseq = Sequence(([0.1 0.2; 
                          0.3 0.4], 
@@ -26,7 +28,7 @@ end
                           SuitabilityMask(layers=suitseq, threshold=0.4); init=init)
     output = ArrayOutput(init, 25)
 
-    @test Dispersal.pressure(rules.rules[1], init, 1) 
+    @test Dispersal.pressure(rules.rules[1], 1) 
 
     sim!(output, rules; tstop=25)
 
@@ -78,7 +80,8 @@ end
 
     # Dispersal in radius 1 neighborhood
     suitmask = SuitabilityMask(layers=suit)
-    hood = DispersalKernel(; formulation=ExponentialKernel(1.0), radius=1)
+    radius = 1
+    hood = DispersalKernel{radius}(; formulation=ExponentialKernel(1.0))
 
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
@@ -152,10 +155,10 @@ end
 
     # Dispersal in radius 1 neighborhood
     suitmask = SuitabilityMask(layers=suit)
-    r = 2
+    radius = 2
 
     @testset "inwards population dispersal fills the grid where reachable suitable" begin
-        hood = DispersalKernel(; formulation=TestFormulation(), radius=r)
+        hood = DispersalKernel{radius}(; formulation=TestFormulation())
         inwards = InwardsPopulationDispersal(neighborhood=hood)
         rules = Ruleset(inwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
@@ -173,7 +176,7 @@ end
     end
 
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin
-        hood = DispersalKernel(; formulation=TestFormulation(), radius=r)
+        hood = DispersalKernel{radius}(; formulation=TestFormulation())
         outwards = OutwardsPopulationDispersal(neighborhood=hood)
         rules = Ruleset(outwards, suitmask; init=init)
         output = ArrayOutput(init, 3)

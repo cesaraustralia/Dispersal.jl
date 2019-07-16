@@ -39,7 +39,6 @@ end
     objective = SimpleObjective(target)
     loss = LogitDistLoss()
     parametriser = Parametriser(ruleset, objective, identity, loss, nreplicates, tstop)
-    p(flatten(rule))
     res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
     @test res.minimizer[1] ≈ rate atol=4
 end
@@ -57,6 +56,7 @@ end
                      1  0  1  # 2
                      1  1  0] # 3
 
+    nreplicates = 1
     framesperstep = 2
     steps = 3
     tstop = framesperstep * steps
@@ -72,39 +72,3 @@ end
 
     p(flatten(rule))
 end
-
-@testset "image processor colors regions by fit" begin
-
-    init =  [1.0  1.0  0.5
-             0.0  0.0  0.0
-             0.0  0.0  0.0]
-
-    regionlookup = [1  2  3
-                    1  2  3
-                    2  2  0]
-
-    occurance = Bool[0  1  0  # 1
-                     1  0  1  # 2
-                     1  1  0] # 3
-
-    image = [RGB24(1.0,0.0,0.0)  RGB24(1.0,1.0,1.0)  RGB24(0.502,0.502,0.502)
-             RGB24(1.0,0.0,1.0)  RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0)
-             RGB24(1.0,1.0,0.0)  RGB24(1.0,1.0,0.0)  RGB24(0.0,1.0,1.0)]
-
-    framesperstep = 2
-    truepostivecolor =   (1.0, 1.0, 1.0)
-    falsepositivecolor = (1.0, 0.0, 0.0)
-    truenegativecolor =  (1.0, 0.0, 1.0)
-    falsenegativecolor = (1.0, 1.0, 0.0)
-    maskcolor =          (0.0, 1.0, 1.0)
-    objective = RegionObjective(0.0, regionlookup, occurance, framesperstep)
-
-    processor = ColorRegionFit(objective, truepostivecolor, falsepositivecolor,
-                               truenegativecolor, falsenegativecolor, maskcolor)
-
-    output = ArrayOutput(init, 1)
-
-    @test image == frametoimage(processor, output, init, 1)
-
-end
-

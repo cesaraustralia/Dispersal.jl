@@ -2,10 +2,20 @@
 """
 Inwards neighborhood based dispersal models.
 """
-abstract type AbstractInwardsDispersal <: AbstractNeighborhoodRule end
+abstract type AbstractInwardsDispersal{R} <: AbstractNeighborhoodRule{R} end
 
-CellularAutomataBase.radius(rule::AbstractInwardsDispersal) = 
-    radius(rule.neighborhood)
+@inline neighbors(hood::DispersalKernel, rule::AbstractInwardsDispersal, buf, state) = begin
+    @inbounds buf ⋅ hood.kernel
+    # display(buf)
+    # display(hood.kernel)
+    # error()
+end
+
+CellularAutomataBase.radius(rule::AbstractInwardsDispersal{R}) where R = R 
+
+# Get the radius from the kernel for all AbstractInwardsDispersal
+(::Type{T})(kernel, args...) where T <: AbstractInwardsDispersal = 
+    T{radius(kernel),typeof(kernel),typeof.(args)...}(kernel, args...)
 
 """
 Binary present/absent dispersal within a [`DispersalKernel`](@ref). 
@@ -15,14 +25,14 @@ The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 $(FIELDDOCTABLE)
 """
-@Probabilistic @Kernel struct InwardsBinaryDispersal{} <: AbstractInwardsDispersal end
+@Kernel @Probabilistic struct InwardsBinaryDispersal{R} <: AbstractInwardsDispersal{R} end
 
 """
 Disperses to the current cells from the populations of the surrounding cells,
 using a dispersal kernel.
 $(FIELDDOCTABLE)
 """
-@Kernel struct InwardsPopulationDispersal{} <: AbstractInwardsDispersal end
+@Kernel struct InwardsPopulationDispersal{R} <: AbstractInwardsDispersal{R} end
 
 
 """
@@ -31,30 +41,24 @@ using a dispersal kernel. Dispersal amounts are randomised with a Poisonn
 distribution.
 $(FIELDDOCTABLE)
 """
-@Kernel struct PoissonInwardsPopulationDispersal{} <: AbstractInwardsDispersal end
+@Kernel struct PoissonInwardsPopulationDispersal{R} <: AbstractInwardsDispersal{R} end
 
 
-
-
-@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, args...) = begin
+@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, index, buf) = begin
     # Combine neighborhood cells into a single scalar
-    cc = neighbors(rule.neighborhood, rule, data, state, args...)
+    cc = neighbors(rule.neighborhood, rule, buf, state)
 
     # Set to occupied if enough pressure from neighbors
-    pressure(rule, data.source, cc, args...) ? oneunit(state) : state
+    pressure(rule, cc) ? oneunit(state) : state
 end
 
-@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, args...) = 
-    neighbors(rule.neighborhood, rule, data, state, args...)
+@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, index, buf) = 
+    neighbors(rule.neighborhood, rule, buf, state)
 
-@inline applyrule(rule::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, args...) = begin
-    p = neighbors(rule.neighborhood, rule, data, state, args...)
+@inline applyrule(rule::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, index, buf) = begin
+    p = neighbors(rule.neighborhood, rule, buf, state)
     p > zero(p) ? typeof(state)(rand(Poisson(p))) : state
 end
 
 
-@inline neighbors(hood::AbstractDispersalKernel, rule::AbstractNeighborhoodRule, data, state,
-                  index, args...) = @inbounds return buffer(data) ⋅ hood.kernel
-
-@inline pressure(rule, source, cc, args...) = 
-    rand() ^ rule.prob_threshold > (one(cc) - cc) / one(cc)
+@inline pressure(rule, cc) = rand() ^ rule.prob_threshold > (one(cc) - cc) / one(cc)

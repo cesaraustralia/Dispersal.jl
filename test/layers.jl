@@ -46,11 +46,11 @@ suitseq = Sequence(([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8]), 10);
 end
 
 @testset "sequence of layers" begin
-    timestep = 1
-    data = CellularAutomataBase.SimData([], nothing, nothing, nothing, nothing, nothing, nothing, timestep, nothing)
+    ruleset = Ruleset((); timestep = 1)
+    data = CellularAutomataBase.SimData([], [], [], ruleset, nothing)
 
     @testset "layers sequences are interpolated over timespans" begin
-        ind = ((1, 1),(1, 2),(2, 1),(2, 2))
+        ind = ((1, 1), (1, 2), (2, 1), (2, 2))
         @test all(get_layers.(Ref(data), Ref(suitseq), ind, 10) .≈ get_layers.(Ref(data), Ref(suitseq), ind, 20))
         @test all(get_layers.(Ref(data), Ref(suitseq), ind, 16) .≈ get_layers.(Ref(data), Ref(suitseq), ind, 14))
         @test all(get_layers.(Ref(data), Ref(suitseq), ind, 19) .≈ get_layers.(Ref(data), Ref(suitseq), ind, 11))

@@ -1,6 +1,5 @@
 using CellularAutomataBase, Dispersal, Test, Random, Statistics
-using Dispersal: precalc_human_dispersal, populate!, upsample_index, CellGravity,
-                 CellInterval
+using Dispersal: precalc_human_dispersal, populate!, upsample_index, CellGravity, CellInterval
 
 @testset "CellGravity sums and compares gravisty" begin
     g = CellGravity(5.0, (1, 1))
@@ -32,7 +31,6 @@ shortlist_len = 9
 
 precalc, prop = precalc_human_dispersal(human_pop, cellsize, scale, aggregator,
                     human_exponent, dist_exponent, shortlist_len)
-
 
 skipmissing(prop) .> 0.0
 
@@ -107,7 +105,8 @@ end
         rules.rules[1].dispersal_probs[3,3] # probability of a long distance migrant at centre
         single = populate(precalc[3, 3], size(init), scale)
 
-        @test sum(init) == sum(output[3])
+        # Population is allways maintained
         @test sum(init) == sum(output[2])
+        @test sum(init) == sum(output[3])
     end
 end

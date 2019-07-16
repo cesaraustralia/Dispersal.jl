@@ -38,7 +38,12 @@ using LossFunctions: ZeroOneLoss
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
-import CellularAutomataBase: applyrule, applyrule!, neighbors, timestep, radius, buffer
+
+
+import CellularAutomataBase: applyrule, applyrule!, neighbors, radius,
+       currenttime, framesize, mask, overflow, timestep, cellsize
+
+import Flatten: constructor_of
 
 import FieldMetadata: @description, @limits, @flattenable, 
                       default, description, limits, flattenable
@@ -53,6 +58,8 @@ export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDis
 
 export AbstractDispersalKernel, DispersalKernel, AbstractKernelFormulation, 
        ExponentialKernel 
+
+export AbstractDistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
 
 export AbstractJumpDispersal, JumpDispersal
 
@@ -70,7 +77,7 @@ export Mask
 
 export Sequence
 
-export Parametriser, AbstractObjective, RegionObjective, ColorRegionFit
+export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, ColorRegionFit
 
 
 
@@ -97,7 +104,9 @@ include("rules/mask.jl")
 include("rules/human.jl")
 include("rules/jump.jl")
 include("rules/allee.jl")
-include("optimisation.jl")
+include("optimisation/optimisation.jl")
+include("optimisation/objectives.jl")
+include("optimisation/frame_processing.jl")
 
 
 end # module

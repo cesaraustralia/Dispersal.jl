@@ -1,7 +1,5 @@
 using CellularAutomataBase, Dispersal, Test
-using CellularAutomataBase: applyrule, SimData
-
-data = SimData([], nothing, nothing, nothing, nothing, nothing, nothing, nothing, 1)
+using CellularAutomataBase: applyrule, simdata
 
 @testset "exponential growth" begin
     init =  [1.0 4.0 7.0;
@@ -46,7 +44,7 @@ end
                         4.0 1.0 0.25;
                         1.0 1.0 0.25]
 
-    @test CellularAutomataBase.normalizeframe(output[3], 0.25, 4) == [0.2  0.2  1.0;
+    @test CellularAutomataBase.normaliseframe(output[3], 0.25, 4) == [0.2  0.2  1.0;
                                                                       1.0  0.2  0.0;
                                                                       0.2  0.2  0.0]
 
@@ -131,6 +129,8 @@ end
 
     output = ArrayOutput(init, 3)
     mask = SuitabilityMask(layers=suit, threshold=1.1)
+    ruleset = Ruleset((); init=init)
+    data = simdata(ruleset, init)
 
     @test applyrule(mask, data, 5, (1, 1)) === 0
     @test applyrule(mask, data, 5, (2, 2)) === 5

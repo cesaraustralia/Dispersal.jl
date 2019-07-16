@@ -21,9 +21,9 @@ $(FIELDDOCTABLE)
     cellsize::CS           | false   | _               | _
     scale::S               | false   | _               | _
     aggregator::AG         | false   | _               | "A function that aggregates scaled down cells"
-    human_exponent::HE     | true    | (0.0, 3.0)      | "Human population exponent"
-    dist_exponent::DE      | true    | (0.0, 3.0)      | "Distance exponent"
-    par_a::PA              | true    | (0.0, 0.00001)  | "Parameter to scale human population in source and dest cells"
+    human_exponent::HE     | true    | (1.0, 3.0)      | "Human population exponent"
+    dist_exponent::DE      | true    | (1.0, 3.0)      | "Distance exponent"
+    par_a::PA              | true    | (0.0, 1e-8)     | "Parameter to scale human population in source and dest cells"
     max_dispersers::MD     | true    | (50.0, 10000.0) | "Maximum number of dispersers in a dispersal events"
     shortlist_len::SL      | false   | _               | "Length of precalc shortlist"
     timestep::TS           | false   | _               | _
@@ -176,19 +176,19 @@ function build_precalc_col(j, data)
     shortlist_len, indices, human, dist, gravities, gravity_vector, 
         gravity_shortlist, interval_shortlist, precalc_col, prop_col = data
     h, w = size(human)
-    for i = 1:h
+    @inbounds for i = 1:h
         cumprop = 0.0f0
         if ismissing(human[i, j])
-            @inbounds precalc_col[i] = missing
+            precalc_col[i] = missing
             # Update shortlist proportion matrix to check coverage of the distribution
-            @inbounds prop_col[i] = missing
+            prop_col[i] = missing
             continue
         end
         # Calculate the gravity for all cells in the grid
         for ii = 1:h, jj = 1:w
-            @inbounds gravities[ii, jj].gravity = if ismissing(human[ii, jj])
-                # Missing values ared assigned a negative gravity to miss the shortlist
-                @inbounds -1one(gravities[1, 1].gravity)
+            gravities[ii, jj].gravity = if ismissing(human[ii, jj])
+                # Missing values are assigned a negative gravity to miss the shortlist
+                -1one(gravities[1, 1].gravity)
             else
                 build_gravity_index(i, j, ii, jj, human, dist)
             end
@@ -197,12 +197,12 @@ function build_precalc_col(j, data)
 
         # Arrange gravities in a vector for 1 dimensional sorting
         for n = 1:size(gravities, 1) * size(gravities, 2)
-            @inbounds gravity_vector[n] = gravities[n]
+            gravity_vector[n] = gravities[n]
         end
         # Sort the top shortlist_len gravities in-place, highest first.
         partialsort!(gravity_vector, shortlist_len, rev=true)
         # Copy sorted gravities to the shortlist
-        gravity_shortlist .= @inbounds gravity_vector[1:shortlist_len]
+        gravity_shortlist .= gravity_vector[1:shortlist_len]
 
         # Sum gravities in the shortlist
         shortlist_sum::Float32 = sum(gravity_shortlist)
@@ -217,18 +217,17 @@ function build_precalc_col(j, data)
             prop = m.gravity / shortlist_sum
             # Track cumulative proportion for use with `searchsortedfirst()`
             cumprop += prop
-            @inbounds interval_shortlist[n] = CellInterval(cumprop, prop, m.gravity, m.index)
+            interval_shortlist[n] = CellInterval(cumprop, prop, m.gravity, m.index)
         end
         prop = shortlist_sum / total_sum
         # Update output matrix
-        @inbounds precalc_col[i] = deepcopy(interval_shortlist)
+        precalc_col[i] = deepcopy(interval_shortlist)
         # Update shortlist proportion matrix to check coverage of the distribution
-        @inbounds prop_col[i] = prop
+        prop_col[i] = prop
     end
 
     j, precalc_col, prop_col
 end
-
 
 """
 Calculate the gravity of an individual cell relative to the current cell.
@@ -264,7 +263,7 @@ populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
 precalc_dispersal_probs(human_pop, par_a, timestep) = (1 .- 1 ./ exp.(human_pop .* par_a)) ./ timestep
 
 """
-    applyrule(rule::AbstractHumanDispersal, state, index, t, source, dest, args...)
+    applyrule(rule::AbstractHumanDispersal, data, state, index)
 Simulates human dispersal, weighting dispersal probability based on human
 population in the source cell.
 """
@@ -274,35 +273,33 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
 
     dispersalprob = rule.dispersal_probs[index...]
 
-    @inbounds ismissing(dispersalprob) && return data.dest[index...]
+    @inbounds ismissing(dispersalprob) && return data[index...]
     @inbounds shortlist = rule.precalc[downsample_index(index, rule.scale)...]
-    @inbounds ismissing(shortlist) && return data.dest[index...]
+    @inbounds ismissing(shortlist) && return data[index...]
 
-    meandispersers = round(Int, state * dispersalprob * data.timestep)
-    meandispersers > zero(meandispersers) || return data.dest[index...]
+    meandispersers = round(Int, state * dispersalprob * CellularAutomataBase.timestep(data))
+    @inbounds meandispersers > zero(meandispersers) || return data[index...]
     # total_dispersers = meandispersers # deterministic
     total_dispersers = rand(Poisson(meandispersers)) # randomised
 
     n = 0
-    # TODO this is a parameter
-    while n < total_dispersers
+    @inbounds while n < total_dispersers
         # Select random subset of dispersers for an individual dispersal event
-        dispersers = min(rand(1:rule.max_dispersers), total_dispersers - n)
+        dispersers = min(rand(1:trunc(Int, rule.max_dispersers)), total_dispersers - n)
         # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
         # Randomise cell destination within upsampled cells
-        dest_index = @inbounds upsample_index(shortlist[dest_id].index, rule.scale) .+
+        dest_index = upsample_index(shortlist[dest_id].index, rule.scale) .+
                               (rand(0:rule.scale-1), rand(0:rule.scale-1))
         # Disperse to the celP
         update_cell!(rule, data, state, dest_index, dispersers)
         n += dispersers
     end
     # TODO make method for boolean and float
-    @inbounds data.dest[index...] -= total_dispersers
-    @inbounds data.dest[index...]
+    @inbounds data[index...] -= total_dispersers
 end
 
 update_cell!(rule::AbstractHumanDispersal, data, state, dest_index, num) =
-    @inbounds return data.dest[dest_index...] += num * oneunit(state)
+    @inbounds return data[dest_index...] += num * oneunit(state)
 update_cell!(rule::AbstractHumanDispersal, data, state::Bool, dest_index, num) =
-    @inbounds return data.dest[dest_index...] = oneunit(state)
+    @inbounds return data[dest_index...] = oneunit(state)

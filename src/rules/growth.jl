@@ -90,41 +90,41 @@ end
 # Rules
 
 # Euler solver rules
-@inline applyrule(rule::EulerExponentialGrowth, data, state, args...) = state + state * rule.intrinsicrate * data.timestep
+@inline applyrule(rule::EulerExponentialGrowth, data, state, args...) = state + state * rule.intrinsicrate * timestep(data)
 
 @inline applyrule(rule::SuitabilityEulerExponentialGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
-    state + intrinsicrate * state * data.timestep # dN = rN * dT
+    state + intrinsicrate * state * timestep(data) # dN = rN * dT
     # max(min(state * intrinsicrate, rule.max), rule.min)
 end
 
 # TODO: fix and test logistic growth
 @inline applyrule(rule::EulerLogisticGrowth, data, state, args...) =
-    state + state * rule.intrinsicrate * (oneunit(state) - state / rule.carrycap) * data.timestep # dN = (1-N/K)rN dT
+    state + state * rule.intrinsicrate * (oneunit(state) - state / rule.carrycap) * timestep(data) # dN = (1-N/K)rN dT
 
 @inline applyrule(rule::SuitabilityEulerLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
     saturation = intrinsicrate > zero(intrinsicrate) ? (oneunit(state) - state / rule.carrycap) : oneunit(state)
-    state + state * saturation * intrinsicrate * data.timestep
+    state + state * saturation * intrinsicrate * timestep(data)
 end
 
 
 # Exact solution rules
 
-@inline applyrule(rule::ExactExponentialGrowth, data, state, args...) = state * exp(rule.intrinsicrate * data.timestep)
+@inline applyrule(rule::ExactExponentialGrowth, data, state, args...) = state * exp(rule.intrinsicrate * timestep(data))
 
 @inline applyrule(rule::SuitabilityExactExponentialGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
-    state * exp(intrinsicrate * data.timestep)
+    state * exp(intrinsicrate * timestep(data))
     # max(min(state * intrinsicrate, rule.max), rule.min)
 end
 
 @inline applyrule(rule::ExactLogisticGrowth, data, state, args...) =
     (state * rule.carrycap) /
-    (state + (rule.carrycap - state) * exp(-rule.intrinsicrate * data.timestep))
+    (state + (rule.carrycap - state) * exp(-rule.intrinsicrate * timestep(data)))
 
 @inline applyrule(rule::SuitabilityExactLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
@@ -132,9 +132,9 @@ end
     # Saturation only applies with positive growth
     if intrinsicrate > zero(intrinsicrate)
         (state * rule.carrycap) /
-        (state + (rule.carrycap - state) * exp(-intrinsicrate * data.timestep))
+        (state + (rule.carrycap - state) * exp(-intrinsicrate * timestep(data)))
     else
-        state * exp(intrinsicrate * data.timestep)
+        state * exp(intrinsicrate * timestep(data))
     end
 end
 
