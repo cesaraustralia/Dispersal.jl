@@ -19,7 +19,7 @@ end
 """
 Extends AbstractCellRule for rules of growth dynamics
 
-For best performance these should be chained with other 
+For best performance these should be chained with other
 AbstractCellRule or following an AbstractNeighborhoodRule.
 """
 abstract type AbstractGrowthRule <: AbstractCellRule end
@@ -118,23 +118,22 @@ end
 @inline applyrule(rule::SuitabilityExactExponentialGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
-    state * exp(intrinsicrate * timestep(data))
+    @fastmath state * exp(intrinsicrate * timestep(data))
     # max(min(state * intrinsicrate, rule.max), rule.min)
 end
 
-@inline applyrule(rule::ExactLogisticGrowth, data, state, args...) =
-    (state * rule.carrycap) /
-    (state + (rule.carrycap - state) * exp(-rule.intrinsicrate * timestep(data)))
+@inline applyrule(rule::ExactLogisticGrowth, data, state, args...) = begin
+    @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) * exp(-rule.intrinsicrate * timestep(data)))
+end
 
 @inline applyrule(rule::SuitabilityExactLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
     # Saturation only applies with positive growth
     if intrinsicrate > zero(intrinsicrate)
-        (state * rule.carrycap) /
-        (state + (rule.carrycap - state) * exp(-intrinsicrate * timestep(data)))
+        @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) * exp(-intrinsicrate * timestep(data)))
     else
-        state * exp(intrinsicrate * timestep(data))
+        @fastmath state * exp(intrinsicrate * timestep(data))
     end
 end
 

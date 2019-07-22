@@ -6,9 +6,6 @@ abstract type AbstractInwardsDispersal{R} <: AbstractNeighborhoodRule{R} end
 
 @inline neighbors(hood::DispersalKernel, rule::AbstractInwardsDispersal, buf, state) = begin
     @inbounds buf ⋅ hood.kernel
-    # display(buf)
-    # display(hood.kernel)
-    # error()
 end
 
 CellularAutomataBase.radius(rule::AbstractInwardsDispersal{R}) where R = R 

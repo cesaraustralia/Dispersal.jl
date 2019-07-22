@@ -7,11 +7,11 @@ abstract type AbstractHumanDispersal <: AbstractPartialRule end
 HumanDispersal Rules human-driven dispersal patterns using population data.
 
 Transport connections between grid cells are calculated using distance and human population,
-modified with the `human_exponent` and `dist_exponent` parameters. A shortlist of the most 
-connected cells is selected for use in the simulation. 
+modified with the `human_exponent` and `dist_exponent` parameters. A shortlist of the most
+connected cells is selected for use in the simulation.
 
-The time taken for precalulation will depend on the `scale` argument. Values above 1 
-will downsample the grid to improve precalulation time and runtime performance. A high 
+The time taken for precalulation will depend on the `scale` argument. Values above 1
+will downsample the grid to improve precalulation time and runtime performance. A high
 scale value is good for use in a live interface.
 $(FIELDDOCTABLE)
 """
@@ -105,9 +105,9 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 
 
 # Define types used in the precalculation
-const Interval = CellInterval{Float32,Float32,Tuple{Int32,Int32}}
-const Gravity = CellGravity{Float32,Tuple{Int32,Int32}}
-const Index = Tuple{Int64,Int64}
+const Index = Tuple{Int16,Int16}
+const Interval = CellInterval{Float32,Float32,Index}
+const Gravity = CellGravity{Float32,Index}
 const Precalc = Union{Vector{Interval},Missing}
 const Prop = Union{Float32,Missing}
 
@@ -121,33 +121,27 @@ precalc_human_dispersal(human_pop::AbstractMatrix, cellsize, scale, aggregator,
     downsampled_pop = downsample(human_pop, aggregator, scale)
     h, w = size(downsampled_pop)
 
-    # Prepare all data and memory for processing
+    # Prepare data for processing
     data = setup_data(downsampled_pop, cellsize, shortlist_len, human_exponent, dist_exponent)
-    # Allocate the final precalc array to be returned
-    precalcs = Precalc[Vector{Interval}(undef, shortlist_len) for i in 1:h, j in 1:w]
-    # Allocate a matrix of shortlist coverage proportions, for diagnostics
-    proportion_covered = Prop[0 for i in 1:h, j in 1:w]
 
-    for j = 1:w
-        _, precalc_col, prop_col = build_precalc_col(j, data)
-        for i = 1:h
-            precalcs[i, j] = precalc_col[i]
-            proportion_covered[i, j] = prop_col[i]
-        end
+    Threads.@threads for j = 1:w
+        precalc_col!(data, j)
     end
+
+    shortlist_len, indices, human, dist, precalcs, proportion_covered = data
 
     precalcs, proportion_covered
 end
 
-""" 
-Prepare all data and allocated required memory for precalculation 
+"""
+Prepare all data and allocated required memory for precalculation
 """
 function setup_data(human_pop, cellsize, shortlist_len, human_exponent, dist_exponent)
     h, w = size(human_pop)
     # Precalculate exponentiation of human population matrix
     human = human_pop .^ human_exponent
     # Precalculated distances matrix
-    dist = (distances(human_pop) .* cellsize) .^ dist_exponent
+    dist::Array{Float32,2} = (distances(human_pop) .* cellsize) .^ dist_exponent
     dist[1] = cellsize/6 * (sqrt(2) + log(1 + sqrt(2))) # mean distance from cell centre
     # Get indices to broadcast over
     indices = broadcastable_indices(Int32, human)
@@ -156,15 +150,12 @@ function setup_data(human_pop, cellsize, shortlist_len, human_exponent, dist_exp
     shortlist_len = min(shortlist_len, length(human))
 
     # Preallocate memory
-    gravities = Matrix{Gravity}(undef, size(human)...)
-    broadcast!(index -> Gravity(0.0f0, index), gravities, indices)
-    gravity_vector = Vector{Gravity}(undef, h * w)
-    gravity_shortlist = Vector{Gravity}(undef, shortlist_len)
-    interval_shortlist = Vector{Interval}(undef, shortlist_len)
-    precalc_col = Precalc[Vector{Interval}(undef, shortlist_len) for i in 1:h]
-    prop_col = Prop[0.0f0 for i in 1:h]
 
-    shortlist_len, indices, human, dist, gravities, gravity_vector, gravity_shortlist, interval_shortlist, precalc_col, prop_col
+    precalcs = Precalc[Vector{Interval}(undef, shortlist_len) for i in 1:h, j in 1:w]
+    # Allocate a matrix of shortlist coverage proportions, for diagnostics
+    proportion_covered = Prop[0 for i in 1:h, j in 1:w]
+
+    shortlist_len, indices, human, dist, precalcs, proportion_covered
 end
 
 
@@ -172,16 +163,22 @@ end
 Precalculate human dispersal shortlist for every cell in a column.
 Working on columns are the cleanest way to separate the work accross multiple processors.
 """
-function build_precalc_col(j, data)
-    shortlist_len, indices, human, dist, gravities, gravity_vector, 
-        gravity_shortlist, interval_shortlist, precalc_col, prop_col = data
+function precalc_col!(data, j)
+    shortlist_len, indices, human, dist, precalcs, proportion_covered = data
     h, w = size(human)
+
+    gravities = Matrix{Gravity}(undef, size(human)...)
+    broadcast!(index -> Gravity(0.0f0, index), gravities, indices)
+    gravity_vector = Vector{Gravity}(undef, h * w)
+    gravity_shortlist = Vector{Gravity}(undef, shortlist_len)
+    interval_shortlist = Vector{Interval}(undef, shortlist_len)
+
     @inbounds for i = 1:h
         cumprop = 0.0f0
         if ismissing(human[i, j])
-            precalc_col[i] = missing
+            precalcs[i, j] = missing
             # Update shortlist proportion matrix to check coverage of the distribution
-            prop_col[i] = missing
+            proportion_covered[i, j] = missing
             continue
         end
         # Calculate the gravity for all cells in the grid
@@ -221,12 +218,10 @@ function build_precalc_col(j, data)
         end
         prop = shortlist_sum / total_sum
         # Update output matrix
-        precalc_col[i] = deepcopy(interval_shortlist)
+        precalcs[i, j] = deepcopy(interval_shortlist)
         # Update shortlist proportion matrix to check coverage of the distribution
-        prop_col[i] = prop
+        proportion_covered[i, j] = prop
     end
-
-    j, precalc_col, prop_col
 end
 
 """
@@ -269,7 +264,7 @@ population in the source cell.
 """
 applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     # Ignore empty cells
-    state > zero(state) || return
+    state != zero(state) || return
 
     dispersalprob = rule.dispersal_probs[index...]
 
@@ -299,7 +294,7 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     @inbounds data[index...] -= total_dispersers
 end
 
-update_cell!(rule::AbstractHumanDispersal, data, state, dest_index, num) =
-    @inbounds return data[dest_index...] += num * oneunit(state)
-update_cell!(rule::AbstractHumanDispersal, data, state::Bool, dest_index, num) =
+update_cell!(rule::AbstractHumanDispersal, data, state, dest_index, ndispersers) =
+    @inbounds return data[dest_index...] += ndispersers
+update_cell!(rule::AbstractHumanDispersal, data, state::Bool, dest_index, ndispersers) =
     @inbounds return data[dest_index...] = oneunit(state)

@@ -24,11 +24,9 @@ end
                         [0.5 0.6; 
                          0.7 0.8]), 
                        10);
-    rules = Ruleset(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0), 
-                          SuitabilityMask(layers=suitseq, threshold=0.4); init=init)
+    rules = Ruleset((InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0), 
+                     SuitabilityMask(layers=suitseq, threshold=0.4)); init=init)
     output = ArrayOutput(init, 25)
-
-    @test Dispersal.pressure(rules.rules[1], 1) 
 
     sim!(output, rules; tstop=25)
 
@@ -85,12 +83,17 @@ end
 
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-        rules = Ruleset(inwards, suitmask; init=init)
+        rules = Ruleset((inwards, suitmask); init=init)
         output = ArrayOutput(init, 3)
         sim!(output, rules; tstop=3)
         @test output[1] == test1
-        @test output[2] == test2
+        @test output[2] == test2 
         @test output[3] == test3
+
+        output[2]
+        test2 
+        output[3]
+        test3
 
         # As subrules
         rules = Ruleset((inwards, suitmask); init=init)
@@ -160,7 +163,7 @@ end
     @testset "inwards population dispersal fills the grid where reachable suitable" begin
         hood = DispersalKernel{radius}(; formulation=TestFormulation())
         inwards = InwardsPopulationDispersal(neighborhood=hood)
-        rules = Ruleset(inwards, suitmask; init=init)
+        rules = Ruleset((inwards, suitmask); init=init)
         output = ArrayOutput(init, 3)
         sim!(output, rules; tstop=3)
         @test output[1] == test1

@@ -47,7 +47,7 @@ end
 
 @testset "sequence of layers" begin
     ruleset = Ruleset((); timestep = 1)
-    data = CellularAutomataBase.SimData([], [], [], ruleset, nothing)
+    data = CellularAutomataBase.simdata(ruleset, [])
 
     @testset "layers sequences are interpolated over timespans" begin
         ind = ((1, 1), (1, 2), (2, 1), (2, 2))

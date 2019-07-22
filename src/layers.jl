@@ -1,9 +1,9 @@
 " An abstract type for for sequences of layers "
 abstract type AbstractSequence{T} <: AbstractVector{T} end
 
-""" 
-A sequences of layers with a timestep length. 
-Unitful units for time will propagate correctly. 
+"""
+A sequences of layers with a timestep length.
+Unitful units for time will propagate correctly.
 """
 @description struct Sequence{T,TS} <: AbstractSequence{T}
     data::T      | "Tuple of 2-dimensional AbstractArray matching the coordinates of the init array"
@@ -30,12 +30,13 @@ Returns the value of a single layer or interplated value from a sequence of laye
 If multiple layers are available the product will be returned.
 """
 function get_layers end
-Base.@propagate_inbounds get_layers(rule, data, index) = get_layers(data, rule.layers, index, currenttime(data))
+Base.@propagate_inbounds get_layers(rule, data, index) =
+    get_layers(data, rule.layers, index, currenttime(data))
 Base.@propagate_inbounds get_layers(data, layers::Tuple, index, t::Number) =
     get_layers(data, layers[1], index, t) * get_layers(data, Base.tail(layers), index, t)
 Base.@propagate_inbounds get_layers(data, layers::Tuple{}, index, t::Number) = 1
 
-Base.@propagate_inbounds get_layers(data, layer::Matrix, index, t::Number) = 
+Base.@propagate_inbounds get_layers(data, layer::Matrix, index, t::Number) =
     return layer[index...]
 
 Base.@propagate_inbounds get_layers(data, sequence::AbstractSequence, index, t::Number) =
