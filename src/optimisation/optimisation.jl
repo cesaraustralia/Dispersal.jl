@@ -35,14 +35,16 @@ Provides an objective function for an optimiser like Optim.jl
     names = fieldnameflatten(p.ruleset.rules, Real)
     println("Parameters: \n", ruletypes(typeof(p.ruleset.rules)))
     display(collect(zip(names, params)))
+    outputs = [deepcopy(p.output) for thread in 1:Threads.nthreads()]
 
     cumsum = Threads.Atomic{Float64}(0.0)
     Threads.@threads for i = 1:p.nreplicates
+        output = outputs[Threads.threadid()]
         targs = deepcopy(p.transform.(targets(p.objective)))
-        sim!(p.output, p.ruleset; tstop = p.tstop)
-        predictions = p.transform.(simpredictions(p.objective, p.output))
+        sim!(output, p.ruleset; tstop = p.tstop)
+        predictions = p.transform.(simpredictions(p.objective, output))
         loss::Float64 = value(p.loss, targs, predictions, AggMode.Sum())
-        # println("replicate: ", i, " - loss: ", loss)
+        # Core.println("replicate: ", i, " - loss: ", loss)
         Threads.atomic_add!(cumsum, loss)
     end
 
