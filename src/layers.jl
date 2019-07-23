@@ -46,7 +46,7 @@ Base.@propagate_inbounds get_layers(data, sequence::AbstractSequence, index, t::
     sequence_interpolate(layer, index, t)
 Interpolates between layers in a sequence.
 """
-Base.@propagate_inbounds @inline sequence_interpolate(data, seq, index, t::Number) = begin
+Base.@propagate_inbounds sequence_interpolate(data, seq, index, t::Number) = begin
     # Linear interpolation between layers in the sequence.
     tf = calc_timestep(data, seq, t)
     tr = unsafe_trunc(Int64, tf)
@@ -57,10 +57,15 @@ Base.@propagate_inbounds @inline sequence_interpolate(data, seq, index, t::Numbe
 end
 
 # Time position is centered in the current frame, not at the start.
-calc_timestep(data, sequence, t) = t * (timestep(data) / timestep(sequence)) + oneunit(t) / 2
+calc_timestep(data, sequence, t) = begin
+    tssim = timestep(data)
+    tsseq = timestep(sequence)
+    # Needs multiple oneunit() to avoid promotion to Float64
+    t * (tssim / tsseq) + oneunit(t) / 2one(tssim)
+end
 
 "Cycles a time position through a particular timestep length"
-cyclic(t::Int, len::Int) =
+cyclic(t::Integer, len::Integer) =
     if t > len
         rem(t + len - 1, len) + 1
     elseif t <= 0

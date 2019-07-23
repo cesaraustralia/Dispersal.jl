@@ -18,16 +18,16 @@ $(FIELDDOCTABLE)
     kernel::K      | nothing                | false | _           | "Kernal matrix"
     cellsize::C    | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
 
-    DispersalKernel{R}(; kwargs...) where {R,F,K,C} = begin 
+    DispersalKernel{R}(; kwargs...) where {R,F,K,C} = begin
         kwargs = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
         DispersalKernel{R,typeof.(kwargs)...}(kwargs...)
     end
-    DispersalKernel{R}(formulation::F, kernel::K, cellsize::C) where {R,F,K,C} = 
+    DispersalKernel{R}(formulation::F, kernel::K, cellsize::C) where {R,F,K,C} =
         DispersalKernel{R,F,K,C}(formulation, kernel, cellsize)
     DispersalKernel{R,F,K,C}(formulation::F, kernel::K, cellsize::C) where {R,F,K,C} = begin
         # Convert kenel the type of the init array
         kernel = build_dispersal_kernel(formulation, CentroidToCentroid(), cellsize, R)
-        kernel = K <: Nothing ? kernel : K(kernel) 
+        kernel = K <: Nothing ? kernel : K(kernel)
         new{R,F,typeof(kernel),C}(formulation, kernel, cellsize)
     end
 end
@@ -42,7 +42,7 @@ build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
         # Calculate the distance from the center cell to this cell
         dist = distance(distancemethod, x, y, cellsize)
         # Update the kernel value based on the formulation and distance
-        kernel[x + r + one(x), y + r + one(y)] = 
+        kernel[x + r + one(x), y + r + one(y)] =
             dispersalatdistance(formulation, dist)
     end
     # Normalise
@@ -78,9 +78,8 @@ distance(::AreaToCentroid, x, y, cellsize) = error("not implemented yet")
 abstract type AbstractKernelFormulation end
 
 @description @limits @flattenable struct ExponentialKernel{P} <: AbstractKernelFormulation
-    param::P    | true  | (0.0, 3.0) | "Parameter for adjusting kernel spread"
+    λ::P    | true  | (0.0, 3.0) | "Parameter for adjusting spread of dispersal propability"
 end
 
-# Paper: l. 96 
-dispersalatdistance(f::ExponentialKernel, distance) = exp(-distance / f.param)
-
+# Paper: l. 96
+dispersalatdistance(f::ExponentialKernel, distance) = exp(-distance / f.λ)

@@ -15,7 +15,7 @@ will downsample the grid to improve precalulation time and runtime performance. 
 scale value is good for use in a live interface.
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP} <: AbstractHumanDispersal
+@description @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP} <: AbstractHumanDispersal
     # Field                | Flatten | Limits
     human_pop::HP          | false   | _               | _
     cellsize::CS           | false   | _               | _
@@ -23,7 +23,7 @@ $(FIELDDOCTABLE)
     aggregator::AG         | false   | _               | "A function that aggregates scaled down cells"
     human_exponent::HE     | true    | (1.0, 3.0)      | "Human population exponent"
     dist_exponent::DE      | true    | (1.0, 3.0)      | "Distance exponent"
-    par_a::PA              | true    | (0.0, 1e-8)     | "Parameter to scale human population in source and dest cells"
+    dispersalperactivity::EA  | true | (0.0, 1e-8)     | "Scales the number of dispersing individuals by human activity (ie population^human_exponent)"
     max_dispersers::MD     | true    | (50.0, 10000.0) | "Maximum number of dispersers in a dispersal events"
     shortlist_len::SL      | false   | _               | "Length of precalc shortlist"
     timestep::TS           | false   | _               | _
@@ -31,34 +31,34 @@ $(FIELDDOCTABLE)
     proportion_covered::PR | false   | _               | _
     dispersal_probs::DP    | false   | _               | _
     function HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
-                    human_exponent::HE, dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL, timestep::TS,
+                    human_exponent::HE, dist_exponent::DE, dispersalperactivity::PA, max_dispersers::MD, shortlist_len::SL, timestep::TS,
                     precalc::PC, proportion_covered::PR, dispersal_probs::DP
                   ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}
         precalc, proportion_covered = precalc_human_dispersal(human_pop, cellsize, scale, aggregator,
                                           human_exponent, dist_exponent, shortlist_len)
-        dispersal_probs = precalc_dispersal_probs(human_pop, par_a, timestep)
+        dispersal_probs = precalc_dispersal_probs(human_pop, dispersalperactivity, timestep)
         pc, pr, dp = typeof.((precalc, proportion_covered, dispersal_probs))
         new{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,pc,pr,dp}(human_pop, cellsize, scale, aggregator, human_exponent,
-                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc,
+                                 dist_exponent, dispersalperactivity, max_dispersers, shortlist_len, timestep, precalc,
                                  proportion_covered, dispersal_probs)
     end
 end
 
 HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG, human_exponent::HE,
-               dist_exponent::DE, par_a::PA, max_dispersers::MD, shortlist_len::SL,
+               dist_exponent::DE, dispersalperactivity::PA, max_dispersers::MD, shortlist_len::SL,
                timestep::TS, precalc::PC, proportion_covered::PR, dispersal_probs::DP
               ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP} = begin
     HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP}(human_pop, cellsize, scale, aggregator, human_exponent,
-                                 dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc,
+                                 dist_exponent, dispersalperactivity, max_dispersers, shortlist_len, timestep, precalc,
                                  proportion_covered, dispersal_probs)
 end
 
 HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
-               human_exponent=1.0, dist_exponent=1.0, par_a=1e-3,
+               human_exponent=1.0, dist_exponent=1.0, dispersalperactivity=1e-3,
                max_dispersers=100.0, shortlist_len=100, timestep=1) = begin
     precalc, proportion_covered, dispersal_probs = [], [], []
     HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent,
-                   dist_exponent, par_a, max_dispersers, shortlist_len, timestep, precalc,
+                   dist_exponent, dispersalperactivity, max_dispersers, shortlist_len, timestep, precalc,
                    proportion_covered, dispersal_probs)
 end
 
@@ -255,7 +255,8 @@ populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
 
 
 " Prealculate dispersal probailities for use in the rule "
-precalc_dispersal_probs(human_pop, par_a, timestep) = (1 .- 1 ./ exp.(human_pop .* par_a)) ./ timestep
+precalc_dispersal_probs(human_pop, dispersalperactivity, timestep) =
+    (1 .- 1 ./ exp.(human_pop .* dispersalperactivity)) ./ timestep
 
 """
     applyrule(rule::AbstractHumanDispersal, data, state, index)
@@ -264,37 +265,41 @@ population in the source cell.
 """
 applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     # Ignore empty cells
-    state != zero(state) || return
+    state == zero(state) && return
 
-    dispersalprob = rule.dispersal_probs[index...]
+    @inbounds dispersalprob = rule.dispersal_probs[index...]
+    ismissing(dispersalprob) && return
 
-    @inbounds ismissing(dispersalprob) && return data[index...]
     @inbounds shortlist = rule.precalc[downsample_index(index, rule.scale)...]
-    @inbounds ismissing(shortlist) && return data[index...]
+    ismissing(shortlist) && return
 
+    # Find the expected number of dispersers given population, dispersal prob and timeframe
     meandispersers = round(Int, state * dispersalprob * CellularAutomataBase.timestep(data))
-    @inbounds meandispersers > zero(meandispersers) || return data[index...]
-    # total_dispersers = meandispersers # deterministic
-    total_dispersers = rand(Poisson(meandispersers)) # randomised
+    meandispersers >= zero(meandispersers) || return
 
-    n = 0
-    @inbounds while n < total_dispersers
-        # Select random subset of dispersers for an individual dispersal event
-        dispersers = min(rand(1:trunc(Int, rule.max_dispersers)), total_dispersers - n)
-        # Randomly choose a cell to disperse to from the precalculated human dispersal distribution
+    # Convert to an actual number of dispersers for this timestep
+    total_dispersers = rand(Poisson(meandispersers)) # randomised
+    # total_dispersers = meandispersers # deterministic
+
+    # Get an integer value for the maximum number of dispersers
+    # in any single dispersal event
+    max_dispersers = trunc(Int, rule.max_dispersers)
+
+    # Simulate (possibly) multiple dispersal events from the cell during the timeframe
+    dispersed = 0
+    @inbounds while dispersed < total_dispersers
+        # Select a subset of dispersers for the dispersal event
+        dispersers = min(rand(1:max_dispersers), total_dispersers - dispersed)
+        # Choose a cell to disperse to from the precalculated human dispersal distribution
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
-        # Randomise cell destination within upsampled cells
+        # Randomise cell destination within upsampled destination cells
         dest_index = upsample_index(shortlist[dest_id].index, rule.scale) .+
                               (rand(0:rule.scale-1), rand(0:rule.scale-1))
-        # Disperse to the celP
-        update_cell!(rule, data, state, dest_index, dispersers)
-        n += dispersers
+        # Disperse to the cell
+        data[dest_index...] += dispersers
+        # Track how many have allready dispersed
+        dispersed += dispersers
     end
-    # TODO make method for boolean and float
-    @inbounds data[index...] -= total_dispersers
+    # Subtract dispersed organisms from current cell population
+    @inbounds data[index...] -= dispersed
 end
-
-update_cell!(rule::AbstractHumanDispersal, data, state, dest_index, ndispersers) =
-    @inbounds return data[dest_index...] += ndispersers
-update_cell!(rule::AbstractHumanDispersal, data, state::Bool, dest_index, ndispersers) =
-    @inbounds return data[dest_index...] = oneunit(state)

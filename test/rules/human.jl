@@ -95,7 +95,7 @@ end
                 0 0 0 0 0]
 
     par_a = 1
-    rules = Ruleset(HumanDispersal(human_pop, par_a=par_a, cellsize=cellsize, scale=scale,
+    rules = Ruleset(HumanDispersal(human_pop, dispersalperactivity=par_a, cellsize=cellsize, scale=scale,
                                   aggregator=aggregator, human_exponent=human_exponent,
                                   dist_exponent=dist_exponent, shortlist_len=shortlist_len); init=init)
     output = ArrayOutput(init, 3)

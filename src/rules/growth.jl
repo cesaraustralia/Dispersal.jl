@@ -128,7 +128,7 @@ end
 
 @inline applyrule(rule::SuitabilityExactLogisticGrowth, data, state, index, args...) = begin
     state == zero(state) && return state
-    intrinsicrate = get_layers(rule, data, index)
+    @inbounds intrinsicrate = get_layers(rule, data, index)
     # Saturation only applies with positive growth
     if intrinsicrate > zero(intrinsicrate)
         @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) * exp(-intrinsicrate * timestep(data)))
