@@ -78,7 +78,7 @@ distance(::AreaToCentroid, x, y, cellsize) = error("not implemented yet")
 abstract type AbstractKernelFormulation end
 
 @description @limits @flattenable struct ExponentialKernel{P} <: AbstractKernelFormulation
-    λ::P    | true  | (0.0, 3.0) | "Parameter for adjusting spread of dispersal propability"
+    λ::P    | true  | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
 end
 
 # Paper: l. 96

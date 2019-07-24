@@ -28,7 +28,8 @@ end
 
     # Test the last simulation frame matches the target when the correct rate is used
     tstop = 4
-    nreplicates = 1
+    ngroups = 1
+    groupsize = 1
     rate = log(2.0)
     ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = rate); init=init)
     output = ArrayOutput(init, tstop)
@@ -38,7 +39,7 @@ end
     # Test optim finds the correct intrinsic growth rate
     objective = SimpleObjective(target)
     loss = LogitDistLoss()
-    parametriser = Parametriser(ruleset, objective, identity, loss, nreplicates, tstop)
+    parametriser = Parametriser(ruleset, objective, identity, loss, ngroups, groupsize, tstop)
     res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
     @test res.minimizer[1] ≈ rate atol=4
 end
@@ -56,7 +57,8 @@ end
                      1  0  1  # 2
                      1  1  0] # 3
 
-    nreplicates = 1
+    ngroups = 1
+    groupsize = 1
     framesperstep = 2
     steps = 3
     tstop = framesperstep * steps
@@ -65,10 +67,10 @@ end
 
 
     # TODO do this with a real dispersal function and predict parameters
-    rule = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
+    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
     objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep)
     loss = ZeroOneLoss()
-    p = Parametriser(rule, objective, transform, loss, nreplicates, tstop)
+    parametriser = Parametriser(ruleset, objective, identity, loss, ngroups, groupsize, tstop)
 
-    p(flatten(rule))
+    parametriser(flatten(ruleset))
 end
