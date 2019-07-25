@@ -61,7 +61,7 @@ end
             sim!(output, p.ruleset; tstop = p.tstop)
             predictions = p.transform.(simpredictions(p.objective, output))
             loss::Float64 = value(p.loss, targs, predictions, AggMode.Sum())
-            # Core.println("group: ", g, " - reps ($(p.groupsize)) mean loss: ", grouploss/p.groupsize)
+            Core.println("thread: ", Threads.threadid(), " - group: ", g, " - reps ", p.groupsize, " - loss: ", loss)
             Threads.atomic_add!(cumsum, loss)
         end
     end
