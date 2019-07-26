@@ -74,10 +74,10 @@ end
 CellGravity allows ordering a list by the cumulative proportion of the total gravity,
 and plotting based on the fraction of total gravity.
 """
-struct CellInterval{P,M,I}
+struct CellInterval{P,I}
     cumprop::P
-    fraction::P
-    gravity::M
+    # fraction::P
+    # gravity::M
     index::I
 end
 
@@ -106,7 +106,7 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 
 # Define types used in the precalculation
 const Index = Tuple{Int16,Int16}
-const Interval = CellInterval{Float32,Float32,Index}
+const Interval = CellInterval{Float32,Index}
 const Gravity = CellGravity{Float32,Index}
 const Precalc = Union{Vector{Interval},Missing}
 const Prop = Union{Float32,Missing}
@@ -214,7 +214,7 @@ function precalc_col!(data, j)
             prop = m.gravity / shortlist_sum
             # Track cumulative proportion for use with `searchsortedfirst()`
             cumprop += prop
-            interval_shortlist[n] = CellInterval(cumprop, prop, m.gravity, m.index)
+            interval_shortlist[n] = CellInterval(cumprop, m.index)
         end
         prop = shortlist_sum / total_sum
         # Update output matrix
