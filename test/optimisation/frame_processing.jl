@@ -25,7 +25,8 @@ using CellularAutomataBase: frametoimage
     truenegativecolor =  (1.0, 0.0, 1.0)
     falsenegativecolor = (1.0, 1.0, 0.0)
     maskcolor =          (0.0, 1.0, 1.0)
-    objective = RegionObjective(0.0, regionlookup, occurance, framesperstep)
+    start = 1
+    objective = RegionObjective(0.0, regionlookup, occurance, framesperstep, start)
 
     processor = ColorRegionFit(objective, truepostivecolor, falsepositivecolor,
                                truenegativecolor, falsenegativecolor, maskcolor)
@@ -34,4 +35,3 @@ using CellularAutomataBase: frametoimage
 
     @test image == frametoimage(processor, output, init, 1)
 end
-

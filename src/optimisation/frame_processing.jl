@@ -20,7 +20,7 @@ struct ColorRegionFit{O,TP,FP,TN,FN,M} <: AbstractFrameProcessor
 end
 
 CellularAutomataBase.frametoimage(p::ColorRegionFit, output, frame, t) = begin
-    step = stepfromframe(p.objective.framesperstep, t)
+    step = stepfromframe(p.objective, t)
     img = similar(frame, RGB24)
     for i in CartesianIndices(frame)
         region = p.objective.regionlookup[i]

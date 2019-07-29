@@ -2,8 +2,8 @@
 [Dispersal.jl](https://github.com/rafaqz/Dispersal.jl) extends
 [Cellular.jl](https://github.com/rafaqz/CellularAutomataBase.jl) for grid-based organism dispersal simulations.
 
-Dispersal.jl provides a range of simulation rules than can be combined to develop complex organism 
-dispersal models. Growth rates, dispersal kernels, allee effects, and randomised jump 
+Dispersal.jl provides a range of simulation rules than can be combined to develop complex organism
+dispersal models. Growth rates, dispersal kernels, allee effects, and randomised jump
 and human assisted dispersal rules are provided.
 
 These rules can be chained arbitrarily, and custom rules combined with the provided set.
@@ -12,7 +12,7 @@ CellularAutomataBase.jl includes REPLOutput for live display in the REPL, while
 [CellularAutomataGtk](https://github.com/rafaqz/CellularAutomataGtk.jl) provides GtkOutput for a
 simple graphical viewer, and [CellularAutomataWeb](https://github.com/rafaqz/CellularAutomataWeb.jl)
 provides BlinkOuput and MuxServer for desktop and online web applications.
-These web apps automatically provide realtime slider controls for model parameters, 
+These web apps automatically provide realtime slider controls for model parameters,
 including for custom rules, customisable using [FieldMetadata.jl](https://github.com/rafaqz/FieldMetadata.jl).
 
 [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl) can efficiently generate
@@ -23,7 +23,6 @@ module Dispersal
 using CellularAutomataBase,
       Colors,
       Distributed,
-      Distributions,
       DocStringExtensions,
       FieldDefaults,
       FieldDocTables,
@@ -32,6 +31,7 @@ using CellularAutomataBase,
       LinearAlgebra,
       LossFunctions,
       Mixers,
+      PoissonRandom,
       Statistics
 
 using LossFunctions: ZeroOneLoss
@@ -45,7 +45,7 @@ import CellularAutomataBase: applyrule, applyrule!, neighbors, radius,
 
 import Flatten: constructor_of
 
-import FieldMetadata: @description, @limits, @flattenable, 
+import FieldMetadata: @description, @limits, @flattenable,
                       default, description, limits, flattenable
 
 
@@ -56,8 +56,8 @@ export AbstractInwardsDispersal, InwardsBinaryDispersal, InwardsPopulationDisper
 
 export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDispersal
 
-export AbstractDispersalKernel, DispersalKernel, AbstractKernelFormulation, 
-       ExponentialKernel 
+export AbstractDispersalKernel, DispersalKernel, AbstractKernelFormulation,
+       ExponentialKernel
 
 export AbstractDistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
 
@@ -65,7 +65,7 @@ export AbstractJumpDispersal, JumpDispersal
 
 export AbstractHumanDispersal, HumanDispersal, populate, populate!
 
-export EulerExponentialGrowth, EulerLogisticGrowth, ExactExponentialGrowth, 
+export EulerExponentialGrowth, EulerLogisticGrowth, ExactExponentialGrowth,
        ExactLogisticGrowth
 
 export SuitabilityMask, SuitabilityEulerExponentialGrowth, SuitabilityEulerLogisticGrowth,
@@ -77,7 +77,7 @@ export Mask
 
 export Sequence
 
-export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, ColorRegionFit
+export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput, ColorRegionFit
 
 
 
