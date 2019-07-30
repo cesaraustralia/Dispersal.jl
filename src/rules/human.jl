@@ -72,7 +72,7 @@ $(FIELDDOCTABLE)
     aggregator::AG         | false   | _               | "A function that aggregates scaled down cells"
     human_exponent::HE     | true    | (1.0, 3.0)      | "Human population exponent"
     dist_exponent::DE      | true    | (1.0, 3.0)      | "Distance exponent"
-    dispersalperactivity::EA  | true | (0.0, 1e-8)     | "Scales the number of dispersing individuals by human activity (ie population^human_exponent)"
+    dispersalperpop::EA    | true    | (0.0, 1e-8)     | "Scales the number of dispersing individuals by human activity (ie population^human_exponent)"
     max_dispersers::MD     | true    | (50.0, 10000.0) | "Maximum number of dispersers in a dispersal events"
     shortlist_len::SL      | false   | _               | "Length of dest shortlist"
     timestep::TS           | false   | _               | _
@@ -82,7 +82,7 @@ $(FIELDDOCTABLE)
     human_buffer::B        | false   | _               | _
     dist_buffer::B         | false   | _               | _
     function HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
-                            human_exponent::HE, dist_exponent::DE, dispersalperactivity::PA,
+                            human_exponent::HE, dist_exponent::DE, dispersalperpop::PA,
                             max_dispersers::MD, shortlist_len::SL, timestep::TS,
                             dest_shortlists::PC, proportion_covered::PR, dispersal_probs::DP,
                             human_buffer::B, dist_buffer::B
@@ -90,52 +90,43 @@ $(FIELDDOCTABLE)
 
         precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
                                  human_exponent, dist_exponent, shortlist_len, human_buffer, dist_buffer)
-        precalc_dispersal_probs!(dispersal_probs, human_pop, dispersalperactivity, timestep)
+        precalc_dispersal_probs!(dispersal_probs, human_pop, dispersalperpop)
 
         new{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
-                                 dist_exponent, dispersalperactivity, max_dispersers, shortlist_len, timestep, dest_shortlists,
+                                 dist_exponent, dispersalperpop, max_dispersers, shortlist_len, timestep, dest_shortlists,
                                  proportion_covered, dispersal_probs, human_buffer, dist_buffer)
     end
 end
 
 function HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
-                        human_exponent::HE, dist_exponent::DE, dispersalperactivity::PA,
+                        human_exponent::HE, dist_exponent::DE, dispersalperpop::PA,
                         max_dispersers::MD, shortlist_len::SL, timestep::TS,
                         dest_shortlists::PC, proportion_covered::PR, dispersal_probs::DP,
                         human_buffer::B, dist_buffer::B
                        ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}
     HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
-                             dist_exponent, dispersalperactivity, max_dispersers, shortlist_len, timestep, dest_shortlists,
+                             dist_exponent, dispersalperpop, max_dispersers, shortlist_len, timestep, dest_shortlists,
                              proportion_covered, dispersal_probs, human_buffer, dist_buffer)
 end
 
 HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
-               human_exponent=1.0, dist_exponent=1.0, dispersalperactivity=1e-3,
+               human_exponent=1.0, dist_exponent=1.0, dispersalperpop=1e-3,
                max_dispersers=100.0, shortlist_len=100, timestep=1) = begin
 
     # Allocate memory
     proportion_covered = nothing
-    dispersal_probs = zeros(Union{typeof(dispersalperactivity / timestep), Missing}, size(human_pop))
+    dispersal_probs = zeros(Union{typeof(dispersalperpop), Missing}, size(human_pop))
     human_buffer = initdownsample(human_pop, scale)
     dist_buffer = initdownsample(human_pop, scale)
     dest_shortlists = init_dest_shortlist(shortlist_len, size(human_buffer))
 
     HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent,
-                   dist_exponent, dispersalperactivity, max_dispersers, shortlist_len, 
-                   timestep, dest_shortlists, proportion_covered, dispersal_probs, 
+                   dist_exponent, dispersalperpop, max_dispersers, shortlist_len,
+                   timestep, dest_shortlists, proportion_covered, dispersal_probs,
                    human_buffer, dist_buffer)
 end
 
 # Precalculation
-
-
-""" 
-Prealculate dispersal probailities for use in the rule 
-
-TODO why does this use exp(), and not human_exponent?
-"""
-precalc_dispersal_probs!(dispersal_probs, human_pop, dispersalperactivity, timestep) =
-    dispersal_probs .= (1 .- 1 ./ exp.(human_pop .* dispersalperactivity)) ./ timestep
 
 """
 Precalculate a dispersal shortlist for each cell
@@ -179,7 +170,7 @@ allocate_column(human, shortlist_len) = begin
     gravity_vector = Vector{Gravity}(undef, h * w)
     gravity_shortlist = Vector{Gravity}(undef, shortlist_len)
     interval_shortlist = Vector{Interval}(undef, shortlist_len)
-    gravities, gravity_vector, gravity_shortlist, interval_shortlist 
+    gravities, gravity_vector, gravity_shortlist, interval_shortlist
 end
 
 
@@ -252,6 +243,16 @@ function precalc_col!(dest_shortlists, shortlist_len, human, dist, colmem, j)
 end
 
 
+"""
+Prealculate dispersal probailities for use in the rule
+"""
+precalc_dispersal_probs!(dispersal_probs, human_activity, dispersalperpop) = begin
+    maximum(skipmissing(human_activity)) * dispersalperpop > oneunit(dispersalperpop) && error("dispersalperpop is too high: more propagules can be sent than ppoulaiton")
+    dispersal_probs .= human_activity .* dispersalperpop
+end
+
+
+
 # CellularAutomataBase Interface
 
 """
@@ -270,16 +271,16 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     ismissing(shortlist) && return
 
     # Find the expected number of dispersers given population, dispersal prob and timeframe
-    meandispersers = trunc(Int, state * dispersalprob * CellularAutomataBase.timestep(data))
+    meandispersers = trunc(Int, state * dispersalprob)
     meandispersers >= zero(meandispersers) || return
 
     # Convert to an actual number of dispersers for this timestep
-    total_dispersers = pois_rand(meandispersers)
+    # total_dispersers = pois_rand(meandispersers)
     # Check we don't disperse more than the current population (very unlikely with low dispersal probs)
-    if total_dispersers > state
-        total_dispersers = trunc(typeof(total_dispersers), state)
-    end
-    # total_dispersers = meandispersers # deterministic
+    # if total_dispersers > state
+        # total_dispersers = trunc(typeof(total_dispersers), state)
+    # end
+    total_dispersers = meandispersers # deterministic
 
     # Get an integer value for the maximum number of dispersers
     # in any single dispersal event
@@ -293,7 +294,7 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
         # Choose a cell to disperse to from the precalculated human dispersal distribution
         dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
         # Randomise cell destination within upsampled destination cells
-        upsample = upsample_index(shortlist[dest_id].index, rule.scale) 
+        upsample = upsample_index(shortlist[dest_id].index, rule.scale)
         dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
         # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
         CellularAutomataBase.ismasked(data, dest_index...) && continue
@@ -330,5 +331,3 @@ This lets you view the contents of a cell in an AbstractOutput display.
 # populate_val(a::AbstractMatrix, cell) = cell.fraction
 
 # populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
-
-

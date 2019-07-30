@@ -130,8 +130,8 @@ end
     #             0 0 0 0 0;
     #             0 0 0 0 0]
 
-    dispersalperactivity = 1
-    rules = Ruleset(HumanDispersal(human_pop, dispersalperactivity=dispersalperactivity, cellsize=cellsize, scale=scale,
+    dispersalperpop = 0.1
+    rules = Ruleset(HumanDispersal(human_pop, dispersalperpop=dispersalperpop, cellsize=cellsize, scale=scale,
                                   aggregator=aggregator, human_exponent=human_exponent, max_dispersers=max_dispersers,
                                   dist_exponent=dist_exponent, shortlist_len=shortlist_len); init=init)
     output = ArrayOutput(init, 3)

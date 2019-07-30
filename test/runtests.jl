@@ -8,6 +8,5 @@ using SafeTestsets
 @time @safetestset "kernels" begin include("rules/kernels.jl") end
 @time @safetestset "allee effects" begin include("rules/allee.jl") end
 @time @safetestset "growth" begin include("rules/growth.jl") end
-@time @safetestset "mask" begin include("rules/mask.jl") end
 @time @safetestset "optimisation" begin include("optimisation/optimisation.jl") end
 @time @safetestset "frame_processing" begin include("optimisation/frame_processing.jl") end
