@@ -14,11 +14,11 @@ dimensions of the prediction array returned by `simpredictions`.
 function targets end
 
 """
-    simpredictions(obj::AbstractObjective, output::AbstractOutput)
+    predictions(obj::AbstractObjective, output::AbstractOutput)
 Methods that map an objective object and a simulation output to a
 prediction array.
 """
-function simpredictions end
+function predictions end
 
 
 
@@ -32,7 +32,7 @@ end
 
 targets(obj::SimpleObjective) = obj.targets
 
-simpredictions(obj::SimpleObjective, output) = output.frames[end]
+predictions(obj::SimpleObjective, output) = output.frames[end]
 
 """
 A simple output that stores each step of the simulation in a vector of arrays.
@@ -91,7 +91,7 @@ struct RegionObjective{DT,RL,OC,FS,S} <: AbstractObjective
 end
 
 targets(obj::RegionObjective) = obj.occurance
-simpredictions(obj::RegionObjective, output::RegionOutput) = output[1]
+predictions(obj::RegionObjective, output::RegionOutput) = output[1]
 
 
 stepfromframe(objective::RegionObjective, t) = stepfromframe(objective.framesperstep, objective.start, t)

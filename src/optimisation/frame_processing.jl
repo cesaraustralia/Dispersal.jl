@@ -1,3 +1,5 @@
+using CellularAutomataBase: normalise, minval, maxval
+
 """
 An image procesor to visualise the model fit, for a live version of
 the region fitting optimiser.
@@ -19,17 +21,19 @@ struct ColorRegionFit{O,TP,FP,TN,FN,M} <: AbstractFrameProcessor
     maskcolor::M
 end
 
-CellularAutomataBase.frametoimage(p::ColorRegionFit, output, frame, t) = begin
+CellularAutomataBase.frametoimage(p::ColorRegionFit, output::AbstractImageOutput, ruleset::AbstractRuleset, frame, t) = begin
     step = stepfromframe(p.objective, t)
     img = similar(frame, RGB24)
+    obj = p.objective
+    min, max = minval(ruleset), maxval(ruleset)
     for i in CartesianIndices(frame)
         region = p.objective.regionlookup[i]
         img[i] = if region > zero(region)
             x = frame[i]
             if p.objective.occurance[region, step]
-                x == zero(x) ? rgb(p.falsenegativecolor) : rgb((x .* p.truepositivecolor))
+                x < obj.detectionthreshold ? rgb(p.falsenegativecolor) : rgb((normalise(x, min, max) .* p.truepositivecolor))
             else
-                x == zero(x) ? rgb(p.truenegativecolor) : rgb((x .* p.falsepositivecolor))
+                x < obj.detectionthreshold ? rgb(p.truenegativecolor) : rgb((normalise(x, min, max) .* p.falsepositivecolor))
             end
         else
            rgb(p.maskcolor)

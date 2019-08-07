@@ -14,9 +14,9 @@ Parametrizer object to use with Optim.jl or similar
 `output`: optional output type. By default an ArrayOutput will be generated.
 """
 
-struct ThreadedReps end
-struct DistributedReps end
-struct SingleCoreReps end
+struct ThreadedReplicates end
+struct DistributedReplicates end
+struct SingleCoreReplicates end
 
 struct Parametriser{R,OP,OB,TR,L,NR,GS,TS,TH,D,TB,PB}
     ruleset::R
@@ -33,18 +33,33 @@ struct Parametriser{R,OP,OB,TR,L,NR,GS,TS,TH,D,TB,PB}
     predictionbuffer::PB
 end
 
-Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tstop, threading::ThreadedReps) = begin
+CellularAutomataBase.ruleset(p::Parametriser) = p.ruleset
+
+data(p::Parametriser) = p.data
+output(p::Parametriser) = p.output
+transform(p::Parametriser) = p.transform
+objective(p::Parametriser) = p.objective
+loss(p::Parametriser) = p.loss
+ngroups(p::Parametriser) = p.ngroups
+groupsize(p::Parametriser) = p.groupsize
+tstop(p::Parametriser) = p.tstop
+threading(p::Parametriser) = p.threading
+targetbuffer(p::Parametriser) = p.targetbuffer
+predictionbuffer(p::Parametriser) = p.predictionbuffer
+
+
+Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tstop, threading::ThreadedReplicates) = begin
     targetbuffer = transform.(targets(objective))
     # Make copies of anything threads will write to
     predictionbuffer = [transform.(targets(objective)) for i in 1:Threads.nthreads()]
     output = [deepcopy(output) for i in 1:Threads.nthreads()]
-    data = [CellularAutomataBase.simdata(ruleset, init(ruleset)) for i in 1:Threads.nthreads()]
+    data = [CellularAutomataBase.simdata(deepcopy(ruleset), deepcopy(init(ruleset))) for i in 1:Threads.nthreads()]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
                  tstop, threading, data, targetbuffer, predictionbuffer)
 end
 
-Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tstop, threading=SingleCoreReps()) = begin
+Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tstop, threading=SingleCoreReplicates()) = begin
     targetbuffer = transform.(targets(objective))
     predictionbuffer = transform.(targets(objective))
     data = CellularAutomataBase.simdata(ruleset, init(ruleset))
@@ -73,30 +88,31 @@ Provides an objective function for an optimiser like Optim.jl
     return meanloss
 end
 
-replicate(::ThreadedReps, p, params) = begin
+replicate(::ThreadedReplicates, p, params) = begin
     obj = p.objective
     cumsum = Threads.Atomic{Float64}(0.0)
-    Threads.@threads for g = 1:p.ngroups
-        output = p.output[Threads.threadid()]
-        data = p.data[Threads.threadid()]
-        predictionbuffer = p.predictionbuffer[Threads.threadid()]
+    Threads.@threads for g in 1:p.ngroups
+        id = Threads.threadid()
+        output = p.output[id]
+        data = p.data[id]
+        predictionbuffer = p.predictionbuffer[id]
         for n in 1:p.groupsize
             sim!(output, p.ruleset; tstop=p.tstop, data=data)
+            predictionbuffer .= p.transform.(predictions(obj, output))
             loss::Float64 = value(p.loss, p.targetbuffer, predictionbuffer, AggMode.Sum())
-            # Core.println("thread: ", Threads.threadid(), " - group: ", g, " - reps ", p.groupsize, " - loss: ", loss)
             Threads.atomic_add!(cumsum, loss)
         end
     end
-    cumsum.value
+    cumsum[]
 end
 
-replicate(::DistributedReps, p, params) = begin
+replicate(::DistributedReplicates, p, params) = begin
     obj = p.objective
     cumsum = @distributed (+) for g in 1:p.ngroups
         grouploss = 0.0
         for n in 1:p.groupsize
             sim!(p.output, p.ruleset; tstop=p.tstop)
-            p.predictionbuffer .= p.transform.(simpredictions(p.objective, p.output))
+            p.predictionbuffer .= p.transform.(predictions(p.objective, p.output))
             loss::Float64 = value(p.loss, p.targetbuffer, p.predictionbuffer, AggMode.Sum())
             grouploss += loss
         end
@@ -106,14 +122,14 @@ replicate(::DistributedReps, p, params) = begin
     cumsum
 end
 
-replicate(::SingleCoreReps, p, params) = begin
+replicate(::SingleCoreReplicates, p, params) = begin
     cumsum = 0.0
     obj = p.objective
     for g in 1:p.ngroups
         grouploss = 0.0
         for n in 1:p.groupsize
             sim!(p.output, p.ruleset; tstop=p.tstop, data=p.data)
-            p.predictionbuffer .= p.transform.(simpredictions(p.objective, p.output))
+            p.predictionbuffer .= p.transform.(predictions(p.objective, p.output))
             loss::Float64 = value(p.loss, p.targetbuffer, p.predictionbuffer, AggMode.Sum())
             grouploss += loss
         end
@@ -125,5 +141,4 @@ end
 
 struct Accuracy <: LossFunctions.Cost end
 
-LossFunctions.value(::Accuracy, targets, predictions, aggmode) =
-    sum(targets .== predictions) / (size(targets, 1) * size(targets, 2))
+LossFunctions.value(::Accuracy, targets, predictions, aggmode) = sum(targets .== predictions) / length(targets)

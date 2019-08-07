@@ -41,12 +41,14 @@ import Base: getindex, setindex!, lastindex, size, length, push!
 
 
 import CellularAutomataBase: applyrule, applyrule!, neighbors, radius,
-       currenttime, framesize, mask, overflow, timestep, cellsize
+       currenttime, framesize, mask, overflow, timestep, cellsize, ruleset
+
 
 import Flatten: constructor_of
 
 import FieldMetadata: @description, @limits, @flattenable,
                       default, description, limits, flattenable
+
 
 
 export AbstractDispersal
@@ -63,7 +65,7 @@ export AbstractDistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, A
 
 export AbstractJumpDispersal, JumpDispersal
 
-export AbstractHumanDispersal, HumanDispersal, populate, populate!
+export AbstractHumanDispersal, HumanDispersal #, populate, populate!
 
 export EulerExponentialGrowth, EulerLogisticGrowth, ExactExponentialGrowth,
        ExactLogisticGrowth
@@ -73,12 +75,14 @@ export SuitabilityMask, SuitabilityEulerExponentialGrowth, SuitabilityEulerLogis
 
 export AlleeExtinction, AlleeExtinction
 
-export Mask
-
 export Sequence
 
-export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput, ColorRegionFit
+export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput, 
+       ColorRegionFit, Accuracy
 
+export ThreadedReplicates, DistributedReplicates, SingleCoreReplicates
+
+export targets, predictions
 
 
 const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Limits),
