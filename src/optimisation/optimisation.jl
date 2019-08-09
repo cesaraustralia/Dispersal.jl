@@ -139,7 +139,3 @@ replicate(::SingleCoreReplicates, p, params) = begin
     end
     cumsum
 end
-
-struct Accuracy <: LossFunctions.Cost end
-
-LossFunctions.value(::Accuracy, targets, predictions, aggmode) = sum(targets .== predictions) / length(targets)
