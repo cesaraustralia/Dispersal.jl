@@ -1,16 +1,16 @@
 # Mixins
 
 @premix @columns struct InstrinsicGrowthRate{GR}
-    # Field           | Def | Flatn | Limits      | Description
+    # Field      | Defaule  | Flatn | Limits      | Description
     intrinsicrate::GR | 0.1 | true  | (0.0, 10.0) | "Intrinsic rate of growth"
 end
 
 @premix @columns struct CarryCap{CC}
-    carrycap::CC | 100000.0 | true  | (0.0, 1e9) | "Carrying capacity for each cell. Not currently scaled by area."
+    carrycap::CC | 100000.0 | true  | (0.0, 1e9)  | "Carrying capacity for each cell. Not currently scaled by area."
 end
 
 @premix @columns struct Layers{L}
-    layers::L    | ()       | false | _ | "Additional data layers"
+    layers::L    | ()       | false | _           | "Additional data layers"
 end
 
 

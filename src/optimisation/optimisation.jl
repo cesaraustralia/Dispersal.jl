@@ -78,8 +78,9 @@ Provides an objective function for an optimiser like Optim.jl
     obj = p.objective
 
     names = fieldnameflatten(p.ruleset.rules, Real)
-    println("Parameters: \n", ruletypes(typeof(p.ruleset.rules)))
+    println("\nParameters: \n", ruletypes(typeof(p.ruleset.rules)))
     display(collect(zip(names, params)))
+    println()
 
     cumsum = replicate(p.threading, p, params)
 
