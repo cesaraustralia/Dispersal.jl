@@ -1,4 +1,4 @@
-using CellularAutomataBase: normalise, minval, maxval
+using CellularAutomataBase: normalise, minval, maxval, ismasked, rgb
 
 """
 An image procesor to visualise the model fit, for a live version of
@@ -12,12 +12,12 @@ Fields:
 `falsenegativecolor`
 `maskcolor` : color when a cell region of zero or lower
 """
-struct ColorRegionFit{O,TP,FP,TN,FN,M} <: AbstractFrameProcessor
+struct ColorRegionFit{O,P,N,TZ,FZ,M} <: AbstractFrameProcessor
     objective::O
-    truepositivecolor::TP
-    falsepositivecolor::FP
-    truenegativecolor::TN
-    falsenegativecolor::FN
+    truescheme::P
+    falsescheme::N
+    truezerocolor::TZ
+    falsezerocolor::FZ
     maskcolor::M
 end
 
@@ -28,20 +28,29 @@ CellularAutomataBase.frametoimage(p::ColorRegionFit, output::AbstractImageOutput
     min, max = minval(ruleset), maxval(ruleset)
     for i in CartesianIndices(frame)
         region = p.objective.regionlookup[i]
-        img[i] = if region > zero(region)
+        img[i] = if !(p.maskcolor isa Nothing) && ismasked(mask(ruleset), i) 
+            p.maskcolor
+        elseif region > zero(region)
             x = frame[i]
+            normed = normalise(x, min, max)
             if p.objective.occurance[region, step]
-                x < obj.detectionthreshold ? rgb(p.falsenegativecolor) : rgb((normalise(x, min, max) .* p.truepositivecolor))
+                if !(p.truezerocolor isa Nothing) && normed == zero(normed) 
+                    rgb(p.falsezerocolor)
+                else
+                    rgb(p.truescheme, normed)
+                end
             else
-                x < obj.detectionthreshold ? rgb(p.truenegativecolor) : rgb((normalise(x, min, max) .* p.falsepositivecolor))
+                if !(p.falsezerocolor isa Nothing) && normed == zero(normed) 
+                    rgb(p.truezerocolor)
+                elseif x > obj.detectionthreshold 
+                    rgb(p.falsescheme, normed)
+                else
+                    rgb(p.truescheme, normed)
+                end
             end
         else
-           rgb(p.maskcolor)
+            p.maskcolor
         end
     end
     img
 end
-
-rgb(c::RGB24) = c
-rgb(c::Tuple) = RGB24(c...)
-rgb(c::Number) = RGB24(c)
