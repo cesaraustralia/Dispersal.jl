@@ -96,41 +96,39 @@ struct CentroidToCentroid <: AbstractDistanceMethod end
 
 dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize |> f
 
-@columns struct CentroidToArea <: AbstractDistanceMethod 
+@columns struct CentroidToArea <: AbstractDistanceMethod
     subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 
 dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented yet")
 
-@columns struct AreaToCentroid <: AbstractDistanceMethod 
+@columns struct AreaToCentroid <: AbstractDistanceMethod
     subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
 
 @inline dispersalprob(f, dm::AreaToCentroid, x, y, cellsize) = begin
     prob = 0.0
-    centerfirst = 1 / dm.subsample / 2 - 0.5 
+    centerfirst = 1 / dm.subsample / 2 - 0.5
     centerlast = centerfirst * -1
     range = LinRange(centerfirst, centerlast, dm.subsample)
-    println(range)
     for j in range, i in range
         prob += sqrt((x + i)^2 + (y + j)^2) * cellsize |> f
     end
     prob / dm.subsample^2
 end
 
-struct AreaToArea <: AbstractDistanceMethod 
-    subsample::Int 
+struct AreaToArea <: AbstractDistanceMethod
+    subsample::Int
 end
 AreaToArea(subsample::Float64) = AreaToArea(round(Int, subsample))
 
 @inline dispersalprob(f, dm::AreaToArea, x, y, cellsize) = begin
     prob = 0.0
     # Get the center point of the first cell (for both dimensions)
-    centerfirst = 1 / dm.subsample / 2 - 0.5 
+    centerfirst = 1 / dm.subsample / 2 - 0.5
     centerlast = centerfirst * -1
     range = LinRange(centerfirst, centerlast, dm.subsample)
-    println((range, x, y))
     for i in range, j in range
         for a in range, b in range
             prob += sqrt((x + i + a)^2 + (y + j + b)^2) * cellsize |> f
@@ -146,4 +144,3 @@ abstract type AbstractKernelFormulation end
     λ::P    | true  | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
 end
 (f::ExponentialKernel)(distance) = exp(-distance / f.λ)
-
