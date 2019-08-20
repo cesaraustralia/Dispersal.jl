@@ -13,22 +13,23 @@ a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
 
-@columns struct DispersalKernel{R,F,K,C} <: AbstractDispersalKernel{R}
-    formulation::F | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
-    kernel::K      | nothing                | false | _           | "Kernal matrix"
-    cellsize::C    | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
+@columns struct DispersalKernel{R,F,K,C,D} <: AbstractDispersalKernel{R}
+    formulation::F    | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
+    kernel::K         | nothing                | false | _           | "Kernal matrix"
+    cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
+    distancemethod::D | CentroidToCentroid()   | false | _           | "Method for calculating distance between cells"
 
-    DispersalKernel{R}(; kwargs...) where {R,F,K,C} = begin
-        kwargs = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
-        DispersalKernel{R,typeof.(kwargs)...}(kwargs...)
+    DispersalKernel{R}(; kwargs...) where {R,F,K,C,D} = begin
+        args = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
+        DispersalKernel{R,typeof.(args)...}(args...)
     end
-    DispersalKernel{R}(formulation::F, kernel::K, cellsize::C) where {R,F,K,C} =
-        DispersalKernel{R,F,K,C}(formulation, kernel, cellsize)
-    DispersalKernel{R,F,K,C}(formulation::F, kernel::K, cellsize::C) where {R,F,K,C} = begin
+    DispersalKernel{R}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} =
+        DispersalKernel{R,F,K,C,D}(formulation, kernel, cellsize, distancemethod)
+    DispersalKernel{R,F,K,C,D}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} = begin
         # Convert kenel the type of the init array
-        kernel = build_dispersal_kernel(formulation, CentroidToCentroid(), cellsize, R)
+        kernel = build_dispersal_kernel(formulation, distancemethod, cellsize, R)
         kernel = K <: Nothing ? kernel : K(kernel)
-        new{R,F,typeof(kernel),C}(formulation, kernel, cellsize)
+        new{R,F,typeof(kernel),C,D}(formulation, kernel, cellsize, distancemethod)
     end
 end
 
@@ -37,17 +38,51 @@ build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
     # The radius doesn't include the center cell, so add it
     sze = 2r + 1
     kernel = zeros(Float64, sze, sze)
+    r1 = r + one(r)
     # Paper: l. 97
-    for x = -r:r, y = -r:r
+    for x = 0:r, y = 0:r
         # Calculate the distance from the center cell to this cell
-        dist = distance(distancemethod, x, y, cellsize)
+        prob = dispersalprob(formulation, distancemethod, x, y, cellsize)
         # Update the kernel value based on the formulation and distance
-        kernel[x + r + one(x), y + r + one(y)] =
-            dispersalatdistance(formulation, dist)
+        kernel[x + r1, y + r1] = prob
+        kernel[x + r1, -y + r1] = prob
+        kernel[-x + r1, y + r1] = prob
+        kernel[-x + r1, -y + r1] = prob
     end
     # Normalise
     kernel ./= sum(kernel)
 end
+
+
+# build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
+#     # The radius doesn't include the center cell, so add it
+#     sze = 2r + 1
+#     kernels = [zeros(Float64, sze, sze) for thread in 1:Threads.nthreads()]
+#     r1 = r + one(r)
+
+#     # Calculate one quadrant
+#     Threads.@threads for x = 0:r
+#         kernel = kernels[Threads.threadid()]
+#         for y = 0:r
+#             kernel[x + r1, y + r1] = dispersalprob(formulation, distancemethod, x, y, cellsize)
+#         end
+#     end
+#     kernel = sum(kernels)
+#     println()
+#     println(length(kernels))
+#     display(kernels)
+#     println()
+#     # Update the other 3 quadrants
+#     for x = 0:r, y = 0:r
+#         # Just sum the threads, most are zero
+#         prob = kernel[x + r1, y + r1]
+#         kernel[x + r1, -y + r1] = prob
+#         kernel[-x + r1, y + r1] = prob
+#         kernel[-x + r1, -y + r1] = prob
+#     end
+#     # Normalise
+#     kernel ./= sum(kernel)
+# end
 
 CellularAutomataBase.radius(hood::DispersalKernel{R}) where R = R
 
@@ -59,20 +94,50 @@ abstract type AbstractDistanceMethod end
 
 struct CentroidToCentroid <: AbstractDistanceMethod end
 
-distance(::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize
+dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize |> f
 
-struct CentroidToArea <: AbstractDistanceMethod end
+@columns struct CentroidToArea <: AbstractDistanceMethod 
+    subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
+end
 
-distance(::CentroidToArea, x, y, cellsize) = error("not implemented yet")
+dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented yet")
 
-struct AreaToArea <: AbstractDistanceMethod end
+@columns struct AreaToCentroid <: AbstractDistanceMethod 
+    subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
+end
+AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
 
-distance(::AreaToArea, x, y, cellsize) = error("not implemented yet")
+@inline dispersalprob(f, dm::AreaToCentroid, x, y, cellsize) = begin
+    prob = 0.0
+    centerfirst = 1 / dm.subsample / 2 - 0.5 
+    centerlast = centerfirst * -1
+    range = LinRange(centerfirst, centerlast, dm.subsample)
+    println(range)
+    for j in range, i in range
+        prob += sqrt((x + i)^2 + (y + j)^2) * cellsize |> f
+    end
+    prob / dm.subsample^2
+end
 
-struct AreaToCentroid <: AbstractDistanceMethod end
+struct AreaToArea <: AbstractDistanceMethod 
+    subsample::Int 
+end
+AreaToArea(subsample::Float64) = AreaToArea(round(Int, subsample))
 
-distance(::AreaToCentroid, x, y, cellsize) = error("not implemented yet")
-
+@inline dispersalprob(f, dm::AreaToArea, x, y, cellsize) = begin
+    prob = 0.0
+    # Get the center point of the first cell (for both dimensions)
+    centerfirst = 1 / dm.subsample / 2 - 0.5 
+    centerlast = centerfirst * -1
+    range = LinRange(centerfirst, centerlast, dm.subsample)
+    println((range, x, y))
+    for i in range, j in range
+        for a in range, b in range
+            prob += sqrt((x + i + a)^2 + (y + j + b)^2) * cellsize |> f
+        end
+    end
+    prob / dm.subsample^4
+end
 
 
 abstract type AbstractKernelFormulation end
@@ -80,6 +145,5 @@ abstract type AbstractKernelFormulation end
 @description @limits @flattenable struct ExponentialKernel{P} <: AbstractKernelFormulation
     λ::P    | true  | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
 end
+(f::ExponentialKernel)(distance) = exp(-distance / f.λ)
 
-# Paper: l. 96
-dispersalatdistance(f::ExponentialKernel, distance) = exp(-distance / f.λ)

@@ -31,7 +31,6 @@ CellularAutomataBase.radius(rule::AbstractOutwardsDispersal) = radius(rule.neigh
 
 
 @inline applyrule!(rule::AbstractOutwardsDispersal, data, state, index) = begin
-    state == zero(state) && return state # Ignore empty cells
     neighbors(rule.neighborhood, rule, data, state, index)
     data[index...]
 end

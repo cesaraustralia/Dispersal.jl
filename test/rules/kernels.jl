@@ -34,7 +34,7 @@ test3 = [0.48  0.96  1.44  1.92  2.4  1.92  1.44;
          0.16  0.32  0.48  0.64  0.8  0.64  0.48]
 
 struct TestFormulation <: AbstractKernelFormulation end
-Dispersal.dispersalatdistance(::TestFormulation, d) = 1.0
+(f::TestFormulation)(d) = 1.0
 
 # Dispersal in radius 2 neighborhood
 hood = DispersalKernel{2}(; formulation=TestFormulation())

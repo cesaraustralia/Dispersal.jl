@@ -261,9 +261,6 @@ Simulates human dispersal, weighting dispersal probability based on human
 population in the source cell.
 """
 applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
-    # Ignore empty cells
-    state == zero(state) && return
-
     dispersalprob = rule.dispersal_probs[index...]
     ismissing(dispersalprob) && return
 
@@ -271,6 +268,8 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     ismissing(shortlist) && return
 
     # Find the expected number of dispersers given population, dispersal prob and timeframe
+    isnan(state) && println("state", state, " at time: ", currenttime(data))
+    isnan(dispersalprob) && println("dispersalprob", dispersalprob)
     meandispersers = trunc(Int, state * dispersalprob)
     meandispersers >= zero(meandispersers) || return
 
@@ -302,8 +301,10 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
         # Disperse to the cell
         data[dest_index...] += dispersers
         # Track how many have allready dispersed
+        isnan(dispersers) && error(string("NaN dispersers", (state, index)))
         dispersed += dispersers
     end
+    isnan(dispersed) && error(string("NaN disperserd", (state, index)))
     # Subtract dispersed organisms from current cell population
     data[index...] -= dispersed
 end

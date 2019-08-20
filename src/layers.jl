@@ -22,6 +22,7 @@ show(s::AbstractSequence) = show(s.data)
 
 CellularAutomataBase.timestep(s::Sequence) = s.timestep
 
+layers(rule) = rule.layers
 
 """
     get_layers
@@ -30,8 +31,8 @@ Returns the value of a single layer or interplated value from a sequence of laye
 If multiple layers are available the product will be returned.
 """
 function get_layers end
-Base.@propagate_inbounds get_layers(rule, data, index) =
-    get_layers(data, rule.layers, index, currenttime(data))
+Base.@propagate_inbounds get_layers(rule, data::AbstractSimData, index) =
+    get_layers(data, layers(rule), index, currenttime(data))
 Base.@propagate_inbounds get_layers(data, layers::Tuple, index, t::Number) =
     get_layers(data, layers[1], index, t) * get_layers(data, Base.tail(layers), index, t)
 Base.@propagate_inbounds get_layers(data, layers::Tuple{}, index, t::Number) = 1

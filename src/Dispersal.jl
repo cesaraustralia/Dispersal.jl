@@ -39,7 +39,6 @@ using LossFunctions: ZeroOneLoss
 import Base: getindex, setindex!, lastindex, size, length, push!
 
 
-
 import CellularAutomataBase: applyrule, applyrule!, neighbors, radius,
        currenttime, framesize, mask, overflow, timestep, cellsize, ruleset
 

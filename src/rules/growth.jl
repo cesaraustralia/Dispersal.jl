@@ -93,7 +93,6 @@ end
 @inline applyrule(rule::EulerExponentialGrowth, data, state, args...) = state + state * rule.intrinsicrate * timestep(data)
 
 @inline applyrule(rule::SuitabilityEulerExponentialGrowth, data, state, index, args...) = begin
-    state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
     state + intrinsicrate * state * timestep(data) # dN = rN * dT
     # max(min(state * intrinsicrate, rule.max), rule.min)
@@ -104,7 +103,6 @@ end
     state + state * rule.intrinsicrate * (oneunit(state) - state / rule.carrycap) * timestep(data) # dN = (1-N/K)rN dT
 
 @inline applyrule(rule::SuitabilityEulerLogisticGrowth, data, state, index, args...) = begin
-    state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
     saturation = intrinsicrate > zero(intrinsicrate) ? (oneunit(state) - state / rule.carrycap) : oneunit(state)
     state + state * saturation * intrinsicrate * timestep(data)
@@ -113,21 +111,20 @@ end
 
 # Exact solution rules
 
-@inline applyrule(rule::ExactExponentialGrowth, data, state, args...) = state * exp(rule.intrinsicrate * timestep(data))
+@inline applyrule(rule::ExactExponentialGrowth, data, state, args...) =
+    state * exp(rule.intrinsicrate * timestep(data))
 
 @inline applyrule(rule::SuitabilityExactExponentialGrowth, data, state, index, args...) = begin
-    state == zero(state) && return state
     intrinsicrate = get_layers(rule, data, index)
     @fastmath state * exp(intrinsicrate * timestep(data))
     # max(min(state * intrinsicrate, rule.max), rule.min)
 end
 
-@inline applyrule(rule::ExactLogisticGrowth, data, state, args...) = begin
+@inline applyrule(rule::ExactLogisticGrowth, data, state, index, args...) = begin
     @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) * exp(-rule.intrinsicrate * timestep(data)))
 end
 
 @inline applyrule(rule::SuitabilityExactLogisticGrowth, data, state, index, args...) = begin
-    state == zero(state) && return state
     @inbounds intrinsicrate = get_layers(rule, data, index)
     # Saturation only applies with positive growth
     if intrinsicrate > zero(intrinsicrate)
@@ -137,7 +134,5 @@ end
     end
 end
 
-@inline applyrule(rule::SuitabilityMask, data, state, index, args...) = begin
-    state == zero(state) && return zero(state)
+@inline applyrule(rule::SuitabilityMask, data, state, index, args...) =
     get_layers(rule, data, index) >= rule.threshold ? state : zero(state)
-end
