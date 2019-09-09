@@ -1,0 +1,187 @@
+---
+title : Dispersal.jl example
+author : Rafael Schouten
+---
+
+# Dispersal simulations
+
+In this example we will calculate run a simulation of the spread of the Spotted
+Winged Drosophila _D. suzukii_ accross the continental USA.
+
+This will involved combining a number of componenents into a single `RuleSet`
+object.
+
+
+# Build a growth-rate matrix
+
+Follow the [examples
+tutorial](https://rafaqz.github.io/GrowthRates.jl/dev/example/index.html) over
+at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl).
+
+Or just grab the output:
+
+```julia; results=hidden
+if !isfile("growthrates.jld2")
+    download("https://rafaqz.github.io/GrowthRates.jl/dev/growthrates.jld2")
+end
+# @load "growthrates.jld2" growthrates
+@load "/home/raf/julia/GrowthRates/docs/build/growthrates.jld2" growthrates
+```
+
+
+
+### Load the required packages
+
+```julia; results=hidden
+using Dispersal, Plots, Pkg, ColorSchemes, GeoData, JLD2
+```
+
+### Define some initialiseation data
+
+```julia; results=hidden
+data = h5open(datafile, "r")
+init = read(data["x_y_initial"]) .* 1e7
+cellsize = 1.0
+```
+
+# Define model components
+
+## Human dispersal
+
+```julia; results=hidden
+human_pop = replace((read(data["x_y_popdens"]), NaN=>missing)
+scale = 8
+aggregator = mean
+human_exponent = 2.0
+dist_exponent = 2.0
+dispersalperpop = 1e-9
+max_dispersers = 500.0
+shortlist_len = 100
+@time humandisp = HumanDispersal(human_pop; scale=scale, shortlist_len=shortlist_len, dispersalperpop=dispersalperpop,
+                                 max_dispersers=max_dispersers, cellsize=cellsize, human_exponent=human_exponent,
+                                 dist_exponent=dist_exponent, timestep=simtimestep)
+```
+
+## Climate driven growth
+
+```julia; results=hidden
+carrycap = 1e8
+pg = replace(read(data["x_y_month_intrinsicGrowthRate"]), NaN=>0)
+popgrowth = [pg[:, :, i] for i in 1:size(pg, 3)]
+popgrowth = vcat(popgrowth[6:12], popgrowth[1:5])
+# Convert growth arrays to units
+growth_layers = Sequence(popgrowth .* d^-1, month);
+growth = SuitabilityExactLogisticGrowth(layers=growth_layers, carrycap=carrycap);
+```
+
+## Local dispersal
+
+```julia; results=hidden
+λ = 0.0125
+radius = 1
+sze = 2radius + 1
+dm = AreaToArea(30)
+@time hood = DispersalKernel{radius}(;kernel=zeros(FloatType, radius, radius), cellsize=cellsize,
+                               formulation=ExponentialKernel(λ), distancemethod=dm)
+localdisp = InwardsPopulationDispersal(hood)
+display(hood.kernel * carrycap)
+```
+
+## Allee effects
+
+```julia; results=hidden
+minfounders = 10.0
+allee = AlleeExtinction(minfounders=minfounders)
+```
+
+## Define a masking layer
+
+This layer lets the simulation know which cells should be ignored
+
+```julia; results=hidden
+masksource = read(data["x_y_month_intrinsicGrowthRate"])[:, :, 1]
+masklayer = BitArray(replace(x -> isnan(x) ? 0 : 1, masksource))
+masklayer |> plot
+```
+
+# Define a combined ruleset
+
+```julia; results=hidden
+ruleset = Ruleset(humandisp, (localdisp, allee, growth); 
+                  init=init, 
+                  mask=masklayer, 
+                  timestep=simtimestep, 
+                  minval=0.0, 
+                  maxval=carrycap)
+```
+
+# Define a model
+
+```julia; results=hidden
+scheme = ColorSchemes.autumn1
+scheme = ColorSchemes.Oranges_3
+
+# Frame Processing Colors
+zerocolor = RGB24(0.7) 
+maskcolor = RGB24(0.0)
+processor = ColorProcessor(scheme, zerocolor, maskcolor)
+
+rulesetkey = :full
+rulesetkey = :noclimate
+rulesetkey = :nolocal
+rulesetkey = :noallee
+rulesetkey = :nohuman
+ruleset = sim_rulesets[rulesetkey]
+ruleset.rules = reconstruct(ruleset.rules, Optim.minimizer(optimresults[rulesetkey]))
+```
+
+## Run with a GTK window
+
+```julia; results=hidden
+using CellularAutomataGtk
+output = GtkOutput(init .* 0; fps=10, store=true, processor=processor)
+output.running = false # Reset after errors
+output.processor = processor # Swap in a different image processor 
+@time sim!(output, ruleset; tstop=103)
+
+# Run multiple simulations overlayed (using all THreads.nthreads() cpus)
+@time sim!(output, ruleset; tstop=68, nreplicates=10)
+```
+
+## Run with a web style output
+
+The web output uses Interact.jl for live control of the simulation, by providing
+a live control console and sliders for model parameters, _even for your own
+custom models!_.
+
+The same basic html output can run in the browser either locally or over the web
+(MuxServer), in Juno or a Jupyter notebook (WebOutput), or in an desktop app
+(BlinkOutput).
+
+```julia; results=hidden
+using CellularAutomataWeb
+# Atom/notebook output
+output = WebOutput(init, ruleset; fps=10, store=true, processor=processor, slider_throttle=1.0)
+display(output)
+# Desktop app output
+# output = BlinkOutput(init, ruleset; fps=10, store=true, processor=processor, slider_throttle=1.0)
+# Web server
+# output = MuxServer(init, model; port=8000, fps=10, processor=processor, slider_throttle=1.0)
+```
+
+# REPL output
+
+You can view a simulation on a serer over SSH, or just in your local console
+using a `REPLOutput`, for minimal loading time. It doesn't work so well in Juno,
+so save it for a real terminal. It works best in a terminal where you can easily
+reduce the font size.
+
+```julia; results=hidden
+output = REPLOutput(init; style=Braile(), fps=5, color=:white, store=false)
+```
+
+## Save a gid of your simulation
+
+```julia; results=hidden
+savegif("sim.gif", output, ruleset; fps=10)
+```
