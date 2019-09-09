@@ -20,8 +20,7 @@ the layers required for suitability growth rules based on temperature response a
 """
 module Dispersal
 
-using CellularAutomataBase,
-      Colors,
+using Colors,
       Distributed,
       DocStringExtensions,
       FieldDefaults,
@@ -32,7 +31,10 @@ using CellularAutomataBase,
       LossFunctions,
       Mixers,
       PoissonRandom,
+      Reexport,
       Statistics
+
+@reexport using CellularAutomataBase
 
 using LossFunctions: ZeroOneLoss
 
@@ -94,7 +96,6 @@ const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Limits),
     $(TYPEDEF)
     $(DOCSTRING)
     """
-
 
 include("downsampling.jl")
 include("layers.jl")

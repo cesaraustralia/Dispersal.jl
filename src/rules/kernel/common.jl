@@ -27,17 +27,16 @@ $(FIELDDOCTABLE)
         DispersalKernel{R,F,K,C,D}(formulation, kernel, cellsize, distancemethod)
     DispersalKernel{R,F,K,C,D}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} = begin
         # Convert kenel the type of the init array
-        kernel = build_dispersal_kernel(formulation, distancemethod, cellsize, R)
+        kernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
         kernel = K <: Nothing ? kernel : K(kernel)
         new{R,F,typeof(kernel),C,D}(formulation, kernel, cellsize, distancemethod)
     end
 end
 
-
-build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
+buildkernel(formulation, distancemethod, cellsize, r) = begin
     # The radius doesn't include the center cell, so add it
     sze = 2r + 1
-    kernel = zeros(Float64, sze, sze)
+    kernel = zeros(typeof(cellsize), sze, sze)
     r1 = r + one(r)
     # Paper: l. 97
     for x = 0:r, y = 0:r
@@ -49,9 +48,10 @@ build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
         kernel[-x + r1, y + r1] = prob
         kernel[-x + r1, -y + r1] = prob
     end
-    # Normalise
-    kernel ./= sum(kernel)
+    kernel
 end
+
+scale(x) = x ./= sum(x)
 
 
 # build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
@@ -108,7 +108,7 @@ end
 AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
 
 @inline dispersalprob(f, dm::AreaToCentroid, x, y, cellsize) = begin
-    prob = 0.0
+    prob = zero(cellsize)
     centerfirst = 1 / dm.subsample / 2 - 0.5
     centerlast = centerfirst * -1
     range = LinRange(centerfirst, centerlast, dm.subsample)
@@ -124,7 +124,7 @@ end
 AreaToArea(subsample::Float64) = AreaToArea(round(Int, subsample))
 
 @inline dispersalprob(f, dm::AreaToArea, x, y, cellsize) = begin
-    prob = 0.0
+    prob = zero(cellsize)
     # Get the center point of the first cell (for both dimensions)
     centerfirst = 1 / dm.subsample / 2 - 0.5
     centerlast = centerfirst * -1

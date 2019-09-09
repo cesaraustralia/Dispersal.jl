@@ -16,6 +16,7 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 LossFunctions = "30fc2ffe-d236-52d8-8643-a9d8f7c094a7"
 Mixers = "2a8e4939-dab8-5edc-8f64-72a8776f13de"
 PoissonRandom = "e409e4f3-bfea-5376-8464-e040bb5c01ab"
+Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [extras]
