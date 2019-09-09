@@ -1,4 +1,4 @@
-using CellularAutomataBase, Dispersal, Test
+using Dispersal, Test
 using Dispersal: get_layers, cyclic
 
 @testset "layers returns 1.0 for an empty tuple" begin

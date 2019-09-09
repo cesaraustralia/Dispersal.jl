@@ -1,4 +1,4 @@
-using CellularAutomataBase, Dispersal, Test
+using Dispersal, Test
 
 struct TestFormulation <: AbstractKernelFormulation end
 (f::TestFormulation)(d) = 1.0
@@ -7,15 +7,14 @@ struct TestFormulation <: AbstractKernelFormulation end
     init = [0.0 1.0 0.0;
             1.0 0.0 1.0]
     radius = 2
-    dk = DispersalKernel{radius}(formulation=ExponentialKernel(1.0), kernel=init, cellsize=1).kernel
+    dk = DispersalKernel{radius}(formulation=ExponentialKernel(1.0), kernel=init, cellsize=1.0).kernel
 
     @test size(dk) == (5, 5)
     @test sum(dk) ≈ 1.0
 end
 
 @testset "binary dispersal and suitability mask" begin
-    init = [0 0;
-            0 1]
+    init = [0 0; 0 1]
     radius = 1
     hood = DispersalKernel{radius}()
     # sequence of layers
