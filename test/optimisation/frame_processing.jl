@@ -1,9 +1,9 @@
-using CellularAutomataBase, Dispersal, Test, Colors
-using CellularAutomataBase: frametoimage
+using DynamicGrids, Dispersal, Test, Colors
+using DynamicGrids: frametoimage
 
 @testset "image processor colors regions by fit" begin
 
-    CellularAutomataBase.@Output mutable struct ImageOutput{} <: AbstractImageOutput{T} end
+    DynamicGrids.@Output mutable struct ImageOutput{} <: AbstractImageOutput{T} end
 
     init =  [1.0  1.0  0.5
              0.0  0.0  0.0

@@ -16,7 +16,6 @@ We define initial conditions. Then we run a dispersal
 simulation that combines local and jump dispersal, for three timesteps.
 
 ```@example
-using Cellular
 using Dispersal
 
 # Make an init array the same size as your suitability layer, and seed it
@@ -84,7 +83,7 @@ OutwardsPopulationDispersal
 
 ## Dispersal kernels 
 
-Kernels extend `CellularAutomataBase.AbstractNeighborhood` and `neighbors()` methods.
+Kernels extend `DynamicGrids.AbstractNeighborhood` and `neighbors()` methods.
 
 ```@docs
 AbstractDispersalKernel

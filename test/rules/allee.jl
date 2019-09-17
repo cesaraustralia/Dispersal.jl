@@ -1,4 +1,4 @@
-using CellularAutomataBase, Dispersal, Test
+using DynamicGrids, Dispersal, Test
 
 init = [1.0 4.0 7.0;
         2.0 5.0 8.0;

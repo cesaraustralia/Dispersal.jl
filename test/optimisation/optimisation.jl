@@ -1,6 +1,6 @@
-using CellularAutomataBase, Dispersal, Test, Colors, Flatten, LossFunctions, Optim
+using DynamicGrids, Dispersal, Test, Colors, Flatten, LossFunctions, Optim
 using Dispersal: stepfromframe
-using CellularAutomataBase: frametoimage
+using DynamicGrids: frametoimage
 
 @testset "step from frame" begin
     # stepfromframe(framesperstep, frame)

@@ -1,4 +1,4 @@
-using CellularAutomataBase, Dispersal, Test
+using DynamicGrids, Dispersal, Test
 
 
 init =  [0.0 0.0 0.0 0.0   0.0 0.0 0.0;

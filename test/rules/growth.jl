@@ -1,5 +1,5 @@
-using CellularAutomataBase, Dispersal, Test
-using CellularAutomataBase: applyrule, simdata
+using DynamicGrids, Dispersal, Test
+using DynamicGrids: applyrule, simdata
 
 @testset "exponential growth" begin
     init =  [1.0 4.0 7.0;
@@ -44,7 +44,7 @@ end
                         4.0 1.0 0.25;
                         1.0 1.0 0.25]
 
-    @test CellularAutomataBase.normaliseframe(output[3], 0.25, 4) == [0.2  0.2  1.0;
+    @test DynamicGrids.normaliseframe(output[3], 0.25, 4) == [0.2  0.2  1.0;
                                                                       1.0  0.2  0.0;
                                                                       0.2  0.2  0.0]
 

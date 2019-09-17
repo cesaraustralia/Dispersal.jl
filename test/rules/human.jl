@@ -1,4 +1,4 @@
-using CellularAutomataBase, Dispersal, Test, Statistics
+using DynamicGrids, Dispersal, Test, Statistics
 using Dispersal: precalc_human_dispersal!, upsample_index, initdownsample,
                  init_dest_shortlist, CellGravity, CellInterval, downsample!
 
@@ -88,7 +88,7 @@ end
     # @test reverse(a, dims=1) == reverse(b, dims=2)
 end
 
-@testset "human dispersal simulaition maintains total populaition" begin
+@testset "human dispersal simulaition maintains total population" begin
     # a = zeros(Int, 5, 5)
     # b = zeros(Int, 5, 5)
     # c = zeros(Int, 5, 5)
@@ -142,6 +142,6 @@ end
         # Population is allways maintained
         @test sum(init) == sum(output[2])
         @test sum(init) == sum(output[3])
-
     end
+
 end

@@ -1,8 +1,9 @@
-using Documenter, Dispersal, Weave, IJulia, Plots, Pkg, ColorSchemes, Colors, GeoData, JLD2
+using Documenter, Dispersal, Weave, IJulia
 
 example = "src/example.jmd"
-convert_doc(example, "src/example.md")
+cp(example, "src/example.md", force=true)
 
+# Generate HTML docs
 makedocs(
     modules = [Dispersal],
     sitename = "Dispersal.jl",
@@ -16,7 +17,12 @@ deploydocs(
     repo = "github.com/rafaqz/Dispersal.jl.git",
 )
 
-mkpath.(("build/pdf", "build/notebook"))
+pdfdir = "build/pdf" 
+notebookdir = "build/notebook"
+mkpath.((pdfdir, notebookdir))
 
-weave(example, out_path="build/pdf", doctype="pandoc2pdf")
-convert_doc(example, "build/notebook/example.ipynb")
+# Generate examples pdf
+weave(example, out_path=pdfdir, doctype="pandoc2pdf")
+
+# Generate examples notebook
+convert_doc(example, joinpath(notebookdir, "example.ipynb"))

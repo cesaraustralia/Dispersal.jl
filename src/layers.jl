@@ -20,7 +20,7 @@ Base.@propagate_inbounds getindex(s::AbstractSequence{T}, i...) where T =
 show(s::AbstractSequence) = show(s.data)
 
 
-CellularAutomataBase.timestep(s::Sequence) = s.timestep
+DynamicGrids.timestep(s::Sequence) = s.timestep
 
 layers(rule) = rule.layers
 

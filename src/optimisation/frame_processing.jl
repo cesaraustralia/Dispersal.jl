@@ -1,4 +1,4 @@
-using CellularAutomataBase: normalise, minval, maxval, ismasked, rgb
+using DynamicGrids: normalise, minval, maxval, ismasked, rgb
 
 """
 An image procesor to visualise the model fit, for a live version of
@@ -21,7 +21,7 @@ struct ColorRegionFit{O,P,N,TZ,FZ,M} <: AbstractFrameProcessor
     maskcolor::M
 end
 
-CellularAutomataBase.frametoimage(p::ColorRegionFit, output::AbstractImageOutput, ruleset::AbstractRuleset, frame, t) = begin
+DynamicGrids.frametoimage(p::ColorRegionFit, output::AbstractImageOutput, ruleset::AbstractRuleset, frame, t) = begin
     step = stepfromframe(p.objective, t)
     img = similar(frame, RGB24)
     obj = p.objective

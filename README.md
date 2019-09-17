@@ -8,13 +8,13 @@
 [![codecov.io](http://codecov.io/github/rafaqz/Dispersal.jl/coverage.svg?branch=master)](http://codecov.io/github/rafaqz/Dispersal.jl?branch=master)
 
 This package builds on
-[CellularAutomataBase.jl](https://github.com/rafaqz/CellularAutomataBase.jl) to
+[DynamicGrids.jl](https://github.com/rafaqz/DynamicGrids.jl) to
 provide a framework for cellular dispersal simulations.
 
 To install:
 
 ```julia
-Pkg.clone("https://github.com/rafaqz/CellularAutomataBase.jl"
+Pkg.clone("https://github.com/rafaqz/DynamicGrids.jl"
 Pkg.clone("https://github.com/rafaqz/Dispersal.jl"
 ```
 

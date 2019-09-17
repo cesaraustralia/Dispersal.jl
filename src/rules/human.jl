@@ -253,7 +253,7 @@ end
 
 
 
-# CellularAutomataBase Interface
+# DynamicGrids Interface
 
 """
     applyrule(rule::AbstractHumanDispersal, data, state, index)
@@ -296,8 +296,8 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
         upsample = upsample_index(shortlist[dest_id].index, rule.scale)
         dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
         # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
-        CellularAutomataBase.ismasked(data, dest_index...) && continue
-        CellularAutomataBase.isinbounds(dest_index, framesize(data), overflow(data)) || continue
+        DynamicGrids.ismasked(data, dest_index...) && continue
+        DynamicGrids.isinbounds(dest_index, framesize(data), overflow(data)) || continue
         # Disperse to the cell
         data[dest_index...] += dispersers
         # Track how many have allready dispersed

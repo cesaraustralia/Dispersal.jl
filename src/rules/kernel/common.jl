@@ -84,7 +84,7 @@ scale(x) = x ./= sum(x)
 #     kernel ./= sum(kernel)
 # end
 
-CellularAutomataBase.radius(hood::DispersalKernel{R}) where R = R
+DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 
 Flatten.constructor_of(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
 

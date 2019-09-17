@@ -8,7 +8,7 @@ abstract type AbstractInwardsDispersal{R} <: AbstractNeighborhoodRule{R} end
     @inbounds buf ⋅ hood.kernel
 end
 
-CellularAutomataBase.radius(rule::AbstractInwardsDispersal{R}) where R = R 
+DynamicGrids.radius(rule::AbstractInwardsDispersal{R}) where R = R 
 
 # Get the radius from the kernel for all AbstractInwardsDispersal
 (::Type{T})(kernel, args...) where T <: AbstractInwardsDispersal = 

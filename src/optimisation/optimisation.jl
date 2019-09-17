@@ -1,4 +1,4 @@
-using CellularAutomataBase: init
+using DynamicGrids: init
 
 """
 Parametrizer object to use with Optim.jl or similar
@@ -34,7 +34,7 @@ struct Parametriser{RU,OP,OB,TR,L,NR,GS,TS,TH,D,TB,PB,RE}
     results::RE
 end
 
-CellularAutomataBase.ruleset(p::Parametriser) = p.ruleset
+DynamicGrids.ruleset(p::Parametriser) = p.ruleset
 
 data(p::Parametriser) = p.data
 output(p::Parametriser) = p.output
@@ -54,7 +54,7 @@ Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, ts
     # Make copies of anything threads will write to
     predictionbuffer = [transform.(targets(objective)) for i in 1:Threads.nthreads()]
     output = [deepcopy(output) for i in 1:Threads.nthreads()]
-    data = [CellularAutomataBase.simdata(deepcopy(ruleset), deepcopy(init(ruleset))) for i in 1:Threads.nthreads()]
+    data = [DynamicGrids.simdata(deepcopy(ruleset), deepcopy(init(ruleset))) for i in 1:Threads.nthreads()]
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
@@ -64,7 +64,7 @@ end
 Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tstop, threading=SingleCoreReplicates()) = begin
     targetbuffer = transform.(targets(objective))
     predictionbuffer = transform.(targets(objective))
-    data = CellularAutomataBase.simdata(ruleset, init(ruleset))
+    data = DynamicGrids.simdata(ruleset, init(ruleset))
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,

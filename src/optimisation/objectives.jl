@@ -41,7 +41,7 @@ A simple output that stores each step of the simulation in a vector of arrays.
 - `frames`: Single init array or vector of arrays
 - `tstop`: The length of the output.
 """
-CellularAutomataBase.@Output mutable struct RegionOutput{O} <: AbstractOutput{T}
+DynamicGrids.@Output mutable struct RegionOutput{O} <: AbstractOutput{T}
     objective::O
 end
 
@@ -51,24 +51,24 @@ RegionOutput(frame::AbstractArray{T,2}, tstop, objective) where T = begin
     RegionOutput{typeof.((predictions, objective))...}(predictions, false, objective)
 end
 
-CellularAutomataBase.storeframe!(output::RegionOutput, data::CellularAutomataBase.SimData, t) = begin
+DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, t) = begin
     step = stepfromframe(output.objective, t)
     predictions = output[1]
     for j in 1:framesize(data)[2], i in 1:framesize(data)[1]
-        CellularAutomataBase.blockdo!(data, output, i, j, step, predictions)
+        DynamicGrids.blockdo!(data, output, i, j, step, predictions)
     end
 end
 
-CellularAutomataBase.initframes!(output::RegionOutput, init) = begin
+DynamicGrids.initframes!(output::RegionOutput, init) = begin
     step = stepfromframe(output.objective, 1)
     predictions = output[1]
     predictions .= false
     for j in 1:size(init, 2), i in 1:size(init, 1)
-        CellularAutomataBase.blockdo!(init, output, i, j, step, predictions)
+        DynamicGrids.blockdo!(init, output, i, j, step, predictions)
     end
 end
 
-@inline CellularAutomataBase.blockdo!(data, output::RegionOutput, i, j, step, predictions) = begin
+@inline DynamicGrids.blockdo!(data, output::RegionOutput, i, j, step, predictions) = begin
     objective = output.objective
     data[i, j] > objective.detectionthreshold || return
     region = objective.regionlookup[i, j]
@@ -76,7 +76,7 @@ end
     predictions[region, step] = true
 end
 
-CellularAutomataBase.showframe(o::RegionOutput, ruleset::AbstractRuleset, t) = nothing
+DynamicGrids.showframe(o::RegionOutput, ruleset::AbstractRuleset, t) = nothing
 
 """
 Implementation of a loss objective that converts cell data to regional

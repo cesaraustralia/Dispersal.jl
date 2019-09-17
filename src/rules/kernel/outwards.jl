@@ -27,7 +27,7 @@ $(FIELDDOCTABLE)
 """
 @Kernel struct OutwardsPopulationDispersal{R} <: AbstractOutwardsDispersal{R} end
 
-CellularAutomataBase.radius(rule::AbstractOutwardsDispersal) = radius(rule.neighborhood)
+DynamicGrids.radius(rule::AbstractOutwardsDispersal) = radius(rule.neighborhood)
 
 
 @inline applyrule!(rule::AbstractOutwardsDispersal, data, state, index) = begin

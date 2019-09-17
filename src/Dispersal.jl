@@ -1,6 +1,6 @@
 """
 [Dispersal.jl](https://github.com/rafaqz/Dispersal.jl) extends
-[Cellular.jl](https://github.com/rafaqz/CellularAutomataBase.jl) for grid-based organism dispersal simulations.
+[Cellular.jl](https://github.com/rafaqz/DynamicGrids.jl) for grid-based organism dispersal simulations.
 
 Dispersal.jl provides a range of simulation rules than can be combined to develop complex organism
 dispersal models. Growth rates, dispersal kernels, allee effects, and randomised jump
@@ -8,7 +8,7 @@ and human assisted dispersal rules are provided.
 
 These rules can be chained arbitrarily, and custom rules combined with the provided set.
 
-CellularAutomataBase.jl includes REPLOutput for live display in the REPL, while
+DynamicGrids.jl includes REPLOutput for live display in the REPL, while
 [CellularAutomataGtk](https://github.com/rafaqz/CellularAutomataGtk.jl) provides GtkOutput for a
 simple graphical viewer, and [CellularAutomataWeb](https://github.com/rafaqz/CellularAutomataWeb.jl)
 provides BlinkOuput and MuxServer for desktop and online web applications.
@@ -34,14 +34,14 @@ using Colors,
       Reexport,
       Statistics
 
-@reexport using CellularAutomataBase
+@reexport using DynamicGrids
 
 using LossFunctions: ZeroOneLoss
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
 
-import CellularAutomataBase: applyrule, applyrule!, neighbors, radius,
+import DynamicGrids: applyrule, applyrule!, neighbors, radius,
        currenttime, framesize, mask, overflow, timestep, cellsize, ruleset
 
 
