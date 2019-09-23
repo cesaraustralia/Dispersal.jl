@@ -1,53 +1,32 @@
 language: julia
-sudo: required
+
 os:
   - linux
   - osx
+
 julia:
   - 1.0
+  - 1.1
   - nightly
+
 notifications:
   email: false
-git:
-  depth: 99999999
-
-matrix:
-  fast_finish: true
-  # allow_failures:
-  # - julia: nightly
-
-addons:
-  apt:
-    packages:
-      - xvfb
-      - xauth
-      - libgtk-3-0
-
-before_script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - if [[ `uname` = "Linux" ]]; then TESTCMD="xvfb-run julia"; else TESTCMD="julia"; fi
-  - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/ChristianKurz/REPLGamesBase.jl.git")); Pkg.build("REPLGamesBase")'
-  - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/rafaqz/FielddocTables.jl")); Pkg.build("FielddocTables")'
-  - julia -e 'using Pkg; Pkg.add(PackageSpec(url="https://github.com/rafaqz/Cellular.jl.git")); Pkg.build("Cellular")'
-
-script:
-  - $TESTCMD -e 'using Pkg;
-                 Pkg.test("Dispersal"; coverage=true)'
 
 after_success:
-  # push coverage results to Coveralls
-  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
-  # push coverage results to Codecov
-  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+  - if [[ $TRAVIS_JULIA_VERSION = 1.1 ]] && [[ $TRAVIS_OS_NAME = linux ]]; then
+      julia --project=coverage/ -e 'using Pkg; Pkg.instantiate();
+          using Coverage; Codecov.submit(Codecov.process_folder()); 
+                          Coveralls.submit(Coveralls.process_folder())';
+    fi
 
 jobs:
   include:
     - stage: "Documentation"
-      julia: 1.0
+      julia: 1.1
       os: linux
-      before_script:
       script:
-        - xvfb-run julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
-                                             Pkg.instantiate();
-                                             include("docs/make.jl")'
+        - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        - julia --project=docs/ --color=yes docs/make.jl
+      name: "HTML"
       after_success: skip
+  services: docker
