@@ -1,24 +1,6 @@
-"""
-[Dispersal.jl](https://github.com/rafaqz/Dispersal.jl) extends
-[DynamicGrids.jl](https://github.com/rafaqz/DynamicGrids.jl) for grid-based organism dispersal simulations.
-
-Dispersal.jl provides a range of simulation rules than can be combined to develop complex organism
-dispersal models. Growth rates, dispersal kernels, allee effects, and randomised jump
-and human assisted dispersal rules are provided.
-
-These rules can be chained arbitrarily, and custom rules combined with the provided set.
-
-DynamicGrids.jl includes REPLOutput for live display in the REPL, while
-[DynamicGridsGtk](https://github.com/rafaqz/DynamicGridsGtk.jl) provides GtkOutput for a
-simple graphical viewer, and [DynamicGridsInteract](https://github.com/rafaqz/DynamicGridsInteract.jl)
-provides BlinkOuput and MuxServer for desktop and online web applications.
-These web apps automatically provide realtime slider controls for model parameters,
-including for custom rules, customisable using [FieldMetadata.jl](https://github.com/rafaqz/FieldMetadata.jl).
-
-[GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl) can efficiently generate
-the layers required for suitability growth rules based on temperature response and stress factors.
-"""
 module Dispersal
+# Use the README as the module docs
+@doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
 using Colors,
       Distributed,
