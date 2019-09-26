@@ -14,7 +14,7 @@ Drosophila _D. suzukii_ accross the continental USA.
 First load the required packages:
 
 ```{julia; results=hidden}
-using Dispersal, Unitful, GeoData, HDF5
+using Dispersal, Unitful, HDF5
 using Unitful: d
 ```
 

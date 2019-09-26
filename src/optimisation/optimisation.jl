@@ -1,5 +1,12 @@
 using DynamicGrids: init
 
+"Use Thread.@threads to run replicate simulations"
+struct ThreadedReplicates end
+"Use @distributed to run replicate simulations"
+struct DistributedReplicates end
+"Use a single processor to run replicate simulations"
+struct SingleCoreReplicates end
+
 """
 Parametrizer object to use with Optim.jl or similar
 
@@ -13,11 +20,6 @@ Parametrizer object to use with Optim.jl or similar
 `tstop`: length of simulation
 `output`: optional output type. By default an ArrayOutput will be generated.
 """
-
-struct ThreadedReplicates end
-struct DistributedReplicates end
-struct SingleCoreReplicates end
-
 struct Parametriser{RU,OP,OB,TR,L,NR,GS,TS,TH,D,TB,PB,RE}
     ruleset::RU
     output::OP

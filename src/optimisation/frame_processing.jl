@@ -21,6 +21,12 @@ struct ColorRegionFit{O,P,N,TZ,FZ,M} <: AbstractFrameProcessor
     maskcolor::M
 end
 
+"""
+    frametoimage(p::ColorRegionFit, output, ruleset, frame, t)
+
+Visualise the match between predictions and observed regional occupancy 
+during live simulations.
+"""
 DynamicGrids.frametoimage(p::ColorRegionFit, output::AbstractImageOutput, ruleset::AbstractRuleset, frame, t) = begin
     step = stepfromframe(p.objective, t)
     img = similar(frame, RGB24)

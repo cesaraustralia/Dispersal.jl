@@ -12,7 +12,6 @@ arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
-
 @columns struct DispersalKernel{R,F,K,C,D} <: AbstractDispersalKernel{R}
     formulation::F    | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
     kernel::K         | nothing                | false | _           | "Kernal matrix"
@@ -89,19 +88,31 @@ DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 Flatten.constructor_of(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
 
 
+"""
+Methods for calculating distances and dispersal probabilities between cells in a grid.
+"""
 abstract type AbstractDistanceMethod end
 
-
+"""
+Calculates probability of dispersal between source and destination cell centroids
+This is the obvious, naive method, but it will not handle low grid resolution well.
+"""
 struct CentroidToCentroid <: AbstractDistanceMethod end
 
 dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize |> f
 
+"""
+Calculates probability of dispersal between source cell centroid and destination cell area.
+"""
 @columns struct CentroidToArea <: AbstractDistanceMethod
     subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 
 dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented yet")
 
+"""
+Calculates probability of dispersal between source cell area and destination centroid.
+"""
 @columns struct AreaToCentroid <: AbstractDistanceMethod
     subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
@@ -118,6 +129,9 @@ AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
     prob / dm.subsample^2
 end
 
+"""
+Calculates probability of dispersal between source and destination cell areas.
+"""
 struct AreaToArea <: AbstractDistanceMethod
     subsample::Int
 end
@@ -138,8 +152,14 @@ AreaToArea(subsample::Float64) = AreaToArea(round(Int, subsample))
 end
 
 
+"""
+Functors for calculating the probability of dispersal between two points.
+"""
 abstract type AbstractKernelFormulation end
 
+"""
+Probability of dispersal with a negatitve exponential relationship to distance.
+"""
 @description @limits @flattenable struct ExponentialKernel{P} <: AbstractKernelFormulation
     λ::P    | true  | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
 end

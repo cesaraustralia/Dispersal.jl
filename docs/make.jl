@@ -1,7 +1,12 @@
 using Documenter, Dispersal, Weave, IJulia
 
 example = "src/example.jmd"
-cp(example, "src/example.md", force=true)
+# Remove YAML
+mdlines = readlines(example)
+md = join(mdlines[findall(x -> x=="---", mdlines)[2]+1:end])
+# Format code blocks for jldoctest 
+md = replace(md, Regex("```julia.*") => "```jldoctest")
+write("src/example.md", md)
 
 # Generate HTML docs
 makedocs(
@@ -14,7 +19,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/rafaqz/Dispersal.jl.git",
+    repo = "github.com/cesaraustralia/Dispersal.jl.git",
 )
 
 pdfdir = "build/pdf" 
