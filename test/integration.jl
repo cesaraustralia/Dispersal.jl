@@ -1,4 +1,5 @@
 using Dispersal, Test
+using DimensionalData: DimensionalArray, X, Y, Time
 
 struct TestFormulation <: AbstractKernelFormulation end
 (f::TestFormulation)(d) = 1.0
@@ -17,18 +18,18 @@ end
     init = [0 0; 0 1]
     radius = 1
     hood = DispersalKernel{radius}()
-    # sequence of layers
-    suitseq = Sequence(([0.1 0.2;
-                         0.3 0.4],
-                        [0.5 0.6;
-                         0.7 0.8]),
-                       10);
+
+    # time sequence of layers
+    a = cat([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8], dims=3)
+    dimz = X(1:2), Y(1:2), Time(1:10:11)
+    suitseq = DimensionalArray(a, dimz)
+
     # Regular
     ruleset1 = Ruleset(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                     SuitabilityMask(layers=suitseq, threshold=0.4); init=init)
+                     SuitabilityMask(layer=suitseq, threshold=0.4); init=init)
     # Chained
-    ruleset2 = Ruleset((InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                     SuitabilityMask(layers=suitseq, threshold=0.4)); init=init)
+    ruleset2 = Ruleset(Chain(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
+                     SuitabilityMask(layer=suitseq, threshold=0.4)); init=init)
     output1 = ArrayOutput(init, 25)
     output2 = ArrayOutput(init, 25)
 
@@ -93,7 +94,7 @@ end
                  1 0 1 1 1]
 
     # Dispersal in radius 1 neighborhood
-    suitmask = SuitabilityMask(layers=suit)
+    suitmask = SuitabilityMask(layer=suit)
     radius = 1
     hood = DispersalKernel{radius}(; formulation=ExponentialKernel(1.0))
 
@@ -173,7 +174,7 @@ end
              0.16  0.16  0.32  0.48  0.64  0.48  0.48;]
 
     # Dispersal in radius 1 neighborhood
-    suitmask = SuitabilityMask(layers=suit)
+    suitmask = SuitabilityMask(layer=suit)
     radius = 2
 
     @testset "inwards population dispersal fills the grid where reachable and suitable" begin
@@ -187,7 +188,7 @@ end
         @test output[3] ≈ test3
 
         # As subrules
-        rules = Ruleset((inwards, suitmask); init=init)
+        rules = Ruleset(Chain(inwards, suitmask); init=init)
         sim!(output, rules; tstop=3)
         @test output[1] == test1
         @test output[2] == test2

@@ -3,6 +3,7 @@ module Dispersal
 @doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
 using Colors,
+      DimensionalData,
       Distributed,
       DocStringExtensions,
       FieldDefaults,
@@ -19,6 +20,7 @@ using Colors,
 @reexport using DynamicGrids
 
 using LossFunctions: ZeroOneLoss
+using DimensionalData: Time
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
@@ -57,8 +59,6 @@ export SuitabilityMask, SuitabilityEulerExponentialGrowth, SuitabilityEulerLogis
        SuitabilityExactExponentialGrowth, SuitabilityExactLogisticGrowth
 
 export AlleeExtinction, AlleeExtinction
-
-export Sequence
 
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput, 
        ColorRegionFit, Accuracy
