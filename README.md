@@ -10,18 +10,21 @@
 [Dispersal.jl](https://github.com/cesaraustralia/Dispersal.jl) extends
 [DynamicGrids.jl](https://github.com/cesaraustralia/DynamicGrids.jl) for grid-based
 simulations of organism dispersal. Dispersal.jl provides a range of simulation
-rules than can be combined to develop complex organism dispersal models. Growth
-rates, dispersal kernels, Allee effects, and randomised jump and human assisted
-dispersal rules are provided.
+rules than can be combined to develop complex organism dispersal models. 
 
-These rules can be chained arbitrarily, and custom rules can easily added and
-combined with the provided set.
+Growth rates, dispersal kernels, Allee effects, and randomised jump and human
+assisted dispersal rules are provided. These rules can be chained arbitrarily,
+and custom rules can easily added and combined with the provided set. See the
+documentation for examples and the lists of included rules.
 
-DynamicGrids.jl includes REPLOutput for live display in the REPL, while
-[DynamicGridsGtk](https://github.com/cesaraustralia/DynamicGridsGtk.jl) provides
-GtkOutput for a simple graphical viewer, and
 [DynamicGridsInteract](https://github.com/cesaraustralia/DynamicGridsInteract.jl)
-provides an interactive interface for desktop and online web applications.
+provides an interactive interface for desktop and online web applications, where
+complete models (including your custom rules) can be manipulated during live
+simulations.
+[DynamicGridsGtk](https://github.com/cesaraustralia/DynamicGridsGtk.jl) provides
+GtkOutput for a simple graphical viewer.
 
-[GrowthMaps.jl](https://github.com/cesaraustralia/GrowthMaps.jl) can efficiently generate
-the layers required for suitability growth rules based on temperature response and stress factors.
+[GrowthMaps.jl](https://github.com/cesaraustralia/GrowthMaps.jl) can efficiently
+generate the layers required for suitability growth rules based on temperature
+response and stress factors.
+
