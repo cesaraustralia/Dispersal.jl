@@ -1,5 +1,7 @@
 
-" CellGravity allows sorting on gravity while keeping records of the original cell coordinate "
+"""
+CellGravity allows sorting on gravity while keeping records of the original cell coordinate
+"""
 mutable struct CellGravity{M,I}
     gravity::M
     index::I
@@ -62,6 +64,9 @@ connected cells is selected for use in the simulation.
 The time taken for precalulation will depend on the `scale` argument. Values above 1
 will downsample the grid to improve precalulation time and runtime performance. A high
 scale value is good for use in a live interface.
+
+## Arguments
+
 $(FIELDDOCTABLE)
 """
 @description @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP,B} <: AbstractHumanDispersal
@@ -254,12 +259,6 @@ end
 
 
 # DynamicGrids Interface
-
-"""
-    applyrule(rule::AbstractHumanDispersal, data, state, index)
-Simulates human dispersal, weighting dispersal probability based on human
-population in the source cell.
-"""
 applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     dispersalprob = rule.dispersal_probs[index...]
     ismissing(dispersalprob) && return
@@ -310,16 +309,17 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
 end
 
 
-# Utilities
+# Utilities - removed for memory/performance improvement. Could be returned
+# as an optional process.
 
-"""
-Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
-This lets you view the contents of a cell in an AbstractOutput display.
+# """
+# Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
+# This lets you view the contents of a cell in an AbstractOutput display.
 
-## Arguments:
-`a`: A matrix of the same size the precalculation was performed on
-`cells`: A vector of [`CellInterval`](@ref)
-"""
+# ## Arguments:
+# `a`: A matrix of the same size the precalculation was performed on
+# `cells`: A vector of [`CellInterval`](@ref)
+# """
 # populate!(a::AbstractMatrix, cells::Missing, scale) = a
 # populate!(a::AbstractMatrix, cells::AbstractVector{<:CellInterval}, scale) = begin
     # for cell in cells

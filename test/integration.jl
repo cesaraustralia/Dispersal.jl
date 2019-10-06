@@ -33,8 +33,8 @@ end
     output1 = ArrayOutput(init, 25)
     output2 = ArrayOutput(init, 25)
 
-    sim!(output1, ruleset1; tstop=25)
-    sim!(output2, ruleset2; tstop=25)
+    sim!(output1, ruleset1; tspan=(1, 25))
+    sim!(output2, ruleset2; tspan=(1, 25))
 
     # All offset by one, because 1 = t0
     @test output1[1]  == [0 0; 0 1]
@@ -102,19 +102,14 @@ end
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
         rules = Ruleset(inwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, rules; tstop=3)
+        sim!(output, rules; tspan=(1, 3))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
 
-        output[2]
-        test2
-        output[3]
-        test3
-
         # As subrules
         rules = Ruleset(inwards, suitmask; init=init)
-        sim!(output, rules; tstop=3)
+        sim!(output, rules; tspan = (1, 3))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
@@ -123,7 +118,7 @@ end
         outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
         rules = Ruleset(outwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, rules; tstop=3)
+        sim!(output, rules; tspan=(1, 3))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
@@ -182,14 +177,14 @@ end
         inwards = InwardsPopulationDispersal(neighborhood=hood)
         rules = Ruleset(inwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, rules; tstop=3)
+        sim!(output, rules; tspan=(1, 3))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3
 
         # As subrules
         rules = Ruleset(Chain(inwards, suitmask); init=init)
-        sim!(output, rules; tstop=3)
+        sim!(output, rules; tspan=(1, 3))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3
@@ -200,7 +195,7 @@ end
         outwards = OutwardsPopulationDispersal(neighborhood=hood)
         rules = Ruleset(outwards, suitmask; init=init)
         output = ArrayOutput(init, 3)
-        sim!(output, rules; tstop=3)
+        sim!(output, rules; tspan=(1, 3))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3

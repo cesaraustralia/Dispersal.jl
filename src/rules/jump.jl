@@ -3,7 +3,7 @@ abstract type AbstractJumpDispersal <: AbstractPartialRule end
 
 """
 Jump dispersal simulates random long distance dispersal events. A random cell within 
-the spotrange is invaded if it is suitable.  A [`Mask`](@ref) rule may be useful 
+the spotrange is invaded.  A [`Mask`](@ref) rule may be useful 
 aftwer this rule, as dispersal events may be to anywhere on the grid within the given range.
 $(FIELDDOCTABLE)
 """

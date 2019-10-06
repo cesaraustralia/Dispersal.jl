@@ -15,12 +15,14 @@ using Colors,
       Mixers,
       PoissonRandom,
       Reexport,
+      Setfield,
       Statistics
 
 @reexport using DynamicGrids
 
 using LossFunctions: ZeroOneLoss
 using DimensionalData: Time
+using Interpolations: WeightedArbIndex
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 

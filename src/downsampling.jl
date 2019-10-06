@@ -2,7 +2,7 @@
 """
     downsample(a::AbstractMatrix, aggregator, scale)
 
-Run [`downsample!`](@ref) by allocating a new output array.
+Allocate a new output array and run [`downsample!`](@ref).
 """
 downsample(a::AbstractMatrix, aggregator, scale) = 
     downsample!(initdownsample(a, scale), a, aggregator, scale)
@@ -39,12 +39,12 @@ initdownsample(a, scale) = similar(a, downsample_index(size(a), scale))
 """
     upsample_index(index, scale)
 
-Convert indecies from the downsampled array to the larger original array.
+Convert indicies from the downsampled array to the larger original array.
 """
 upsample_index(index, scale) = ((index .- 1) .* scale) .+ 1
 
 """
     downsample_index(index, scale)
-Convert indecies from the original array to the downsampled array.
+Convert indicies from the original array to the downsampled array.
 """
 downsample_index(index, scale) = ((index .- 1) .÷ scale) .+ 1

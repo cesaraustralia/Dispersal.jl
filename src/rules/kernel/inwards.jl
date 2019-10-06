@@ -24,12 +24,23 @@ $(FIELDDOCTABLE)
 """
 @Kernel @Probabilistic struct InwardsBinaryDispersal{R} <: AbstractInwardsDispersal{R} end
 
+@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, index, buf) = begin
+    # Combine neighborhood cells into a single scalar
+    cc = neighbors(rule.neighborhood, rule, buf, state)
+
+    # Set to occupied if enough pressure from neighbors
+    pressure(rule, cc) ? oneunit(state) : state
+end
+
 """
 Disperses to the current cells from the populations of the surrounding cells,
 using a dispersal kernel.
 $(FIELDDOCTABLE)
 """
 @Kernel struct InwardsPopulationDispersal{R} <: AbstractInwardsDispersal{R} end
+
+@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, index, buf) = 
+    neighbors(rule.neighborhood, rule, buf, state)
 
 
 """
@@ -39,18 +50,6 @@ distribution.
 $(FIELDDOCTABLE)
 """
 @Kernel struct PoissonInwardsPopulationDispersal{R} <: AbstractInwardsDispersal{R} end
-
-
-@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, index, buf) = begin
-    # Combine neighborhood cells into a single scalar
-    cc = neighbors(rule.neighborhood, rule, buf, state)
-
-    # Set to occupied if enough pressure from neighbors
-    pressure(rule, cc) ? oneunit(state) : state
-end
-
-@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, index, buf) = 
-    neighbors(rule.neighborhood, rule, buf, state)
 
 @inline applyrule(rule::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, index, buf) = begin
     p = neighbors(rule.neighborhood, rule, buf, state)
