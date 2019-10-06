@@ -14,16 +14,8 @@ Drosophila _D. suzukii_ accross the continental USA.
 First load the required packages:
 
 ```{julia; results=hidden}
-using Dispersal, Unitful, HDF5
+using Dispersal, Unitful, GeoData
 using Unitful: d
-```
-
-### Define initialisation data
-
-```{julia; results=hidden}
-datafile = "spread_inputs_US_cleaned.h5"
-data = h5open(datafile, "r")
-init = read(data["x_y_initial"]) .* 1e7;
 ```
 
 ### Define simulation settings 
@@ -58,26 +50,22 @@ end
 @load "growthrates.jld2" growthrates
 ```
 
-```{julia; results=hidden}
-carrycap = 1e8
-pg = replace(read(data["x_y_month_intrinsicGrowthRate"]), NaN=>0)
-popgrowth = [pg[:, :, i] for i in 1:size(pg, 3)]
-popgrowth = vcat(popgrowth[6:12], popgrowth[1:5]);
-```
-
 Plot the growth layer:
 
 ```{julia; results=hidden}
 using Plots
-reverse(popgrowth[1]; dims=1) |> heatmap
-savefig("build/assets/popgrowth.png")
+plot(growthrates)
+savefig("build/assets/growthrates.png")
 ```
 
-Create a sequence from the layer, here we use explicit unitful units :
+Create a `SuitabilityExactLogisticGrowth` rule from the layer, here we use
+unitful units for the layers' `Time` dimension:
 
 ```{julia; results=hidden}
-growth_layers = Sequence(popgrowth .* d^-1, month);
-growth = SuitabilityExactLogisticGrowth(layers=growth_layers, carrycap=carrycap);
+carrycap = 1e8
+newdims = dims(growthrates, (Lat(), Lon())), Time(zero(month):month:12month))
+layer = rebuild(growthrates; dims=newdims)
+growth = SuitabilityExactLogisticGrowth(layer=layer, carrycap=carrycap);
 ```
 
 ## Local dispersal
@@ -105,14 +93,8 @@ The human dispersal component is generated from an array or population data.
 First we'll clean up our input data:
 
 ```{julia; results=hidden}
-human_pop = replace(read(data["x_y_popdens"]), NaN=>missing);
-```
-
-We can plot it using Plots.jl:
-
-```{julia; results=hidden}
-using Plots
-reverse(replace(human_pop, missing=>NaN); dims=1) |> heatmap
+human_pop = GeoArray(GDALarray("population_density.tiff"; dims=dims(init)))
+plot(human_pop)
 savefig("build/assets/human_pop.png")
 ```
 
@@ -131,21 +113,22 @@ shortlist_len = 100
                                  dist_exponent=dist_exponent, timestep=simtimestep);
 ```
 
+### Define initialisation data
+
+Make a zeros array and populate the starting cell:
+
+```{julia; results=hidden}
+init = zero(growthrates[Time(1)])
+init[X, X] = 1e7
+```
 
 ## Define a masking layer
 
-This layer lets the simulation know which cells should be ignored
+This layer lets the simulation know which cells should be ignored.
 
 ```{julia; results=hidden}
-masksource = read(data["x_y_month_intrinsicGrowthRate"])[:, :, 1]
-masklayer = BitArray(replace(x -> isnan(x) ? 0 : 1, masksource))
-```
-
-Plot the mask layer:
-
-```{julia; results=hidden}
-using Plots
-reverse(masklayer; dims=1) |> heatmap
+masklayer = BitArray(mask(growthrates[Time(1)]))
+plot(masklayer)
 savefig("build/assets/mask.png")
 ```
 
@@ -154,7 +137,7 @@ savefig("build/assets/mask.png")
 ## Define a combined ruleset
 
 ```{julia; results=hidden}
-ruleset = Ruleset(humandisp, (localdisp, allee, growth); 
+ruleset = Ruleset(humandisp, Chain(localdisp, allee, growth); 
                   init=init, 
                   mask=masklayer, 
                   timestep=simtimestep, 
@@ -179,7 +162,7 @@ To run a simulation, we pass in the output and rulset.
 
 ```{julia; results=hidden}
 # FIXME: this hangs
-# sim!(output, ruleset; tstop = tstop)
+# sim!(output, ruleset)
 ```
 
 ## Save a gif of your simulation
@@ -189,7 +172,7 @@ we need to define a color processor to turn the simulation into images for the
 frames of the the gif. This processor can also be used later in web or gtk
 outputs.
 
-You can use the built in (and fast) `Greyscale` scheme, or any scheme from
+You can use the built-in `Greyscale` scheme, or any scheme from
 [ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl).
 
 ```{julia; results=hidden}

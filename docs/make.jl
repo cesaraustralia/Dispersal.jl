@@ -5,7 +5,7 @@ basedir = @__DIR__
 example = joinpath(basedir, "src/example.jmd")
 # Remove YAML
 mdlines = readlines(example)
-md = join(mdlines[findall(x -> x=="---", mdlines)[2]+1:end])
+md = join(mdlines[findall(x -> x=="---", mdlines)[2]+1:end], "\n")
 # Format code blocks for jldoctest 
 md = replace(md, Regex("```julia.*") => "```jldoctest")
 write(joinpath(basedir, "src/example.md"), md)
