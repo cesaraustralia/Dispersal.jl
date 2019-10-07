@@ -54,11 +54,9 @@ export AbstractJumpDispersal, JumpDispersal
 
 export AbstractHumanDispersal, HumanDispersal #, populate, populate!
 
-export EulerExponentialGrowth, EulerLogisticGrowth, ExactExponentialGrowth,
-       ExactLogisticGrowth
+export ExactExponentialGrowth, ExactLogisticGrowth
 
-export SuitabilityMask, SuitabilityEulerExponentialGrowth, SuitabilityEulerLogisticGrowth,
-       SuitabilityExactExponentialGrowth, SuitabilityExactLogisticGrowth
+export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
 export AlleeExtinction, AlleeExtinction
 

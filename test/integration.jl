@@ -14,7 +14,7 @@ struct TestFormulation <: AbstractKernelFormulation end
     @test sum(dk) ≈ 1.0
 end
 
-@testset "binary dispersal and suitability mask" begin
+@testset "binary dispersal and mask" begin
     init = [0 0; 0 1]
     radius = 1
     hood = DispersalKernel{radius}()
@@ -26,10 +26,10 @@ end
 
     # Regular
     ruleset1 = Ruleset(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                     SuitabilityMask(layer=suitseq, threshold=0.4); init=init)
+                       MaskGrowthMap(layer=suitseq, threshold=0.4); init=init)
     # Chained
     ruleset2 = Ruleset(Chain(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                     SuitabilityMask(layer=suitseq, threshold=0.4)); init=init)
+                     MaskGrowthMap(layer=suitseq, threshold=0.4)); init=init)
     output1 = ArrayOutput(init, 25)
     output2 = ArrayOutput(init, 25)
 
@@ -94,7 +94,7 @@ end
                  1 0 1 1 1]
 
     # Dispersal in radius 1 neighborhood
-    suitmask = SuitabilityMask(layer=suit)
+    suitmask = MaskGrowthMap(layer=suit)
     radius = 1
     hood = DispersalKernel{radius}(; formulation=ExponentialKernel(1.0))
 
@@ -169,7 +169,7 @@ end
              0.16  0.16  0.32  0.48  0.64  0.48  0.48;]
 
     # Dispersal in radius 1 neighborhood
-    suitmask = SuitabilityMask(layer=suit)
+    suitmask = MaskGrowthMap(layer=suit)
     radius = 2
 
     @testset "inwards population dispersal fills the grid where reachable and suitable" begin

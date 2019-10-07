@@ -31,7 +31,7 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init, 3)
-    rule = Ruleset(SuitabilityExactExponentialGrowth(layer=suit); init=init)
+    rule = Ruleset(ExactExponentialGrowth(layer=suit); init=init)
     sim!(output, rule; tstop=3)
 
     @test output[1] == [1.0 1.0 1.0;
@@ -68,7 +68,7 @@ end
              5.0      8.0      9.41176;
              6.31579  8.57143  9.72973]
 
-    rule = Ruleset(ExactLogisticGrowth(intrinsicrate=log(2.0), carrycap=10); init=init)
+    rule = Ruleset(ExactLogisticGrowthMap(intrinsicrate=log(2.0), carrycap=10); init=init)
     output = ArrayOutput(init, 3)
 
     sim!(output, rule; tstop=3)
@@ -101,7 +101,7 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init, 3)
-    rule = Ruleset(SuitabilityExactLogisticGrowth(layer=suit, carrycap=10); init=init)
+    rule = Ruleset(ExactLogisticGrowthMap(layer=suit, carrycap=10); init=init)
     sim!(output, rule; tstop=3)
 
     @test output[1] == test1
@@ -110,7 +110,7 @@ end
 
 end
 
-@testset "suitability masking" begin
+@testset "growth map masking" begin
     init = [1.0 1.0 1.0;
             1.0 1.0 1.0;
             1.0 1.0 1.0]
@@ -128,7 +128,7 @@ end
              0.0 0.0 0.0]
 
     output = ArrayOutput(init, 3)
-    mask = SuitabilityMask(layer=suit, threshold=1.1)
+    mask = MaskGrowthMap(layer=suit, threshold=1.1)
     ruleset = Ruleset(mask; init=init)
     data = simdata(ruleset, init)
 

@@ -31,12 +31,12 @@ growth rate layer.
 [GrowthMaps.jl](http://github.com/cesaraustralia/GrowthMaps.jl)
 can produce these growth maps from environmental data.
 """
-abstract type AbstractMappedGrowthRule <: AbstractGrowthRule end
+abstract type AbstractGrowthMapRule <: AbstractGrowthRule end
 
-layer(rule::AbstractMappedGrowthRule) = rule.layer 
-timeinterp(rule::AbstractMappedGrowthRule) = rule.timeinterp
+layer(rule::AbstractGrowthMapRule) = rule.layer 
+timeinterp(rule::AbstractGrowthMapRule) = rule.timeinterp
 
-DynamicGrids.precalcrule!(rule::AbstractMappedGrowthRule, data) = begin
+DynamicGrids.precalcrule!(rule::AbstractGrowthMapRule, data) = begin
     @set! rule.timeinterp = precalc_time_interpolation(layer(rule), rule, data)
     rule
 end
@@ -68,9 +68,9 @@ end
 Exponential growth based on a growth rate layer using exact solution.
 $(FIELDDOCTABLE)
 """
-@Layers struct MappedExactExponentialGrowth{} <: AbstractMappedGrowthRule end
+@Layers struct ExactExponentialGrowthMap{} <: AbstractGrowthMapRule end
 
-@inline applyrule(rule::MappedExactExponentialGrowth, data, state, index, args...) = begin
+@inline applyrule(rule::ExactExponentialGrowthMap, data, state, index, args...) = begin
     intrinsicrate = layer(rule, data, index)
     @fastmath state * exp(intrinsicrate * timestep(data))
 end
@@ -81,9 +81,9 @@ Logistic growth based on a growth rate layer, using exact solution.
 Saturation only applies with positive growth
 $(FIELDDOCTABLE)
 """
-@CarryCap @Layers struct MappedExactLogisticGrowth{} <: AbstractMappedGrowthRule end
+@CarryCap @Layers struct ExactLogisticGrowthMap{} <: AbstractGrowthMapRule end
 
-@inline applyrule(rule::MappedExactLogisticGrowth, data, state, index, args...) = begin
+@inline applyrule(rule::ExactLogisticGrowthMap, data, state, index, args...) = begin
     @inbounds intrinsicrate = layer(rule, data, index)
     if intrinsicrate > zero(intrinsicrate)
         @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) * 
@@ -97,9 +97,9 @@ end
 Simple layer mask. Values below a certain threshold are replaced with zero.
 $(FIELDDOCTABLE)
 """
-@Layers struct GrowthMask{ST} <: AbstractMappedGrowthRule
-    threshold::ST | 0.7 | true  | (0.0, 1.0) | "Minimum habitat suitability index."
+@Layers struct MaskGrowthMap{ST} <: AbstractGrowthMapRule
+    threshold::ST | 0.5 | true  | (0.0, 1.0) | "Minimum viability index."
 end
 
-@inline applyrule(rule::GrowthMask, data, state, index, args...) =
+@inline applyrule(rule::MaskGrowthMap, data, state, index, args...) =
     layer(rule, data, index) >= rule.threshold ? state : zero(state)
