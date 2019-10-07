@@ -38,18 +38,19 @@ suitseq = DimensionalArray(a, dimz)
 
     @testset "layers sequences are interpolated over timespans" begin
         ind = ((1, 1), (1, 2), (2, 1), (2, 2))
-        times = (10d, 20d), (16d, 14d), (19d, 11d), (5d, 45d), (15d, 55d)
+        times = (0d, 20d), (16d, 14d), (19d, 11d), (5d, 45d)#, (15d, 55d)
 
         for (t1, t2) in times
-            interp1 = precalc_time_interpolation(suitseq, rule, data, timestep(data), t1)
-            interp2 = precalc_time_interpolation(suitseq, rule, data, timestep(data), t2)
-            @test all(layer.(Ref(suitseq), Ref(data), ind, Ref(interp1)) .≈ layer.(Ref(suitseq), Ref(data), ind, Ref(interp2)))
+            interp1 = precalc_time_interpolation(suitseq, rule, data, t1)
+            interp2 = precalc_time_interpolation(suitseq, rule, data, t2)
+            @test interp1 == interp2
         end
 
     end
 
     @testset "layers returns first frame values at 0.5 through the timespan" begin
-        interp = precalc_time_interpolation(suitseq, rule, data, timestep(data), 5)
+        t = 5d
+        interp = precalc_time_interpolation(suitseq, rule, data, t)
         @test layer(suitseq, data, (1, 1), interp) == 0.1
         @test layer(suitseq, data, (1, 2), interp) == 0.2
         @test layer(suitseq, data, (2, 1), interp) == 0.3
@@ -57,7 +58,8 @@ suitseq = DimensionalArray(a, dimz)
     end
 
     @testset "layers returns second frame values at 1.5 times through the timespan" begin
-        interp = precalc_time_interpolation(suitseq, rule, data, timestep(data), 15)
+        t = 15d
+        interp = precalc_time_interpolation(suitseq, rule, data, t)
         @test layer(suitseq, data, (1, 1), interp) == 1.5
         @test layer(suitseq, data, (1, 2), interp) == 1.6
         @test layer(suitseq, data, (2, 1), interp) == 1.7
@@ -65,10 +67,11 @@ suitseq = DimensionalArray(a, dimz)
     end
 
     @testset "layers interpolates halfway between frames on the timespan" begin
-        interp = precalc_time_interpolation(suitseq, rule, data, timestep(data), 10)
-        @test layer(suitseq, data, (1, 1), interp) ≈ 0.8
-        @test layer(suitseq, data, (1, 2), interp) ≈ 0.9
-        @test layer(suitseq, data, (2, 1), interp) ≈ 1.0
-        @test layer(suitseq, data, (2, 2), interp) ≈ 1.1
+        t = 10d
+        interp = precalc_time_interpolation(suitseq, rule, data, t)
+        @test layer(suitseq, data, (1, 1), interp) ≈ 1.5
+        @test layer(suitseq, data, (1, 2), interp) ≈ 1.6
+        @test layer(suitseq, data, (2, 1), interp) ≈ 1.7
+        @test layer(suitseq, data, (2, 2), interp) ≈ 1.8
     end
 end

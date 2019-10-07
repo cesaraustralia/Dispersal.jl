@@ -1,7 +1,7 @@
 
-timestep(a::AbstractDimensionalData) = step(val(dims(a, Time)))
-starttime(a::AbstractDimensionalData) = first(val(dims(a, Time)))
-stoptime(a::AbstractDimensionalData) = last(val(dims(a, Time)))
+timestep(a::AbstractDimensionalArray) = step(val(dims(a, Time)))
+starttime(a::AbstractDimensionalArray) = first(val(dims(a, Time)))
+stoptime(a::AbstractDimensionalArray) = last(val(dims(a, Time)))
 
 """
     layer(rule)
@@ -14,9 +14,9 @@ function layer end
 layer(rule::AbstractRule) = rule.layer
 Base.@propagate_inbounds layer(rule::AbstractRule, data, index) =
     layer(layer(rule), data, index, timeinterp(rule))
-Base.@propagate_inbounds layer(layer::Matrix, data, index, interp) = layer[index...]
-Base.@propagate_inbounds layer(layers::AbstractArray{T,3}, data, index, interp) where T =
-    layers[index..., interp]
+Base.@propagate_inbounds layer(l::Matrix, data, index, interp) = l[index...]
+Base.@propagate_inbounds layer(l::AbstractArray{T,3}, data, index, interp) where T =
+    l[index..., interp]
 
 """
     precalc_time_interpolation(layer, index, t)
@@ -24,7 +24,7 @@ Base.@propagate_inbounds layer(layers::AbstractArray{T,3}, data, index, interp) 
 Interpolates between layers in a sequence. This should probably be 
 replaced with an external interpolation package.
 """
-precalc_time_interpolation(layer::AbstractMatrix, rule, data) = currentframe(data) 
+# precalc_time_interpolation(layer::AbstractMatrix, rule, data) = currentframe(data) 
 # Base.@propagate_inbounds precalc_time_interpolation(layers, rule, data) = begin
 #     # Convert Month etc timesteps to a realised DateTime period
 #     f = currentframe(data)
@@ -42,12 +42,17 @@ precalc_time_interpolation(layer::AbstractMatrix, rule, data) = currentframe(dat
 
 #     WeightedArbIndex((t1, t2), (frac, 1-frac))
 # end
-Base.@propagate_inbounds precalc_time_interpolation(layers, rule, data, t = currenttime(data)) = begin
+Base.@propagate_inbounds precalc_time_interpolation(layer, rule, data, t = currenttime(data)) = begin
     # Convert Month etc timesteps to a realised DateTime period
-    tstep = t + timestep(layers) - t
+    tstep = t + timestep(layer) - t
+    println("tstep: ", tstep)
+    println("t: ", t)
+    println("starttime: ", starttime(layer))
     nsteps = length(starttime(layer):tstep:t)
-    len = size(layers, Time)
-    cyclic(t_int, len)
+    println("nsteps: ", nsteps)
+    len = size(layer, Time)
+    println("length: ", len)
+    cyclic(nsteps, len)
 end
 
 "Cycles a time position through a particular timestep length"
