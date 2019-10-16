@@ -10,20 +10,21 @@ Drosophila _D. suzukii_ accross the continental USA.
 
 ## Setup
 
-
-First load the required packages:
+First, load the required packages. Dates is a core julia package that
+give us date/time handling, GeoData simplifies the loading of geospatial 
+raster files.
 
 ```{julia; results=hidden}
-using Dispersal, Unitful, GeoData
-using Unitful: d
+using Dispersal, Dates, GeoData
+, Plots
 ```
 
 ### Define simulation settings 
 
 ```{julia; results=hidden}
 cellsize = 1.0
-# Using Unitful.jl time units for the timestep
-simtimestep = month = 365.25d/12;
+# Using DateTime units for the timestep.
+simtimestep = Month(1);
 ```
 
 # Define a RuleSet 
@@ -58,14 +59,12 @@ plot(growthrates)
 savefig("build/assets/growthrates.png")
 ```
 
-Create a `SuitabilityExactLogisticGrowth` rule from the layer, here we use
+Create a `ExactLogisticGrowthMap` rule from the layer, here we use
 unitful units for the layers' `Time` dimension:
 
 ```{julia; results=hidden}
 carrycap = 1e8
-newdims = dims(growthrates, (Lat(), Lon())), Time(zero(month):month:12month))
-layer = rebuild(growthrates; dims=newdims)
-growth = SuitabilityExactLogisticGrowth(layer=layer, carrycap=carrycap);
+growth = ExactLogisticGrowthMap(layer=growthrates, carrycap=carrycap);
 ```
 
 ## Local dispersal
@@ -90,11 +89,20 @@ allee = AlleeExtinction(minfounders=10.0);
 ## Human dispersal
 
 The human dispersal component is generated from an array or population data.
-First we'll clean up our input data:
+First we'll open an input tiff, and move it to a memory backed `GeoArray`. 
 
 ```{julia; results=hidden}
-human_pop = GeoArray(GDALarray("population_density.tiff"; dims=dims(init)))
-plot(human_pop)
+human_pop = GDALarray("population_density.tif")[Band(1), Lon(590:1125), Lat(150:480)]
+size(growthrates)
+dims(human_pop)
+DimensionalData.order.(dims(human_pop, Lat))
+DimensionalData.dimorder(dims(human_pop, Lat))
+DimensionalData.arrayorder(dims(human_pop, Lat))
+DimensionalData.val(dims(human_pop, Lat))
+window = Lat(Between(bounds(growthrates, Lat))), Lon(Between(bounds(growthrates, Lon))) 
+plot(human_pop[window...])
+plot(growthrates[window...]))
+)
 savefig("build/assets/human_pop.png")
 ```
 
@@ -293,6 +301,4 @@ rules, and can take advantage of a number of the same performance optimisations
 by using the type heirarchy in DynamicGrids.jl. 
 
 Rules may be a [number of types]. 
-
-
 

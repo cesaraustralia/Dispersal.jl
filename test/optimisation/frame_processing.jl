@@ -1,4 +1,4 @@
-using DynamicGrids, Dispersal, Test, Colors
+using DynamicGrids, Dispersal, Test, Colors, FieldDefaults
 using DynamicGrids: frametoimage
 
 DynamicGrids.@Output mutable struct ImageOutput{} <: AbstractImageOutput{T} end
@@ -33,7 +33,7 @@ DynamicGrids.@Output mutable struct ImageOutput{} <: AbstractImageOutput{T} end
 
     processor = ColorRegionFit(objective, truepostivecolor, falsepositivecolor,
                                truenegativecolor, falsenegativecolor, maskcolor)
-    output = ImageOutput(init, false)
+    output = ImageOutput(init)
 
     # This output needs an update anyway
     @test_broken image == frametoimage(processor, output, Ruleset(), init, 1)

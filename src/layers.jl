@@ -1,7 +1,7 @@
 
-timestep(a::AbstractDimensionalArray) = step(val(dims(a, Time)))
-starttime(a::AbstractDimensionalArray) = first(val(dims(a, Time)))
-stoptime(a::AbstractDimensionalArray) = last(val(dims(a, Time)))
+DynamicGrids.timestep(a::AbstractDimensionalArray) = step(val(dims(a, Time)))
+DynamicGrids.starttime(a::AbstractDimensionalArray) = first(val(dims(a, Time)))
+DynamicGrids.stoptime(a::AbstractDimensionalArray) = last(val(dims(a, Time)))
 
 """
     layer(rule)
@@ -21,10 +21,9 @@ Base.@propagate_inbounds layer(l::AbstractArray{T,3}, data, index, interp) where
 """
     precalc_time_interpolation(layer, index, t)
 
-Interpolates between layers in a sequence. This should probably be 
+Interpolates between layers in a sequence. This should probably be
 replaced with an external interpolation package.
 """
-# precalc_time_interpolation(layer::AbstractMatrix, rule, data) = currentframe(data) 
 # Base.@propagate_inbounds precalc_time_interpolation(layers, rule, data) = begin
 #     # Convert Month etc timesteps to a realised DateTime period
 #     f = currentframe(data)
@@ -42,16 +41,11 @@ replaced with an external interpolation package.
 
 #     WeightedArbIndex((t1, t2), (frac, 1-frac))
 # end
-Base.@propagate_inbounds precalc_time_interpolation(layer, rule, data, t = currenttime(data)) = begin
+Base.@propagate_inbounds precalc_time_interpolation(layer, rule, data, t=currenttime(data)) = begin
     # Convert Month etc timesteps to a realised DateTime period
     tstep = t + timestep(layer) - t
-    println("tstep: ", tstep)
-    println("t: ", t)
-    println("starttime: ", starttime(layer))
     nsteps = length(starttime(layer):tstep:t)
-    println("nsteps: ", nsteps)
     len = size(layer, Time)
-    println("length: ", len)
     cyclic(nsteps, len)
 end
 

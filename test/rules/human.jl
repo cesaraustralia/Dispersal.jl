@@ -137,7 +137,7 @@ end
     output = ArrayOutput(init, 3)
 
     for i = 1:100
-        sim!(output, rules; init=init, tstop=3)
+        sim!(output, rules; init=init, tspan=(1, 3))
         rules.rules[1].dispersal_probs[3,3] # probability of a long distance migrant at centre
         # Population is allways maintained
         @test sum(init) == sum(output[2])

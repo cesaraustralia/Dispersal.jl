@@ -1,5 +1,6 @@
-using Dispersal, Test
+using Dispersal, Test, Unitful, Dates
 using DimensionalData: DimensionalArray, X, Y, Time
+using Unitful: d, s
 
 struct TestFormulation <: AbstractKernelFormulation end
 (f::TestFormulation)(d) = 1.0
@@ -21,41 +22,65 @@ end
 
     # time sequence of layers
     a = cat([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8], dims=3)
-    dimz = X(1:2), Y(1:2), Time(1:10:11)
+    dimz = X(1:2), Y(1:2), Time(1d:10d:11d)
     suitseq = DimensionalArray(a, dimz)
 
     # Regular
     ruleset1 = Ruleset(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                       MaskGrowthMap(layer=suitseq, threshold=0.4); init=init)
+                       MaskGrowthMap(layer=suitseq, threshold=0.4); init=init, timestep=1d)
     # Chained
     ruleset2 = Ruleset(Chain(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                     MaskGrowthMap(layer=suitseq, threshold=0.4)); init=init)
+                       MaskGrowthMap(layer=suitseq, threshold=0.4)); init=init, timestep=1d)
     output1 = ArrayOutput(init, 25)
     output2 = ArrayOutput(init, 25)
 
-    sim!(output1, ruleset1; tspan=(1, 25))
-    sim!(output2, ruleset2; tspan=(1, 25))
+    sim!(output1, ruleset1; tspan=(1d, 25d))
+    sim!(output2, ruleset2; tspan=(1d, 25d))
 
-    # All offset by one, because 1 = t0
-    @test output1[1]  == [0 0; 0 1]
-    @test output1[2]  == [0 0; 1 1]
-    @test output1[5]  == [0 0; 0 1]
-    @test output1[8]  == [0 0; 1 1]
-    @test output1[10] == [0 1; 1 1]
-    @test output1[15] == [1 1; 1 1]
-    @test output1[20] == [0 1; 1 1]
-    @test output1[22] == [0 0; 1 1]
-    @test output1[25] == [0 0; 0 1]
-    # All offset by one, because 1 = t0
-    @test output2[1]  == [0 0; 0 1]
-    @test output2[2]  == [0 0; 1 1]
-    @test output2[5]  == [0 0; 0 1]
-    @test output2[8]  == [0 0; 1 1]
-    @test output2[10] == [0 1; 1 1]
-    @test output2[15] == [1 1; 1 1]
-    @test output2[20] == [0 1; 1 1]
-    @test output2[22] == [0 0; 1 1]
-    @test output2[25] == [0 0; 0 1]
+    @testset "Rounded" begin
+        @test output1[1]  == [0 0; 0 1]
+        @test output1[2]  == [0 0; 0 1]
+        @test output1[5]  == [0 0; 0 1]
+        @test output1[8]  == [0 0; 0 1]
+        @test output1[10] == [0 0; 0 1]
+        @test output1[15] == [1 1; 1 1]
+        @test output1[20] == [1 1; 1 1]
+        @test output1[22] == [0 0; 0 1]
+        @test output1[25] == [0 0; 0 1]
+        @test output2[1]  == [0 0; 0 1]
+        @test output2[2]  == [0 0; 0 1]
+        @test output2[5]  == [0 0; 0 1]
+        @test output2[8]  == [0 0; 0 1]
+        @test output2[10] == [0 0; 0 1]
+        @test output2[15] == [1 1; 1 1]
+        @test output2[20] == [1 1; 1 1]
+        @test output2[22] == [0 0; 0 1]
+        @test output2[25] == [0 0; 0 1]
+    end
+
+    # @testset "Interpolated" begin
+    #     # All offset by one, because 1 = t0
+    #     @test output1[1]  == [0 0; 0 1]
+    #     @test output1[2]  == [0 0; 1 1]
+    #     @test output1[5]  == [0 0; 0 1]
+    #     @test output1[8]  == [0 0; 1 1]
+    #     @test output1[10] == [0 1; 1 1]
+    #     @test output1[15] == [1 1; 1 1]
+    #     @test output1[20] == [0 1; 1 1]
+    #     @test output1[22] == [0 0; 1 1]
+    #     @test output1[25] == [0 0; 0 1]
+    #     # All offset by one, because 1 = t0
+    #     @test output2[1]  == [0 0; 0 1]
+    #     @test output2[2]  == [0 0; 1 1]
+    #     @test output2[5]  == [0 0; 0 1]
+    #     @test output2[8]  == [0 0; 1 1]
+    #     @test output2[10] == [0 1; 1 1]
+    #     @test output2[15] == [1 1; 1 1]
+    #     @test output2[20] == [0 1; 1 1]
+    #     @test output2[22] == [0 0; 1 1]
+    #     @test output2[25] == [0 0; 0 1]
+    # end
+    
     @test_throws BoundsError output1[26]
     @test_throws BoundsError output2[26]
 end
@@ -94,13 +119,13 @@ end
                  1 0 1 1 1]
 
     # Dispersal in radius 1 neighborhood
-    suitmask = MaskGrowthMap(layer=suit)
+    mask = MaskGrowthMap(layer=suit)
     radius = 1
     hood = DispersalKernel{radius}(; formulation=ExponentialKernel(1.0))
 
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-        rules = Ruleset(inwards, suitmask; init=init)
+        rules = Ruleset(inwards, mask; init=init)
         output = ArrayOutput(init, 3)
         sim!(output, rules; tspan=(1, 3))
         @test output[1] == test1
@@ -108,15 +133,15 @@ end
         @test output[3] == test3
 
         # As subrules
-        rules = Ruleset(inwards, suitmask; init=init)
+        rules = Ruleset(inwards, mask; init=init)
         sim!(output, rules; tspan = (1, 3))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
     end
-    @testset "outwards dispersal fills the grid where reachable and suitable" begin
+    @testset "outwards dispersal fills the grid where reachable and mask" begin
         outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-        rules = Ruleset(outwards, suitmask; init=init)
+        rules = Ruleset(outwards, mask; init=init)
         output = ArrayOutput(init, 3)
         sim!(output, rules; tspan=(1, 3))
         @test output[1] == test1
@@ -169,22 +194,22 @@ end
              0.16  0.16  0.32  0.48  0.64  0.48  0.48;]
 
     # Dispersal in radius 1 neighborhood
-    suitmask = MaskGrowthMap(layer=suit)
+    mask = MaskGrowthMap(layer=suit)
     radius = 2
 
     @testset "inwards population dispersal fills the grid where reachable and suitable" begin
         hood = DispersalKernel{radius}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
         inwards = InwardsPopulationDispersal(neighborhood=hood)
-        rules = Ruleset(inwards, suitmask; init=init)
+        rules = Ruleset(inwards, mask; init=init, timestep=1d)
         output = ArrayOutput(init, 3)
-        sim!(output, rules; tspan=(1, 3))
+        sim!(output, rules; tspan=(4d, 6d))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3
 
         # As subrules
-        rules = Ruleset(Chain(inwards, suitmask); init=init)
-        sim!(output, rules; tspan=(1, 3))
+        rules = Ruleset(Chain(inwards, mask); init=init, timestep=Day(1))
+        sim!(output, rules; tspan=(Date(2001,1,1), Date(2001,1,3)))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3
@@ -193,9 +218,9 @@ end
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin
         hood = DispersalKernel{radius}(; formulation=TestFormulation())
         outwards = OutwardsPopulationDispersal(neighborhood=hood)
-        rules = Ruleset(outwards, suitmask; init=init)
+        rules = Ruleset(outwards, mask; init=init, timestep=Month(1))
         output = ArrayOutput(init, 3)
-        sim!(output, rules; tspan=(1, 3))
+        sim!(output, rules; tspan=(Date(2001, 1), Date(2001, 3)))
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] ≈ test3

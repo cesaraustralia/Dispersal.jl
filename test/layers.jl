@@ -66,7 +66,7 @@ suitseq = DimensionalArray(a, dimz)
         @test layer(suitseq, data, (2, 2), interp) == 1.8
     end
 
-    @testset "layers interpolates halfway between frames on the timespan" begin
+    @testset "layers returns the second frame one timestep in" begin
         t = 10d
         interp = precalc_time_interpolation(suitseq, rule, data, t)
         @test layer(suitseq, data, (1, 1), interp) ≈ 1.5

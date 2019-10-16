@@ -42,17 +42,17 @@ A simple output that stores each step of the simulation in a vector of arrays.
 - `tstop`: The length of the output.
 """
 DynamicGrids.@Output mutable struct RegionOutput{O} <: AbstractOutput{T}
-    objective::O
+    objective::O | nothing
 end
 
-RegionOutput(frame::AbstractArray{T,2}, tstop, objective) where T = begin
-    steps = stepfromframe(objective, tstop)
+RegionOutput(frame::AbstractArray{T,2}, starttime, stoptime, objective) where T = begin
+    step = stepfromframe(objective, last(DynamicGrids.tspan2fspan(tspan)))
     predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
     RegionOutput{typeof.((predictions, objective))...}(predictions, false, objective)
 end
 
 DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, t) = begin
-    step = stepfromframe(output.objective, t)
+    step = stepfromframe(output.objective, last(DynamicGrids.tspan2fspan(tspan)))
     predictions = output[1]
     for j in 1:framesize(data)[2], i in 1:framesize(data)[1]
         DynamicGrids.blockdo!(data, output, i, j, step, predictions)

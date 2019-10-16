@@ -27,13 +27,14 @@ target = [8.0 0.0 8.0
           8.0 8.0 0.0]
 
 # Test the last simulation frame matches the target when the correct rate is used
+tstart = 1
 tstop = 4
 ngroups = 1
 groupsize = 1
 rate = log(2.0)
 ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = rate); init=init)
 output = ArrayOutput(init, tstop)
-sim!(output, ruleset; tstop=tstop)
+sim!(output, ruleset; tspan=(tstart, tstop))
 
 @test output[end] == target
 
@@ -41,7 +42,7 @@ sim!(output, ruleset; tstop=tstop)
 output = ArrayOutput(init, tstop)
 objective = SimpleObjective(target)
 loss = LogitDistLoss()
-parametriser = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, tstop)
+parametriser = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, tstart, tstop)
 res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
 @test res.minimizer[1] ≈ rate atol=4
 

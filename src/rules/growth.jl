@@ -36,7 +36,10 @@ abstract type AbstractGrowthMapRule <: AbstractGrowthRule end
 layer(rule::AbstractGrowthMapRule) = rule.layer 
 timeinterp(rule::AbstractGrowthMapRule) = rule.timeinterp
 
-DynamicGrids.precalcrule!(rule::AbstractGrowthMapRule, data) = begin
+DynamicGrids.precalcrule(rule::AbstractGrowthMapRule, data) = 
+    DynamicGrids.precalcrule(layer(rule), rule, data)
+DynamicGrids.precalcrule(::AbstractMatrix, rule::AbstractGrowthMapRule, data) = rule
+DynamicGrids.precalcrule(::AbstractArray{<:Any,3}, rule::AbstractGrowthMapRule, data) = begin
     @set! rule.timeinterp = precalc_time_interpolation(layer(rule), rule, data)
     rule
 end

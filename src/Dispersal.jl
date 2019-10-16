@@ -22,13 +22,13 @@ using Colors,
 
 using LossFunctions: ZeroOneLoss
 using DimensionalData: Time
-using Interpolations: WeightedArbIndex
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
 
 import DynamicGrids: applyrule, applyrule!, neighbors, radius,
-       currenttime, framesize, mask, overflow, timestep, cellsize, ruleset
+       currenttime, framesize, mask, overflow, timestep, cellsize, ruleset, 
+       starttime, stoptime, timestep, tspan
 
 
 import Flatten: constructor_of

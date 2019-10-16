@@ -1,5 +1,5 @@
 using DynamicGrids, Dispersal, Test
-using DynamicGrids: applyrule, simdata
+using DynamicGrids: applyrule, SimData
 
 @testset "exponential growth" begin
     init =  [1.0 4.0 7.0;
@@ -8,7 +8,7 @@ using DynamicGrids: applyrule, simdata
 
     output = ArrayOutput(init, 3)
     rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)); init=init)
-    sim!(output, rule; tstop=3)
+    sim!(output, rule; tspan=(1, 3))
 
     @test output[1] == [ 1.0  4.0  7.0;
                          2.0  5.0  8.0;
@@ -31,8 +31,8 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init, 3)
-    rule = Ruleset(ExactExponentialGrowth(layer=suit); init=init)
-    sim!(output, rule; tstop=3)
+    rule = Ruleset(ExactExponentialGrowthMap(layer=suit); init=init)
+    sim!(output, rule; tspan=(1, 3))
 
     @test output[1] == [1.0 1.0 1.0;
                         1.0 1.0 1.0;
@@ -45,8 +45,8 @@ end
                         1.0 1.0 0.25]
 
     @test DynamicGrids.normaliseframe(output[3], 0.25, 4) == [0.2  0.2  1.0;
-                                                                      1.0  0.2  0.0;
-                                                                      0.2  0.2  0.0]
+                                                              1.0  0.2  0.0;
+                                                              0.2  0.2  0.0]
 
 end
 
@@ -68,10 +68,10 @@ end
              5.0      8.0      9.41176;
              6.31579  8.57143  9.72973]
 
-    rule = Ruleset(ExactLogisticGrowthMap(intrinsicrate=log(2.0), carrycap=10); init=init)
+    rule = Ruleset(ExactLogisticGrowth(intrinsicrate=log(2.0), carrycap=10); init=init)
     output = ArrayOutput(init, 3)
 
-    sim!(output, rule; tstop=3)
+    sim!(output, rule; tspan=(1, 3))
 
     @test output[1] == test1
     @test output[2] ≈ test2 atol=1e-4
@@ -102,7 +102,7 @@ end
 
     output = ArrayOutput(init, 3)
     rule = Ruleset(ExactLogisticGrowthMap(layer=suit, carrycap=10); init=init)
-    sim!(output, rule; tstop=3)
+    sim!(output, rule; tspan=(1, 3))
 
     @test output[1] == test1
     @test output[2] ≈ test2 atol=1e-4
@@ -130,7 +130,7 @@ end
     output = ArrayOutput(init, 3)
     mask = MaskGrowthMap(layer=suit, threshold=1.1)
     ruleset = Ruleset(mask; init=init)
-    data = simdata(ruleset, init)
+    data = SimData(ruleset, init, 1)
 
     @test applyrule(mask, data, 5, (1, 1)) === 0
     @test applyrule(mask, data, 5, (2, 2)) === 5
@@ -138,7 +138,7 @@ end
     @test applyrule(mask, data, 5.0, (1, 1)) === 0.0
     @test applyrule(mask, data, 5.0, (2, 2)) === 5.0
 
-    sim!(output, Ruleset(mask; init=init); tstop=3)
+    sim!(output, Ruleset(mask; init=init); tspan=(1, 3))
 
     @test output[1] == test1
     @test output[2] == test2
