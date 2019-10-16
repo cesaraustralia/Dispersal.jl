@@ -45,6 +45,8 @@ DynamicGrids.@Output mutable struct RegionOutput{O} <: AbstractOutput{T}
     objective::O | nothing
 end
 
+objective(o::RegionOutput) = o.objective
+
 RegionOutput(frame::AbstractArray{T,2}, starttime, stoptime, objective) where T = begin
     step = stepfromframe(objective, last(DynamicGrids.tspan2fspan(tspan)))
     predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
@@ -52,7 +54,7 @@ RegionOutput(frame::AbstractArray{T,2}, starttime, stoptime, objective) where T 
 end
 
 DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, t) = begin
-    step = stepfromframe(output.objective, last(DynamicGrids.tspan2fspan(tspan)))
+    step = stepfromframe(objective(output), last(DynamicGrids.tspan2fspan(tspan(output), timestep(data))))
     predictions = output[1]
     for j in 1:framesize(data)[2], i in 1:framesize(data)[1]
         DynamicGrids.blockdo!(data, output, i, j, step, predictions)
@@ -60,7 +62,7 @@ DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, t) = 
 end
 
 DynamicGrids.initframes!(output::RegionOutput, init) = begin
-    step = stepfromframe(output.objective, 1)
+    step = stepfromframe(objective(output), 1)
     predictions = output[1]
     predictions .= false
     for j in 1:size(init, 2), i in 1:size(init, 1)
@@ -69,9 +71,9 @@ DynamicGrids.initframes!(output::RegionOutput, init) = begin
 end
 
 @inline DynamicGrids.blockdo!(data, output::RegionOutput, i, j, step, predictions) = begin
-    objective = output.objective
-    data[i, j] > objective.detectionthreshold || return
-    region = objective.regionlookup[i, j]
+    obj = objective(output)
+    data[i, j] > obj.detectionthreshold || return
+    region = obj.regionlookup[i, j]
     region > zero(region) || return
     predictions[region, step] = true
 end

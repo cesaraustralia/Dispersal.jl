@@ -16,63 +16,66 @@ using DynamicGrids: frametoimage
 end
 
 
-# @testset "SimpleObjective" begin
+@testset "SimpleObjective" begin
 
-init =  [1.0 0.0 1.0
-         0.0 0.0 0.0
-         1.0 1.0 0.0]
+    init =  [1.0 0.0 1.0
+             0.0 0.0 0.0
+             1.0 1.0 0.0]
 
-target = [8.0 0.0 8.0
-          0.0 0.0 0.0
-          8.0 8.0 0.0]
+    target = [8.0 0.0 8.0
+              0.0 0.0 0.0
+              8.0 8.0 0.0]
 
-# Test the last simulation frame matches the target when the correct rate is used
-tstart = 1
-tstop = 4
-ngroups = 1
-groupsize = 1
-rate = log(2.0)
-ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = rate); init=init)
-output = ArrayOutput(init, tstop)
-sim!(output, ruleset; tspan=(tstart, tstop))
+    # Test the last simulation frame matches the target when the correct rate is used
+    starttime = 1
+    stoptime = 4
+    ngroups = 1
+    groupsize = 1
+    rate = log(2.0)
+    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = rate); init=init)
+    output = ArrayOutput(init, stoptime)
+    sim!(output, ruleset; tspan=(starttime, stoptime))
 
-@test output[end] == target
+    @test output[end] == target
 
-# Test optim finds the correct intrinsic growth rate
-output = ArrayOutput(init, tstop)
-objective = SimpleObjective(target)
-loss = LogitDistLoss()
-parametriser = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, tstart, tstop)
-res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
-@test res.minimizer[1] ≈ rate atol=4
+    # Test optim finds the correct intrinsic growth rate
+    output = ArrayOutput(init, stoptime)
+    objective = SimpleObjective(target)
+    loss = LogitDistLoss()
+    parametriser = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, starttime, stoptime)
+    res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
+    @test res.minimizer[1] ≈ rate atol=4
+end
 
-# @testset "RegionObjective" begin
-init =  [1.0  1.0  0.5
-         0.0  0.0  0.0
-         0.0  0.0  0.0]
+@testset "RegionObjective" begin
+    init =  [1.0  1.0  0.5
+             0.0  0.0  0.0
+             0.0  0.0  0.0]
 
-regionlookup = [1  2  3
-                1  2  3
-                2  2  0]
+    regionlookup = [1  2  3
+                    1  2  3
+                    2  2  0]
 
-occurance = Bool[0  1  0  # 1
-                 1  0  1  # 2
-                 1  1  0] # 3
+    occurance = Bool[0  1  0  # 1
+                     1  0  1  # 2
+                     1  1  0] # 3
 
-ngroups = 1
-groupsize = 1
-framesperstep = 2
-steps = 3
-tstop = framesperstep * steps
-detectionthreshold = 0.1
-transform = x -> 2x - 1
+    ngroups = 1
+    groupsize = 1
+    framesperstep = 2
+    steps = 3
+    starttime = 1
+    stoptime = framesperstep * steps
+    detectionthreshold = 0.1
+    transform = x -> 2x - 1
 
 
-# TODO do this with a real dispersal function and predict parameters
-objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep, 1)
-output = RegionOutput(init, tstop, objective)
-ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
-loss = ZeroOneLoss()
-parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tstop)
-
-parametriser(flatten(ruleset))
+    # TODO test the result with a real dispersal function and predict parameters
+    objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep, 1)
+    output = RegionOutput(init, starttime=starttime, stoptime=stoptime, objective=objective)
+    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
+    loss = ZeroOneLoss()
+    parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, stoptime)
+    parametriser(flatten(ruleset))
+    res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
+end
