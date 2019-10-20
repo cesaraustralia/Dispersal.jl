@@ -15,8 +15,8 @@ give us date/time handling, GeoData simplifies the loading of geospatial
 raster files.
 
 ```{julia; results=hidden}
-using Dispersal, Dates, GeoData
-, Plots
+using Dispersal, Dates, GeoData, Plots
+using GeoData: Time
 ```
 
 ### Define simulation settings 
@@ -45,8 +45,10 @@ just download the output saved in the example:
 
 ```{julia; eval=false}
 using JLD2
-if !isfile("growthrates.jld2")
-    download("https://rafaqz.github.io/GrowthRates.jl/dev/growthrates.jld2")
+dataurl = "https://media.githubusercontent.com/media/cesaraustralia/Dispersal.jl/data"
+growthratesfilename = "growthrates.jld2"
+if !isfile(growthratesfilename)
+    download(joinpath(dataurl, growthratesfilename))
 end
 @load "growthrates.jld2" growthrates
 ```
@@ -55,7 +57,7 @@ Plot the growth layer:
 
 ```{julia; results=hidden}
 using Plots
-plot(growthrates)
+plot(growthrates[Time(1)])
 savefig("build/assets/growthrates.png")
 ```
 
@@ -92,7 +94,11 @@ The human dispersal component is generated from an array or population data.
 First we'll open an input tiff, and move it to a memory backed `GeoArray`. 
 
 ```{julia; results=hidden}
-human_pop = GDALarray("population_density.tif")[Band(1), Lon(590:1125), Lat(150:480)]
+humanpopfilename = "population_density.tif"
+if !isfile(humanpopfilename)
+    download(joinpath(dataurl, humanpopfilename))
+end
+human_pop = GDALarray()[Band(1), Lon(590:1125), Lat(150:480)]
 size(growthrates)
 dims(human_pop)
 DimensionalData.order.(dims(human_pop, Lat))

@@ -3,6 +3,7 @@ module Dispersal
 @doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
 using Colors,
+      Dates,
       DimensionalData,
       Distributed,
       DocStringExtensions,
@@ -27,8 +28,8 @@ import Base: getindex, setindex!, lastindex, size, length, push!
 
 
 import DynamicGrids: applyrule, applyrule!, neighbors, radius,
-       currenttime, framesize, mask, overflow, timestep, cellsize, ruleset, 
-       starttime, stoptime, timestep, tspan
+       framesize, mask, overflow, cellsize, ruleset, 
+       currenttime, currenttimestep, starttime, stoptime, timestep, tspan
 
 
 import Flatten: constructor_of

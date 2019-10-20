@@ -1,24 +1,47 @@
-using DynamicGrids, Dispersal, Test
+using DynamicGrids, Dispersal, Test, Unitful, Dates
 using DynamicGrids: applyrule, SimData
+using Unitful: d
 
 @testset "exponential growth" begin
     init =  [1.0 4.0 7.0;
              2.0 5.0 8.0;
              3.0 6.0 9.0]
 
+    test1 = [ 1.0  4.0  7.0;
+              2.0  5.0  8.0;
+              3.0  6.0  9.0]
+    test2 = [ 2.0  8.0 14.0;
+              4.0 10.0 16.0;
+              6.0 12.0 18.0]
+    test3 = [ 4.0 16.0 28.0;
+              8.0 20.0 32.0;
+             12.0 24.0 36.0]
+
     output = ArrayOutput(init, 3)
     rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)); init=init)
     sim!(output, rule; tspan=(1, 3))
 
-    @test output[1] == [ 1.0  4.0  7.0;
-                         2.0  5.0  8.0;
-                         3.0  6.0  9.0]
-    @test output[2] == [ 2.0  8.0 14.0;
-                         4.0 10.0 16.0;
-                         6.0 12.0 18.0]
-    @test output[3] == [ 4.0 16.0 28.0;
-                         8.0 20.0 32.0;
-                        12.0 24.0 36.0]
+    @test output[1] == test1
+    @test output[2] == test2
+    @test output[3] == test3
+
+    output = ArrayOutput(init, 3)
+    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0), timestep=1d); init=init, timestep=1d)
+    sim!(output, rule; tspan=(1d, 3d))
+    typeof(rule.rules[1].timestep)
+
+    @test output[1] == test1
+    @test output[2] == test2
+    @test output[3] == test3
+
+    output = ArrayOutput(init, 3)
+    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)/5, timestep=Day(1)); 
+                   init=init, timestep=Day(5))
+    sim!(output, rule; tspan=(DateTime(2001,1,1), DateTime(2001,1,15)))
+
+    @test output[1] == test1
+    @test output[2] == test2
+    @test output[3] == test3
 end
 
 @testset "exponential growth with rate from suitability layer" begin

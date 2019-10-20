@@ -32,7 +32,7 @@ dimz = X(1:2), Y(1:2), Time(0d:10d:10d)
 suitseq = DimensionalArray(a, dimz)
 
 @testset "sequence of layers" begin
-    rule = ExactExponentialGrowth(1.0)
+    rule = ExactExponentialGrowth(intrinsicrate=1.0)
     ruleset = Ruleset(rule; timestep=1d)
     data = DynamicGrids.SimData(ruleset, [], 0d)
 

@@ -47,14 +47,13 @@ end
 
 objective(o::RegionOutput) = o.objective
 
-RegionOutput(frame::AbstractArray{T,2}, starttime, stoptime, objective) where T = begin
-    step = stepfromframe(objective, last(DynamicGrids.tspan2fspan(tspan)))
+RegionOutput(frame::AbstractArray{T,2}, objective) where T = begin
     predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
     RegionOutput{typeof.((predictions, objective))...}(predictions, false, objective)
 end
 
-DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, t) = begin
-    step = stepfromframe(objective(output), last(DynamicGrids.tspan2fspan(tspan(output), timestep(data))))
+DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, f) = begin
+    step = stepfromframe(objective(output), f)
     predictions = output[1]
     for j in 1:framesize(data)[2], i in 1:framesize(data)[1]
         DynamicGrids.blockdo!(data, output, i, j, step, predictions)
@@ -78,17 +77,19 @@ end
     predictions[region, step] = true
 end
 
-DynamicGrids.showframe(o::RegionOutput, ruleset::AbstractRuleset, t) = nothing
+DynamicGrids.showframe(o::RegionOutput, ruleset::AbstractRuleset, f) = nothing
 
 """
 Implementation of a loss objective that converts cell data to regional
 presence/absence and compares to a target of regional occurance data.
+
 """
 struct RegionObjective{DT,RL,OC,FS,S} <: AbstractObjective
     detectionthreshold::DT
     regionlookup::RL
     occurance::OC
     framesperstep::FS
+    # TODO fix this offset hack with real DateTime handling
     start::S
 end
 
