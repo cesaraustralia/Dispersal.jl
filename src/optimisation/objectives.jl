@@ -47,9 +47,9 @@ end
 
 objective(o::RegionOutput) = o.objective
 
-RegionOutput(frame::AbstractArray{T,2}, objective) where T = begin
+RegionOutput(objective::AbstractObjective; kwargs...) where T = begin
     predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
-    RegionOutput{typeof.((predictions, objective))...}(predictions, false, objective)
+    RegionOutput(; frames=predictions, objective=objective, kwargs...)
 end
 
 DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, f) = begin

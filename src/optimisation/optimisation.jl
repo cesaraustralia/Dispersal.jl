@@ -28,7 +28,7 @@ struct Parametriser{RU,OP,OB,TR,L,NR,GS,TSta,TSto,TH,D,TB,PB,RE}
     loss::L
     ngroups::NR
     groupsize::GS
-    startime::TSta
+    starttime::TSta
     stoptime::TSto
     threading::TH
     data::D
@@ -49,33 +49,33 @@ groupsize(p::Parametriser) = p.groupsize
 threading(p::Parametriser) = p.threading
 targetbuffer(p::Parametriser) = p.targetbuffer
 predictionbuffer(p::Parametriser) = p.predictionbuffer
-DynamicGrids.starttime(p::Parametriser) = p.startime
+DynamicGrids.starttime(p::Parametriser) = p.starttime
 DynamicGrids.stoptime(p::Parametriser) = p.stoptime
 DynamicGrids.tspan(p::Parametriser) = (starttime(p), stoptime(p))
 
 
-Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, startime, 
+Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, 
              stoptime, threading::ThreadedReplicates) = begin
     targetbuffer = transform.(targets(objective))
     # Make copies of anything threads will write to
     predictionbuffer = [transform.(targets(objective)) for i in 1:Threads.nthreads()]
     output = [deepcopy(output) for i in 1:Threads.nthreads()]
-    data = [DynamicGrids.SimData(deepcopy(ruleset), deepcopy(init(ruleset)), starttime(output)) for i in 1:Threads.nthreads()]
+    data = [DynamicGrids.SimData(deepcopy(ruleset), deepcopy(init(ruleset)), starttime) for i in 1:Threads.nthreads()]
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
-                 startime, stoptime, threading, data, targetbuffer, predictionbuffer, results)
+                 starttime, stoptime, threading, data, targetbuffer, predictionbuffer, results)
 end
 
 Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, 
-             startime, stoptime, threading=SingleCoreReplicates()) = begin
+             starttime, stoptime, threading=SingleCoreReplicates()) = begin
     targetbuffer = transform.(targets(objective))
     predictionbuffer = transform.(targets(objective))
-    data = DynamicGrids.SimData(ruleset, init(ruleset), starttime(output))
+    data = DynamicGrids.SimData(ruleset, init(ruleset), starttime)
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
-                 startime, stoptime, threading, data, targetbuffer, predictionbuffer, results)
+                 starttime, stoptime, threading, data, targetbuffer, predictionbuffer, results)
 end
 
 """
