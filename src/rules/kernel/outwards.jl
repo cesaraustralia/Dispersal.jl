@@ -31,9 +31,14 @@ DynamicGrids.radius(rule::AbstractOutwardsDispersal) = radius(rule.neighborhood)
 
 
 @inline applyrule!(rule::AbstractOutwardsDispersal, data, state, index) = begin
-    exported = mapsetneighbors!(data, rule.neighborhood, rule, state, index)
-    update_exported!(data, hood, rule, state, index, exported)
+    hood = rule.neighborhood
+    sum = mapreduceneighbors(setneighbor!, data, hood, rule, state, index)
+    update_state!(data, hood, state, index, sum)
 end
+
+@inline update_state!(data, hood, state::AbstractFloat, index, sum) = 
+    data[index...] = state - sum
+@inline update_state!(data, hood, state, index, sum) = state
 
 @inline setneighbor!(data, hood, rule::OutwardsPopulationDispersal, state::AbstractFloat, hood_index, dest_index) = begin
     @inbounds propagules = state * hood.kernel[hood_index...]
@@ -43,12 +48,11 @@ end
 
 @inline setneighbor!(data, hood, rule::OutwardsBinaryDispersal, state::Integer, hood_index, dest_index) = begin
     @inbounds rand() * hood.kernel[hood_index...] > rule.prob_threshold || return zero(state)
-
     @inbounds data[dest_index...] += oneunit(state)
     oneunit(state)
 end
 
-@inline setneighbor!(data, hood, rule::OutwardsPopulationDispersal, state::Bool, hood_index, dest_index) = begin
+@inline setneighbor!(data, hood, rule::OutwardsBinaryDispersal, state::Bool, hood_index, dest_index) = begin
     @inbounds rand() * hood.kernel[hood_index...] > rule.prob_threshold || return zero(state)
 
     @inbounds data[dest_index...] |= oneunit(state)

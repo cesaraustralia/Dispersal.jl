@@ -267,7 +267,9 @@ end
 @inline applyrule!(rule::HumanDispersal, data, state, index) = begin
     dispersalprob = rule.dispersal_probs[index...]
     ismissing(dispersalprob) && return
-    data[index...] -= humandispersal!(rule, data, state, index, dispersalprob)
+    dispersed = humandispersal!(rule, data, state, index, dispersalprob)
+    # These need to stay on separate lines as humandispersal may alter data[index...]
+    data[index...] -= dispersed 
 end
 
 
@@ -294,7 +296,7 @@ humandispersal!(rule::AbstractHumanDispersal, data, state, index, dispersalprob)
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
-    dispersed = 0
+    dispersed = zero(state)
     while dispersed < total_dispersers
         # Select a subset of the remaining dispersers for a dispersal event
         dispersers = min(rand(1:max_dispersers), total_dispersers - dispersed)
@@ -309,10 +311,8 @@ humandispersal!(rule::AbstractHumanDispersal, data, state, index, dispersalprob)
         # Disperse to the cell
         data[dest_index...] += dispersers
         # Track how many have allready dispersed
-        isnan(dispersers) && error(string("NaN dispersers", (state, index)))
         dispersed += dispersers
     end
-    isnan(dispersed) && error(string("NaN dispersers", (state, index)))
     dispersed
 end
 
