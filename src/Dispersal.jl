@@ -61,6 +61,8 @@ export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
 export AlleeExtinction, AlleeExtinction
 
+export Detection, QuanantinedHumanDispersal
+
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput, 
        ColorRegionFit, Accuracy
 
