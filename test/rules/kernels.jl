@@ -33,7 +33,7 @@ test3 = [0.48  0.96  1.44  1.92  2.4  1.92  1.44;
          0.32  0.64  0.96  1.28  1.6  1.28  0.96;
          0.16  0.32  0.48  0.64  0.8  0.64  0.48]
 
-struct TestFormulation <: AbstractKernelFormulation end
+struct TestFormulation <: KernelFormulation end
 (f::TestFormulation)(d) = 1.0
 
 # Dispersal in radius 2 neighborhood

@@ -48,12 +48,6 @@ const Gravity = CellGravity{Float32,Index}
 const Precalc = Union{Vector{Interval},Missing}
 const Prop = Union{Float32,Missing}
 
-
-"""
-Human driven dispersal rules
-"""
-abstract type AbstractHumanDispersal <: AbstractPartialRule end
-
 """
 HumanDispersal Rules human-driven dispersal patterns using population data.
 
@@ -69,7 +63,7 @@ scale value is good for use in a live interface.
 
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP,B} <: AbstractHumanDispersal
+@description @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP,B} <: PartialRule
     # Field                | Flatten | Limits
     human_pop::HP          | false   | _               | _
     cellsize::CS           | false   | _               | _
@@ -273,7 +267,7 @@ end
 end
 
 
-humandispersal!(rule::AbstractHumanDispersal, data, state, index, dispersalprob) = begin
+humandispersal!(rule::HumanDispersal, data, state, index, dispersalprob) = begin
     shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
     ismissing(shortlist) && return
 
@@ -323,7 +317,7 @@ end
 
 # """
 # Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
-# This lets you view the contents of a cell in an AbstractOutput display.
+# This lets you view the contents of a cell in an Output display.
 
 # ## Arguments:
 # `a`: A matrix of the same size the precalculation was performed on

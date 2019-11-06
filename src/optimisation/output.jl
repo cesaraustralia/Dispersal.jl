@@ -12,7 +12,7 @@ Fields:
 `falsenegativecolor`
 `maskcolor` : color when a cell region of zero or lower
 """
-struct ColorRegionFit{O,P,N,TZ,FZ,M} <: AbstractFrameProcessor
+struct ColorRegionFit{O,P,N,TZ,FZ,M} <: FrameProcessor
     objective::O
     truescheme::P
     falsescheme::N
@@ -27,7 +27,7 @@ end
 Visualise the match between predictions and observed regional occupancy 
 during live simulations.
 """
-DynamicGrids.frametoimage(p::ColorRegionFit, output::AbstractImageOutput, ruleset::AbstractRuleset, frame, t) = begin
+DynamicGrids.frametoimage(p::ColorRegionFit, output::ImageOutput, ruleset::Ruleset, frame, t) = begin
     step = stepfromframe(p.objective, t)
     img = similar(frame, RGB24)
     obj = p.objective

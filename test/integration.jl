@@ -2,7 +2,7 @@ using Dispersal, Test, Unitful, Dates
 using DimensionalData: DimensionalArray, X, Y, Time
 using Unitful: d, s
 
-struct TestFormulation <: AbstractKernelFormulation end
+struct TestFormulation <: KernelFormulation end
 (f::TestFormulation)(d) = 1.0
 
 @testset "dispersal kernel array matches passed in function" begin

@@ -21,36 +21,36 @@ end
 
 
 """
-Extends AbstractCellRule for rules of growth dynamics
+Extends CellRule for rules of growth dynamics
 
 For best performance these should be chained with other
-AbstractCellRule or following an AbstractNeighborhoodRule.
+CellRule or following an NeighborhoodRule.
 """
-abstract type AbstractGrowthRule <: AbstractCellRule end
+abstract type GrowthRule <: CellRule end
 
 
 """
-Extends AbstractGrowthRule for growth rules using a heterogenous
+Extends GrowthRule for growth rules using a heterogenous
 growth rate layer. 
 
 [GrowthMaps.jl](http://github.com/cesaraustralia/GrowthMaps.jl)
 can produce these growth maps from environmental data.
 """
-abstract type AbstractGrowthMapRule <: AbstractGrowthRule end
+abstract type GrowthMapRule <: GrowthRule end
 
-layer(rule::AbstractGrowthMapRule) = rule.layer 
-timeinterp(rule::AbstractGrowthMapRule) = rule.timeinterp
+layer(rule::GrowthMapRule) = rule.layer 
+timeinterp(rule::GrowthMapRule) = rule.timeinterp
 
-DynamicGrids.precalcrules(rule::AbstractGrowthMapRule, data) = begin
+DynamicGrids.precalcrules(rule::GrowthMapRule, data) = begin
     if :timestep in fieldnames(typeof(rule))
         rule = precaltimestep(rule, data)
     end
     DynamicGrids.precalcrules(layer(rule), rule, data)
 end
-DynamicGrids.precalcrules(::AbstractMatrix, rule::AbstractGrowthMapRule, data) = rule
-DynamicGrids.precalcrules(::AbstractArray{<:Any,3}, rule::AbstractGrowthMapRule, data) =
+DynamicGrids.precalcrules(::AbstractMatrix, rule::GrowthMapRule, data) = rule
+DynamicGrids.precalcrules(::AbstractArray{<:Any,3}, rule::GrowthMapRule, data) =
     @set rule.timeinterp = precalc_time_interpolation(layer(rule), rule, data)
-DynamicGrids.precalcrules(rule::AbstractGrowthRule, data) = 
+DynamicGrids.precalcrules(rule::GrowthRule, data) = 
     if :timestep in fieldnames(typeof(rule))
         precaltimestep(rule, data)
     else
@@ -71,7 +71,7 @@ precaltimestep(ruletimestep, rule, data) =
 Simple fixed exponential growth rate using exact solution.
 $(FIELDDOCTABLE)
 """
-@InstrinsicGrowthRate struct ExactExponentialGrowth{} <: AbstractGrowthRule end
+@InstrinsicGrowthRate struct ExactExponentialGrowth{} <: GrowthRule end
 
 @inline applyrule(rule::ExactExponentialGrowth, data, state, args...) =
     state * exp(rule.intrinsicrate * rule.nsteps)
@@ -80,7 +80,7 @@ $(FIELDDOCTABLE)
 Simple fixed logistic growth rate using exact solution
 $(FIELDDOCTABLE)
 """
-@CarryCap @InstrinsicGrowthRate struct ExactLogisticGrowth{} <: AbstractGrowthRule end
+@CarryCap @InstrinsicGrowthRate struct ExactLogisticGrowth{} <: GrowthRule end
 
 @inline applyrule(rule::ExactLogisticGrowth, data, state, index, args...) = begin
     @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) * 
@@ -91,7 +91,7 @@ end
 Exponential growth based on a growth rate layer using exact solution.
 $(FIELDDOCTABLE)
 """
-@Layers struct ExactExponentialGrowthMap{} <: AbstractGrowthMapRule end
+@Layers struct ExactExponentialGrowthMap{} <: GrowthMapRule end
 
 @inline applyrule(rule::ExactExponentialGrowthMap, data, state, index, args...) = begin
     intrinsicrate = layer(rule, data, index)
@@ -104,7 +104,7 @@ Logistic growth based on a growth rate layer, using exact solution.
 Saturation only applies with positive growth
 $(FIELDDOCTABLE)
 """
-@CarryCap @Layers struct ExactLogisticGrowthMap{} <: AbstractGrowthMapRule end
+@CarryCap @Layers struct ExactLogisticGrowthMap{} <: GrowthMapRule end
 
 @inline applyrule(rule::ExactLogisticGrowthMap, data, state, index, args...) = begin
     @inbounds intrinsicrate = layer(rule, data, index)
@@ -120,7 +120,7 @@ end
 Simple layer mask. Values below a certain threshold are replaced with zero.
 $(FIELDDOCTABLE)
 """
-@Layers struct MaskGrowthMap{ST} <: AbstractGrowthMapRule
+@Layers struct MaskGrowthMap{ST} <: GrowthMapRule
     threshold::ST | 0.5 | true  | (0.0, 1.0) | "Minimum viability index."
 end
 

@@ -12,7 +12,7 @@ Parametrizer object to use with Optim.jl or similar
 
 # Arguments
 `ruleset::Ruleset`: simulation ruleset, with `init` array attached
-`objective::AbstractObjective`: objective data
+`objective::Objective`: objective data
 `transform`: single argument function to transform targets and predictions before the loss function
 `loss`: LossFunctions.jl loss function
 `ngroups`: number of replicate simulation

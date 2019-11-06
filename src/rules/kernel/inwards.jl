@@ -2,16 +2,12 @@
 """
 Inwards neighborhood based dispersal models.
 """
-abstract type AbstractInwardsDispersal{R} <: AbstractNeighborhoodRule{R} end
+abstract type InwardsDispersal{R} <: NeighborhoodRule{R} end
 
-@inline neighbors(hood::DispersalKernel, rule::AbstractInwardsDispersal, buf, state) = begin
-    @inbounds buf ⋅ hood.kernel
-end
+DynamicGrids.radius(rule::InwardsDispersal{R}) where R = R 
 
-DynamicGrids.radius(rule::AbstractInwardsDispersal{R}) where R = R 
-
-# Get the radius from the kernel for all AbstractInwardsDispersal
-(::Type{T})(kernel, args...) where T <: AbstractInwardsDispersal = 
+# Get the radius from the kernel for all InwardsDispersal
+(::Type{T})(kernel, args...) where T <: InwardsDispersal = 
     T{radius(kernel),typeof(kernel),typeof.(args)...}(kernel, args...)
 
 """
@@ -22,11 +18,11 @@ The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 $(FIELDDOCTABLE)
 """
-@Kernel @Probabilistic struct InwardsBinaryDispersal{R} <: AbstractInwardsDispersal{R} end
+@Kernel @Probabilistic struct InwardsBinaryDispersal{R} <: InwardsDispersal{R} end
 
 @inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, index, buf) = begin
     # Combine neighborhood cells into a single scalar
-    cc = neighbors(rule.neighborhood, rule, buf, state)
+    cc = neighbors(neighborhood(rule), rule, buf, state)
 
     # Set to occupied if enough pressure from neighbors
     pressure(rule, cc) ? oneunit(state) : state
@@ -37,10 +33,10 @@ Disperses to the current cells from the populations of the surrounding cells,
 using a dispersal kernel.
 $(FIELDDOCTABLE)
 """
-@Kernel struct InwardsPopulationDispersal{R} <: AbstractInwardsDispersal{R} end
+@Kernel struct InwardsPopulationDispersal{R} <: InwardsDispersal{R} end
 
 @inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, index, buf) = 
-    neighbors(rule.neighborhood, rule, buf, state)
+    neighbors(neighborhood(rule), rule, buf, state)
 
 
 """
@@ -49,10 +45,10 @@ using a dispersal kernel. Dispersal amounts are randomised with a Poisonn
 distribution.
 $(FIELDDOCTABLE)
 """
-@Kernel struct PoissonInwardsPopulationDispersal{R} <: AbstractInwardsDispersal{R} end
+@Kernel struct PoissonInwardsPopulationDispersal{R} <: InwardsDispersal{R} end
 
 @inline applyrule(rule::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, index, buf) = begin
-    p = neighbors(rule.neighborhood, rule, buf, state)
+    p = neighbors(neighborhood(rule), rule, buf, state)
     p > zero(p) ? typeof(state)(rand(Poisson(p))) : state
 end
 

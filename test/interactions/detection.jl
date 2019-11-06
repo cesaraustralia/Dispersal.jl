@@ -20,7 +20,7 @@ pop = [0.0 1.0 0.0 1.0 1.0;
 
 init = (pop=pop, quarantine=quarantine)
 
-struct AddOne <: AbstractCellRule end
+struct AddOne <: CellRule end
 DynamicGrids.applyrule(rule::AddOne, data, state, index) = state + one(state)
 
 

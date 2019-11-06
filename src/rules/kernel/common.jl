@@ -1,6 +1,3 @@
-"Extends AbstractNeighborhood for for dispersal kernel neighborhoods"
-abstract type AbstractDispersalKernel{R} <: AbstractRadialNeighborhood{R} end
-
 @mix @columns struct Kernel{N}
     neighborhood::N | DispersalKernel{3}() | true  | _ | "Normalised proportions of dispersal to surrounding cells"
 end
@@ -12,7 +9,7 @@ arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
-@columns struct DispersalKernel{R,F,K,C,D} <: AbstractDispersalKernel{R}
+@columns struct DispersalKernel{R,F,K,C,D} <: AbstractRadialNeighborhood{R}
     formulation::F    | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
     kernel::K         | nothing                | false | _           | "Kernal matrix"
     cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
@@ -31,6 +28,15 @@ $(FIELDDOCTABLE)
         new{R,F,typeof(kernel),C,D}(formulation, kernel, cellsize, distancemethod)
     end
 end
+Flatten.constructor_of(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
+
+DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
+kernel(hood::DispersalKernel) = hood.kernel
+formulation(hood::DispersalKernel) = hood.formulation
+
+@inline neighbors(hood::DispersalKernel, rule, buf, state) = 
+    @inbounds return buf ⋅ kernel(hood)
+
 
 buildkernel(formulation, distancemethod, cellsize, r) = begin
     # The radius doesn't include the center cell, so add it
@@ -83,28 +89,26 @@ scale(x) = x ./= sum(x)
 #     kernel ./= sum(kernel)
 # end
 
-DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
-
-Flatten.constructor_of(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
-
 
 """
 Methods for calculating distances and dispersal probabilities between cells in a grid.
 """
-abstract type AbstractDistanceMethod end
+abstract type DistanceMethod end
+
+subsample(method::DistanceMethod) = method.subsample
 
 """
 Calculates probability of dispersal between source and destination cell centroids
 This is the obvious, naive method, but it will not handle low grid resolution well.
 """
-struct CentroidToCentroid <: AbstractDistanceMethod end
+struct CentroidToCentroid <: DistanceMethod end
 
 dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize |> f
 
 """
 Calculates probability of dispersal between source cell centroid and destination cell area.
 """
-@columns struct CentroidToArea <: AbstractDistanceMethod
+@columns struct CentroidToArea <: DistanceMethod
     subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 
@@ -113,26 +117,26 @@ dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented ye
 """
 Calculates probability of dispersal between source cell area and destination centroid.
 """
-@columns struct AreaToCentroid <: AbstractDistanceMethod
+@columns struct AreaToCentroid <: DistanceMethod
     subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
 
 @inline dispersalprob(f, dm::AreaToCentroid, x, y, cellsize) = begin
     prob = zero(cellsize)
-    centerfirst = 1 / dm.subsample / 2 - 0.5
+    centerfirst = 1 / subsample(dm) / 2 - 0.5
     centerlast = centerfirst * -1
-    range = LinRange(centerfirst, centerlast, dm.subsample)
+    range = LinRange(centerfirst, centerlast, subsample(dm))
     for j in range, i in range
         prob += sqrt((x + i)^2 + (y + j)^2) * cellsize |> f
     end
-    prob / dm.subsample^2
+    prob / subsample(dm)^2
 end
 
 """
 Calculates probability of dispersal between source and destination cell areas.
 """
-struct AreaToArea <: AbstractDistanceMethod
+struct AreaToArea <: DistanceMethod
     subsample::Int
 end
 AreaToArea(subsample::Float64) = AreaToArea(round(Int, subsample))
@@ -140,27 +144,27 @@ AreaToArea(subsample::Float64) = AreaToArea(round(Int, subsample))
 @inline dispersalprob(f, dm::AreaToArea, x, y, cellsize) = begin
     prob = zero(cellsize)
     # Get the center point of the first cell (for both dimensions)
-    centerfirst = 1 / dm.subsample / 2 - 0.5
+    centerfirst = 1 / subsample(dm) / 2 - 0.5
     centerlast = centerfirst * -1
-    range = LinRange(centerfirst, centerlast, dm.subsample)
+    range = LinRange(centerfirst, centerlast, subsample(dm))
     for i in range, j in range
         for a in range, b in range
             prob += sqrt((x + i + a)^2 + (y + j + b)^2) * cellsize |> f
         end
     end
-    prob / dm.subsample^4
+    prob / subsample(dm)^4
 end
 
 
 """
 Functors for calculating the probability of dispersal between two points.
 """
-abstract type AbstractKernelFormulation end
+abstract type KernelFormulation end
 
 """
 Probability of dispersal with a negatitve exponential relationship to distance.
 """
-@description @limits @flattenable struct ExponentialKernel{P} <: AbstractKernelFormulation
+@description @limits @flattenable struct ExponentialKernel{P} <: KernelFormulation
     λ::P    | true  | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
 end
 (f::ExponentialKernel)(distance) = exp(-distance / f.λ)

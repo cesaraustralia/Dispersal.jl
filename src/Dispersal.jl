@@ -27,9 +27,9 @@ using DimensionalData: Time
 import Base: getindex, setindex!, lastindex, size, length, push!
 
 
-import DynamicGrids: applyrule, applyrule!, applyinteraction, applyinteraction!, 
+import DynamicGrids: applyrule, applyrule!, applyinteraction, applyinteraction!,
        neighbors, neighborhood, setneighbor!, mapreduceneighbors,
-       radius, framesize, mask, overflow, cellsize, ruleset, 
+       radius, framesize, mask, overflow, cellsize, ruleset,
        currenttime, currenttimestep, starttime, stoptime, timestep, tspan
 
 
@@ -39,34 +39,31 @@ import FieldMetadata: @description, @limits, @flattenable,
                       default, description, limits, flattenable
 
 
+export AbstractDispersalKernel, DispersalKernel
 
-export AbstractDispersal
+export KernelFormulation, ExponentialKernel
+
+export DistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
 
 export AbstractInwardsDispersal, InwardsBinaryDispersal, InwardsPopulationDispersal,
        PoissonInwardsPopulationDispersal
 
 export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDispersal
 
-export AbstractDispersalKernel, DispersalKernel, AbstractKernelFormulation,
-       ExponentialKernel
 
-export AbstractDistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
-
-export AbstractJumpDispersal, JumpDispersal
-
-export AbstractHumanDispersal, HumanDispersal #, populate, populate!
+export AlleeExtinction, JumpDispersal, HumanDispersal
 
 export ExactExponentialGrowth, ExactLogisticGrowth
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
-export AlleeExtinction, AlleeExtinction
-
-export Detection, QuarantinedHumanDispersal
 
 export DetectionModel, ThresholdDetection
 
-export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput, 
+export Detection, QuarantinedHumanDispersal
+
+
+export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
        ColorRegionFit, Accuracy
 
 export ThreadedReplicates, DistributedReplicates, SingleCoreReplicates
@@ -99,7 +96,7 @@ include("interactions/quarantine.jl")
 include("interactions/detection.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
-include("optimisation/frame_processing.jl")
+include("optimisation/output.jl")
 
 
 end # module

@@ -11,8 +11,8 @@ Returns the value of a single layer or interplated value from a sequence of laye
 If multiple layers are available the product will be returned.
 """
 function layer end
-layer(rule::AbstractRule) = rule.layer
-Base.@propagate_inbounds layer(rule::AbstractRule, data, index) =
+layer(rule::Rule) = rule.layer
+Base.@propagate_inbounds layer(rule::Rule, data, index) =
     layer(layer(rule), data, index, timeinterp(rule))
 Base.@propagate_inbounds layer(l::Matrix, data, index, interp) = l[index...]
 Base.@propagate_inbounds layer(l::AbstractArray{T,3}, data, index, interp) where T =
