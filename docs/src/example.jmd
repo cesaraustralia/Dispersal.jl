@@ -98,17 +98,13 @@ humanpopfilename = "population_density.tif"
 if !isfile(humanpopfilename)
     download(joinpath(dataurl, humanpopfilename))
 end
-human_pop = GDALarray()[Band(1), Lon(590:1125), Lat(150:480)]
+human_pop = GDALarray(humanpopfilename)[Band(1), Lon(590:1125), Lat(150:480)]
 size(growthrates)
 dims(human_pop)
-DimensionalData.order.(dims(human_pop, Lat))
-DimensionalData.dimorder(dims(human_pop, Lat))
-DimensionalData.arrayorder(dims(human_pop, Lat))
-DimensionalData.val(dims(human_pop, Lat))
 window = Lat(Between(bounds(growthrates, Lat))), Lon(Between(bounds(growthrates, Lon))) 
 plot(human_pop[window...])
-plot(growthrates[window...]))
-)
+plot(growthrates[window...][Time(1)])
+
 savefig("build/assets/human_pop.png")
 ```
 
@@ -122,18 +118,30 @@ dist_exponent = 2.0
 dispersalperpop = 1e-9
 max_dispersers = 500.0
 shortlist_len = 100
-@time humandisp = HumanDispersal(human_pop; scale=scale, shortlist_len=shortlist_len, dispersalperpop=dispersalperpop,
+@time humandisp = HumanDispersal(parent(human_pop); scale=scale, shortlist_len=shortlist_len, dispersalperpop=dispersalperpop,
                                  max_dispersers=max_dispersers, cellsize=cellsize, human_exponent=human_exponent,
                                  dist_exponent=dist_exponent, timestep=simtimestep);
 ```
 
 ### Define initialisation data
 
-Make a zeros array and populate the starting cell:
+Make a zeros array and populate the starting cells:
 
 ```{julia; results=hidden}
-init = zero(growthrates[Time(1)])
-init[X, X] = 1e7
+init = zero(growthrates[Time(1), Band(1)])
+
+incursion = [(36.9677,-122.0294),
+             (37.3226,-121.8921),
+             (37.6008,-120.9545),
+             (35.3453,-119.0586),
+             (38.7318,-121.9014),
+             (38.5249,-121.9708),
+             (37.2502,-119.751)]
+
+# Using `Near` finds the nearest cell to the coordinates
+for (lat, lon) in incursion 
+    init[Lat(Near(lat)), Lon(Near(lon))] = 1e7 
+end
 ```
 
 ## Define a masking layer
@@ -141,8 +149,8 @@ init[X, X] = 1e7
 This layer lets the simulation know which cells should be ignored.
 
 ```{julia; results=hidden}
-masklayer = BitArray(mask(growthrates[Time(1)]))
-plot(masklayer)
+masklayer = BitArray(mask(growthrates[Time(1), Band(1)]))
+heatmap(masklayer)
 savefig("build/assets/mask.png")
 ```
 

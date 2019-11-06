@@ -1,8 +1,8 @@
 "Extends AbstractNeighborhood for for dispersal kernel neighborhoods"
-abstract type AbstractDispersalKernel{R} <: AbstractNeighborhood{R} end
+abstract type AbstractDispersalKernel{R} <: AbstractRadialNeighborhood{R} end
 
 @mix @columns struct Kernel{N}
-    neighborhood::N | DispersalKernel{3}() | true  | _ | "Neighborhood to disperse to or from"
+    neighborhood::N | DispersalKernel{3}() | true  | _ | "Normalised proportions of dispersal to surrounding cells"
 end
 
 """

@@ -27,8 +27,9 @@ using DimensionalData: Time
 import Base: getindex, setindex!, lastindex, size, length, push!
 
 
-import DynamicGrids: applyrule, applyrule!, neighbors, radius,
-       framesize, mask, overflow, cellsize, ruleset, 
+import DynamicGrids: applyrule, applyrule!, applyinteraction, applyinteraction!, 
+       neighbors, neighborhood, setneighbor!, mapreduceneighbors,
+       radius, framesize, mask, overflow, cellsize, ruleset, 
        currenttime, currenttimestep, starttime, stoptime, timestep, tspan
 
 
@@ -61,6 +62,10 @@ export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
 export AlleeExtinction, AlleeExtinction
 
+export Detection, QuarantinedHumanDispersal
+
+export DetectionModel, ThresholdDetection
+
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput, 
        ColorRegionFit, Accuracy
 
@@ -90,6 +95,8 @@ include("rules/growth.jl")
 include("rules/human.jl")
 include("rules/jump.jl")
 include("rules/allee.jl")
+include("interactions/quarantine.jl")
+include("interactions/detection.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
 include("optimisation/frame_processing.jl")

@@ -131,6 +131,7 @@ HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
                    human_buffer, dist_buffer)
 end
 
+
 # Precalculation
 
 """
@@ -250,19 +251,29 @@ end
 
 """
 Prealculate dispersal probailities for use in the rule
+
+This used to make sense to remove exp(), but probably should be done
+on the fly now.
 """
 precalc_dispersal_probs!(dispersal_probs, human_activity, dispersalperpop) = begin
-    maximum(skipmissing(human_activity)) * dispersalperpop > oneunit(dispersalperpop) && error("dispersalperpop is too high: more propagules can be sent than ppoulaiton")
+    maximum(skipmissing(human_activity)) * dispersalperpop > oneunit(dispersalperpop) && 
+        error("dispersalperpop is too high: more propagules can be sent than populaiton")
     dispersal_probs .= human_activity .* dispersalperpop
 end
 
 
 
 # DynamicGrids Interface
-applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
+@inline applyrule!(rule::HumanDispersal, data, state, index) = begin
     dispersalprob = rule.dispersal_probs[index...]
     ismissing(dispersalprob) && return
+    dispersed = humandispersal!(rule, data, state, index, dispersalprob)
+    # These need to stay on separate lines as humandispersal may alter data[index...]
+    data[index...] -= dispersed 
+end
 
+
+humandispersal!(rule::AbstractHumanDispersal, data, state, index, dispersalprob) = begin
     shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
     ismissing(shortlist) && return
 
@@ -285,7 +296,7 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
-    dispersed = 0
+    dispersed = zero(state)
     while dispersed < total_dispersers
         # Select a subset of the remaining dispersers for a dispersal event
         dispersers = min(rand(1:max_dispersers), total_dispersers - dispersed)
@@ -300,13 +311,11 @@ applyrule!(rule::AbstractHumanDispersal, data, state, index) = begin
         # Disperse to the cell
         data[dest_index...] += dispersers
         # Track how many have allready dispersed
-        isnan(dispersers) && error(string("NaN dispersers", (state, index)))
         dispersed += dispersers
     end
-    isnan(dispersed) && error(string("NaN disperserd", (state, index)))
-    # Subtract dispersed organisms from current cell population
-    data[index...] -= dispersed
+    dispersed
 end
+
 
 
 # Utilities - removed for memory/performance improvement. Could be returned
