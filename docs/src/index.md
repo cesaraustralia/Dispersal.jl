@@ -37,25 +37,21 @@ suitability = [0.5 0.0 0.3 0.0 0.0 0.3 0.0;
                0.0 0.0 0.0 0.0 0.0 0.0 0.7]
 
 
-# Define a dispersal kernel function
-
-f = d -> e^-d
-
 # Define the neighborhood, using the dispersal kernel and a radius
-hood = DispersalKernel(; f=f, radius=2, init=init)
+λ = 1.0
+radius = 1
+hood = DispersalKernel{radius}(;kernel=zeros(radius, radius), formulation=ExponentialKernel(λ))
 
 # Define disersal rules
-localdisp = InwardsLocalDispersal(neighborhood=hood)
-jumpdisp = JumpDispersal()
-growth = SuitabilityExactLogisticGrowth(suitability)
+localdisp = InwardsBinaryDispersal(neighborhood=hood)
 
 # Set the output type
-output = ArrayOutput(init)
+output = ArrayOutput(init, 3)
 
 # Run the simulation
-sim!(output, Rulesets(localdisp, jumpdisp, ), init, layers; time=1:3)
+sim!(output, Ruleset(localdisp); init=init, tspan=(1, 3))
 
-output.frames[3]
+output[3]
 ```
 
 ## Neighborhood Rules
