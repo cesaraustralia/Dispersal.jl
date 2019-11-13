@@ -1,0 +1,318 @@
+---
+title : Dispersal.jl example
+author : Rafael Schouten
+---
+
+# Dispersal simulations
+
+In this example we will run a simulation of the spread of the Spotted Winged
+Drosophila _D. suzukii_ accross the continental USA.
+
+## Setup
+
+First, load the required packages. Dates is a core julia package that
+give us date/time handling, GeoData simplifies the loading of geospatial 
+raster files.
+
+```{julia; results=hidden}
+using Dispersal, Dates, GeoData, Plots
+using GeoData: Time
+```
+
+### Define simulation settings 
+
+```{julia; results=hidden}
+cellsize = 1.0
+# Using DateTime units for the timestep.
+simtimestep = Month(1);
+```
+
+# Define a RuleSet 
+
+This will involve combining multiple dispersal componenents into a single
+`RuleSet` object: population growth, local dispersal, Allee effects, and human
+dispersal.
+
+
+## Climate driven population growth
+
+### Build a growth-rate matrix
+
+Follow the [examples
+tutorial](https://rafaqz.github.io/GrowthRates.jl/dev/example/index.html) over
+at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl). To skip this step
+just download the output saved in the example:
+
+```{julia; eval=false}
+using JLD2
+dataurl = "https://media.githubusercontent.com/media/cesaraustralia/Dispersal.jl/data"
+growthratesfilename = "growthrates.jld2"
+if !isfile(growthratesfilename)
+    download(joinpath(dataurl, growthratesfilename))
+end
+@load "growthrates.jld2" growthrates
+```
+
+Plot the growth layer:
+
+```{julia; results=hidden}
+using Plots
+plot(growthrates[Time(1)])
+savefig("build/assets/growthrates.png")
+```
+
+Create a `ExactLogisticGrowthMap` rule from the layer, here we use
+unitful units for the layers' `Time` dimension:
+
+```{julia; results=hidden}
+carrycap = 1e8
+growth = ExactLogisticGrowthMap(layer=growthrates, carrycap=carrycap);
+```
+
+## Local dispersal
+
+```{julia; results=hidden}
+lambda = 0.0125
+radius = 1
+sze = 2radius + 1
+dm = AreaToArea(30)
+@time hood = DispersalKernel{radius}(;kernel=zeros(Float64, radius, radius), cellsize=cellsize,
+                               formulation=ExponentialKernel(lambda), distancemethod=dm)
+localdisp = InwardsPopulationDispersal(hood)
+display(hood.kernel * carrycap);
+```
+
+## Allee effects
+
+```{julia; results=hidden}
+allee = AlleeExtinction(minfounders=10.0);
+```
+
+## Human dispersal
+
+The human dispersal component is generated from an array or population data.
+First we'll open an input tiff, and move it to a memory backed `GeoArray`. 
+
+```{julia; results=hidden}
+humanpopfilename = "population_density.tif"
+if !isfile(humanpopfilename)
+    download(joinpath(dataurl, humanpopfilename))
+end
+human_pop = GDALarray(humanpopfilename)[Band(1), Lon(590:1125), Lat(150:480)]
+size(growthrates)
+dims(human_pop)
+window = Lat(Between(bounds(growthrates, Lat))), Lon(Between(bounds(growthrates, Lon))) 
+plot(human_pop[window...])
+plot(growthrates[window...][Time(1)])
+
+savefig("build/assets/human_pop.png")
+```
+
+![popgrowth](../assets/popgrowth.png)
+
+
+```{julia; results=hidden}
+scale = 8
+human_exponent = 2.0
+dist_exponent = 2.0
+dispersalperpop = 1e-9
+max_dispersers = 500.0
+shortlist_len = 100
+@time humandisp = HumanDispersal(parent(human_pop); scale=scale, shortlist_len=shortlist_len, dispersalperpop=dispersalperpop,
+                                 max_dispersers=max_dispersers, cellsize=cellsize, human_exponent=human_exponent,
+                                 dist_exponent=dist_exponent, timestep=simtimestep);
+```
+
+### Define initialisation data
+
+Make a zeros array and populate the starting cells:
+
+```{julia; results=hidden}
+init = zero(growthrates[Time(1), Band(1)])
+
+incursion = [(36.9677,-122.0294),
+             (37.3226,-121.8921),
+             (37.6008,-120.9545),
+             (35.3453,-119.0586),
+             (38.7318,-121.9014),
+             (38.5249,-121.9708),
+             (37.2502,-119.751)]
+
+# Using `Near` finds the nearest cell to the coordinates
+for (lat, lon) in incursion 
+    init[Lat(Near(lat)), Lon(Near(lon))] = 1e7 
+end
+```
+
+## Define a masking layer
+
+This layer lets the simulation know which cells should be ignored.
+
+```{julia; results=hidden}
+masklayer = BitArray(mask(growthrates[Time(1), Band(1)]))
+heatmap(masklayer)
+savefig("build/assets/mask.png")
+```
+
+![mask](../assets/mask.png)
+
+## Define a combined ruleset
+
+```{julia; results=hidden}
+ruleset = Ruleset(humandisp, Chain(localdisp, allee, growth); 
+                  init=init, 
+                  mask=masklayer, 
+                  timestep=simtimestep, 
+                  minval=0.0, 
+                  maxval=carrycap);
+```
+
+# Output
+
+The simplest and most performant output for a simulation is an ArrayOutput,
+which simply writes the simulation to a preallocated array without visualising
+it.  
+
+```{julia; results=hidden}
+tstop = 100
+output = ArrayOutput(init, tstop) 
+```
+
+## Run a simulation
+
+To run a simulation, we pass in the output and rulset.
+
+```{julia; results=hidden}
+# FIXME: this hangs
+# sim!(output, ruleset)
+```
+
+## Save a gif of your simulation
+
+Gif files are an easy way to share the visual dynamics of the simulation. First
+we need to define a color processor to turn the simulation into images for the
+frames of the the gif. This processor can also be used later in web or gtk
+outputs.
+
+You can use the built-in `Greyscale` scheme, or any scheme from
+[ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl).
+
+```{julia; results=hidden}
+using ColorSchemes
+#scheme = ColorSchemes.autumn1
+scheme = ColorSchemes.Oranges_3
+
+## Frame Processing Colors
+zerocolor = RGB24(0.7) 
+maskcolor = RGB24(0.0)
+processor = ColorProcessor(scheme, zerocolor, maskcolor);
+```
+
+With a non-image output like ArrayOuput we need to pass in the image processor
+manually.
+
+```{julia; results=hidden}
+savegif("build/assets/sim.gif", output, ruleset, processor; fps=10)
+```
+
+![Drosphila suzukii spread](../assets/sim.gif)
+
+# Live simulation outputs
+
+There are a number of live outputs provided in CelularAutomataBase.jl and
+specific output packages DynamicGridsGtk and DynamicGridsInteract that keep
+heavy graphics and web dependencies separate form the rest of the framework.
+
+
+## REPL output
+
+You can view a simulation over SSH or just in your local console using the
+included `REPLOutput`. It doesn't work so well in Juno, so we only recommend
+using it in a real terminal. It also works better in a terminal where you can
+easily reduce the font size.
+
+```{julia; results=hidden}
+using Crayons
+output = REPLOutput(init; style=Block(), fps=5, color=:white, store=false)
+```
+
+The `Braile()` style is half the dimensions of the `Block()` style, but doen't
+look as clear.
+
+```{julia; results=hidden}
+output = REPLOutput(init; style=Braile(), fps=5, color=:white, store=false)
+```
+
+
+## Interactive web outputs
+
+[DynamicGridsInteract.jl](http://gihub.com/rafaqz/DynamicGridsInteract.jl)
+produces interactive web page outputs for a simulation. It uses Interact.jl for
+live control, providing a control console and sliders for model parameters, even
+for your own custom models.
+
+The simple `InteractOutput()` is the core output that can run on its own inside Juno
+or a Jupyter notebook. It can also be served to a browser locally or over the
+web using `ServerOutput()`, or run in a standalone desktop app using
+`ElectronOutput()`.
+
+### Juno or jupyter notebooks
+
+Building a `InteractOutput()` and running `display()` will open an output in a plot
+pane in Juno. See the example above to define an image processor. Setting
+`store` to true will save the last simulation to the output array to be saved or
+converted to a gif. Really long simulations may use your avilable ram, in which
+case set `store` to false.
+
+
+```{julia; eval=false}
+using DynamicGridsInteract
+output = InteractOutput(init, ruleset; fps=10, store=true, processor=processor, slider_throttle=1.0)
+display(output)
+```
+
+### Wrap the IneractOutput in a standalone desktop (electron) app
+
+This will create a standalone desktop app wrapping the InteractOutput. Unfortunately
+the compile and load time for electron can take quite a while.
+
+```{julia; eval=false}
+output = ElectronOutput(init, ruleset; fps=10, store=true, processor=processor, slider_throttle=1.0)
+```
+
+### Serving web pages
+
+The `InteractOutput` can be served locally or over the web. You may need to do some
+port or firewall configuration on your server, but otherwise this is all you
+need to do to serve a simulation. Unlike other outputs, `ServerOutput` makes a
+copy of the internal `InteractOutput` for each new connection. Changes in one
+connection will not effect anything in the others.
+
+```{julia; eval=false}
+output = ServerOutput(init, model; port=8000, fps=10, processor=processor, slider_throttle=1.0)
+```
+
+## Run in a GTK window
+
+The `GTKOutput` in
+[DynamicGridsGtk.jl](http://gihub.com/rafaqz/DynamicGridsGtk.jl) is a
+simple desktop output that just shows the simulation without controls. It can be
+useful for faster load-time than `ElectronOutput`, and also dedicates all
+screenspace to viewing the simulation.
+
+```{julia; eval=false}
+using DynamicGridsGtk
+output = GtkOutput(init .* 0; fps=10, store=true, processor=processor)
+```
+
+
+# Adding your own rules
+
+In Dispersal.jl and the CelularAutomataBase.jl framework it's easy to add your
+won custom model components, or 'rules' to follow the language of cellular
+automata. If you write them well they will perform as well as the built in
+rules, and can take advantage of a number of the same performance optimisations
+by using the type heirarchy in DynamicGrids.jl. 
+
+Rules may be a [number of types]. 
+
