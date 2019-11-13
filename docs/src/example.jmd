@@ -15,6 +15,8 @@ give us date/time handling, GeoData simplifies the loading of geospatial
 raster files.
 
 ```{julia; results=hidden}
+using Pkg
+Pkg.add(PackageSpec(url="https://github.com/rafaqz/GeoData.jl", rev="master"))
 using Dispersal, Dates, GeoData, Plots
 using GeoData: Time
 ```
