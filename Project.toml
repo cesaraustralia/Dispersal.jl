@@ -37,11 +37,9 @@ Reexport = "0.2"
 Setfield = "0.5"
 
 [extras]
-FieldDefaults = "49426c49-986f-5969-8844-d5cc96441cfc"
-Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["FieldDefaults", "Optim", "Unitful", "SafeTestsets", "Test"]
+test = ["Unitful", "SafeTestsets", "Test"]
