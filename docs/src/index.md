@@ -56,7 +56,7 @@ sim!(output, Ruleset(localdisp, jumpdisp, growth); init=init, tspan=(1, 3))
 display(output[1])
 display(output[2])
 display(output[3])
-```
+
 
 ## Neighborhood Rules
 

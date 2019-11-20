@@ -2,8 +2,7 @@ module Dispersal
 # Use the README as the module docs
 @doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
-using Colors,
-      Dates,
+using Dates,
       DimensionalData,
       Distributed,
       Distributions,

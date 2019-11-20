@@ -25,6 +25,6 @@ simulations.
 GtkOutput for a simple graphical viewer.
 
 [GrowthMaps.jl](https://github.com/cesaraustralia/GrowthMaps.jl) can efficiently
-generate the layers required for suitability growth rules based on temperature
+generate the layers required for growth rules based on temperature
 response and stress factors.
 
