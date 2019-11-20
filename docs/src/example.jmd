@@ -15,15 +15,17 @@ give us date/time handling, GeoData simplifies the loading of geospatial
 raster files.
 
 ```{julia; results=hidden}
+using Pkg
+Pkg.add(PackageSpec(url="https://github.com/rafaqz/GeoData.jl", rev="master"))
 using Dispersal, Dates, GeoData, Plots
 using GeoData: Time
 ```
 
 ### Define simulation settings 
 
+We use DateTime units of for the timestep:
+
 ```{julia; results=hidden}
-cellsize = 1.0
-# Using DateTime units for the timestep.
 simtimestep = Month(1);
 ```
 
@@ -44,13 +46,12 @@ at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl). To skip this step
 just download the output saved in the example:
 
 ```{julia; eval=false}
-using JLD2
 dataurl = "https://media.githubusercontent.com/media/cesaraustralia/Dispersal.jl/data"
-growthratesfilename = "growthrates.jld2"
+growthratesfilename = "growthrates.ncd"
 if !isfile(growthratesfilename)
     download(joinpath(dataurl, growthratesfilename))
 end
-@load "growthrates.jld2" growthrates
+growthrates = GeoArray(NCDarray("growthrates.ncd"))
 ```
 
 Plot the growth layer:
@@ -76,7 +77,7 @@ lambda = 0.0125
 radius = 1
 sze = 2radius + 1
 dm = AreaToArea(30)
-@time hood = DispersalKernel{radius}(;kernel=zeros(Float64, radius, radius), cellsize=cellsize,
+@time hood = DispersalKernel{radius}(;kernel=zeros(Float64, radius, radius),
                                formulation=ExponentialKernel(lambda), distancemethod=dm)
 localdisp = InwardsPopulationDispersal(hood)
 display(hood.kernel * carrycap);
@@ -119,7 +120,7 @@ dispersalperpop = 1e-9
 max_dispersers = 500.0
 shortlist_len = 100
 @time humandisp = HumanDispersal(parent(human_pop); scale=scale, shortlist_len=shortlist_len, dispersalperpop=dispersalperpop,
-                                 max_dispersers=max_dispersers, cellsize=cellsize, human_exponent=human_exponent,
+                                 max_dispersers=max_dispersers, human_exponent=human_exponent,
                                  dist_exponent=dist_exponent, timestep=simtimestep);
 ```
 
