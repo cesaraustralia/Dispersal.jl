@@ -5,6 +5,7 @@ module Dispersal
 using Dates,
       DimensionalData,
       Distributed,
+      Distributions,
       DocStringExtensions,
       FieldDefaults,
       FieldDocTables,
@@ -59,7 +60,7 @@ export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
 export DetectionModel, ThresholdDetection
 
-export Detection, QuarantinedHumanDispersal
+export Detection, QuarantinedHumanDispersal, Cost
 
 
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
@@ -93,6 +94,7 @@ include("rules/jump.jl")
 include("rules/allee.jl")
 include("interactions/quarantine.jl")
 include("interactions/detection.jl")
+include("interactions/costs.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
 include("optimisation/output.jl")

@@ -255,38 +255,20 @@ precalc_dispersal_probs!(dispersal_probs, human_activity, dispersalperpop) = beg
     dispersal_probs .= human_activity .* dispersalperpop
 end
 
-
-
 # DynamicGrids Interface
 @inline applyrule!(rule::HumanDispersal, data, state, index) = begin
     dispersalprob = rule.dispersal_probs[index...]
     ismissing(dispersalprob) && return
-    dispersed = humandispersal!(rule, data, state, index, dispersalprob)
-    # These need to stay on separate lines as humandispersal may alter data[index...]
-    data[index...] -= dispersed 
-end
-
-
-humandispersal!(rule::HumanDispersal, data, state, index, dispersalprob) = begin
     shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
     ismissing(shortlist) && return
 
     # Find the expected number of dispersers given population, dispersal prob and timeframe
     isnan(state) && println("state", state, " at time: ", currenttime(data))
     isnan(dispersalprob) && println("dispersalprob", dispersalprob)
-    meandispersers = trunc(Int, state * dispersalprob)
-    meandispersers >= zero(meandispersers) || return
+    total_dispersers = trunc(Int, state * dispersalprob)
+    total_dispersers >= zero(total_dispersers) || return
 
-    # Convert to an actual number of dispersers for this timestep
-    # total_dispersers = pois_rand(meandispersers)
-    # Check we don't disperse more than the current population (very unlikely with low dispersal probs)
-    # if total_dispersers > state
-        # total_dispersers = trunc(typeof(total_dispersers), state)
-    # end
-    total_dispersers = meandispersers # deterministic
-
-    # Get an integer value for the maximum number of dispersers
-    # in any single dispersal event
+    # Int max number of dispersers in any single dispersal event
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
@@ -302,14 +284,13 @@ humandispersal!(rule::HumanDispersal, data, state, index, dispersalprob) = begin
         # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
         DynamicGrids.ismasked(data, dest_index...) && continue
         DynamicGrids.isinbounds(dest_index, framesize(data), overflow(data)) || continue
-        # Disperse to the cell
+        # Disperse to the cell. 
         data[dest_index...] += dispersers
         # Track how many have allready dispersed
         dispersed += dispersers
     end
-    dispersed
+    data[index...] -= dispersed 
 end
-
 
 
 # Utilities - removed for memory/performance improvement. Could be returned
