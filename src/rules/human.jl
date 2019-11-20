@@ -265,8 +265,8 @@ end
     # Find the expected number of dispersers given population, dispersal prob and timeframe
     isnan(state) && println("state", state, " at time: ", currenttime(data))
     isnan(dispersalprob) && println("dispersalprob", dispersalprob)
-    totaldispersers = trunc(Int, state * dispersalprob)
-    totaldispersers >= zero(totaldispersers) || return
+    total_dispersers = trunc(Int, state * dispersalprob)
+    total_dispersers >= zero(total_dispersers) || return
 
     # Int max number of dispersers in any single dispersal event
     max_dispersers = trunc(Int, rule.max_dispersers)
