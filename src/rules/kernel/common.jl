@@ -28,7 +28,8 @@ $(FIELDDOCTABLE)
         new{R,F,typeof(kernel),C,D}(formulation, kernel, cellsize, distancemethod)
     end
 end
-Flatten.constructor_of(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
+
+ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
 
 DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 kernel(hood::DispersalKernel) = hood.kernel
