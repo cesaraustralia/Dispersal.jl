@@ -2,7 +2,8 @@ module Dispersal
 # Use the README as the module docs
 @doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
-using Dates,
+using ConstructionBase,
+      Dates,
       DimensionalData,
       Distributed,
       Distributions,
@@ -32,8 +33,7 @@ import DynamicGrids: applyrule, applyrule!, applyinteraction, applyinteraction!,
        radius, framesize, mask, overflow, cellsize, ruleset,
        currenttime, currenttimestep, starttime, stoptime, timestep, tspan
 
-
-import Flatten: constructor_of
+import ConstructionBase: constructorof
 
 import FieldMetadata: @description, @limits, @flattenable,
                       default, description, limits, flattenable
