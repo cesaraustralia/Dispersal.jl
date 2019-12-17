@@ -32,10 +32,29 @@ end
 
 targets(obj::SimpleObjective) = obj.targets
 
-predictions(obj::SimpleObjective, output) = output.frames[end]
+predictions(obj::SimpleObjective, output) = output[end]
+
 
 """
-A simple output that stores each step of the simulation in a vector of arrays.
+Implementation of a loss objective that converts cell data to regional
+presence/absence and compares to a target of regional occurance data.
+
+"""
+struct PresenceAbsenceObjective{DT,RL,OC,FS,S} <: Objective
+    detectionthreshold::DT
+    occurance::OC
+    framesperstep::FS
+end
+
+targets(obj::PresenceAbsenceObjective) = obj.occurance
+predictions(obj::PresenceAbsenceObjective, output) = output[end]
+
+
+# RegionObjective and supporting types/methods #################
+
+"""
+A minimal low-memory output that stores the inhabited regions for
+each timestep, as required by the [`RegionObjection`](@ref).
 
 ### Arguments:
 - `frames`: Single init array or vector of arrays
@@ -69,12 +88,16 @@ DynamicGrids.initframes!(output::RegionOutput, init) = begin
     end
 end
 
+"""
+Set region presence status in non-zero blocks
+"""
 @inline DynamicGrids.blockdo!(data, output::RegionOutput, i, j, step, predictions) = begin
     obj = objective(output)
     data[i, j] > obj.detectionthreshold || return
     region = obj.regionlookup[i, j]
     region > zero(region) || return
     predictions[region, step] = true
+    return
 end
 
 DynamicGrids.showframe(o::RegionOutput, ruleset::Ruleset, f) = nothing

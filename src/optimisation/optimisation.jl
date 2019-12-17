@@ -80,6 +80,7 @@ end
 
 """
     (p::Parametriser)(params)
+
 Provides an objective function for an optimiser like Optim.jl
 """
 (p::Parametriser)(params) = begin
