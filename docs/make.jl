@@ -20,10 +20,6 @@ makedocs(
     ]
 )
 
-deploydocs(
-    repo = "github.com/cesaraustralia/Dispersal.jl.git",
-)
-
 pdfdir = joinpath(basedir, "build/pdf")
 notebookdir = joinpath(basedir, "build/notebook")
 mkpath.((pdfdir, notebookdir))
@@ -33,3 +29,7 @@ weave(example, out_path=pdfdir, doctype="pandoc2pdf")
 
 # Generate examples notebook
 convert_doc(example, joinpath(notebookdir, "example.ipynb"))
+
+deploydocs(
+    repo = "github.com/cesaraustralia/Dispersal.jl.git",
+)
