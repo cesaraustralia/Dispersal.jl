@@ -44,7 +44,7 @@ using Unitful: d
     @test output[3] == test3
 end
 
-@testset "exponential growth with rate from suitability layer" begin
+@testset "exponential growth with rate from growth map" begin
     init = [1.0 1.0 1.0;
             1.0 1.0 1.0;
             1.0 1.0 1.0]
@@ -101,7 +101,7 @@ end
     @test output[3] ≈ test3 atol=1e-4
 end
 
-@testset "logistic growth with rate from suitability layer" begin
+@testset "logistic growth with rate from a growth map" begin
 
     init = [1.0 1.0 1.0;
             1.0 1.0 1.0;

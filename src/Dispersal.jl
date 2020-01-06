@@ -46,7 +46,7 @@ export KernelFormulation, ExponentialKernel
 export DistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
 
 export AbstractInwardsDispersal, InwardsBinaryDispersal, InwardsPopulationDispersal,
-       PoissonInwardsPopulationDispersal
+       PoissonInwardsPopulationDispersal, SwitchedInwardsPopulationDispersal
 
 export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDispersal
 

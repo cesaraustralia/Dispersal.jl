@@ -147,7 +147,7 @@ HumanDispersal
 ## Optimisation
 
 Dispersal.jl provides optimisation tools for automatically optimising 
-the parameters of arbitrary rulesets given target data. [`Objective`](@ref) 
+the parameters of arbitrary rulesets, given target data. [`Objective`](@ref) 
 can be extended to add specific objection functions to transform simulation outputs.
 
 ```@docs
@@ -155,6 +155,7 @@ Parametriser
 Objective
 SimpleObjective
 RegionObjective
-simpredictions
+ColorRegionFit
 targets
+predictions
 ```

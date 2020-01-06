@@ -2,14 +2,14 @@
 Objectives map simulation outputs to predictions that
 can be compared to target data using a loss function.
 
-They must implement [`simpredictions`](@ref)and [`targets`](@ref) methods.
+They must implement [`predictions`](@ref)and [`targets`](@ref) methods.
 """
 abstract type Objective end
 
 """
     targets(obj::Objective)
 Returns a targets array given an Objective. The targets must match the size and
-dimensions of the prediction array returned by `simpredictions`.
+dimensions of the prediction array returned by `predictions`.
 """
 function targets end
 

@@ -1,7 +1,11 @@
 
-DynamicGrids.timestep(a::AbstractDimensionalArray) = step(val(dims(a, Time)))
-DynamicGrids.starttime(a::AbstractDimensionalArray) = first(val(dims(a, Time)))
-DynamicGrids.stoptime(a::AbstractDimensionalArray) = last(val(dims(a, Time)))
+DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, Time))
+DynamicGrids.starttime(A::AbstractDimensionalArray) = first(val(dims(A, Time)))
+DynamicGrids.stoptime(A::AbstractDimensionalArray) = last(val(dims(A, Time)))
+# Interger gallback for other array types is the indices of dim 3
+DynamicGrids.timestep(A::AbstractArray) = 1
+DynamicGrids.starttime(A::AbstractArray) = firstindex(A, 3)
+DynamicGrids.stoptime(A::AbstractArray) = lastindex(A, 3)
 
 """
     layer(rule)
@@ -13,10 +17,15 @@ If multiple layers are available the product will be returned.
 function layer end
 layer(rule::Rule) = rule.layer
 Base.@propagate_inbounds layer(rule::Rule, data, index) =
-    layer(layer(rule), data, index, timeinterp(rule))
+    layer(layer(rule), data, index, rule.timeinterp)
 Base.@propagate_inbounds layer(l::Matrix, data, index, interp) = l[index...]
 Base.@propagate_inbounds layer(l::AbstractArray{T,3}, data, index, interp) where T =
     l[index..., interp]
+
+# Layer precalcs
+precalclayer(::AbstractMatrix, rule::Rule, data) = rule
+precalclayer(::AbstractArray{<:Any,3}, rule::Rule, data) =
+    @set rule.timeinterp = precalc_time_interpolation(layer(rule), rule, data)
 
 """
     precalc_time_interpolation(layer, index, t)
