@@ -1,18 +1,7 @@
 # Mixins
 
-@premix @columns struct Timestep{TS,S}
-    # Field            | Default | Flatn | Bounds      | Description
-    timestep::TS       | nothing | false | _           | "Timestep converted from sim data. Needs to be separate from rate for DateTime"
-    nsteps::S          | 1.0     | false | _           | "The exact nsteps timestep, updated by precalcrule"
-end
-
 @premix @Timestep struct InstrinsicGrowthRate{GR}
     intrinsicrate::GR  | 0.1     | true  | (0.0, 10.0) | "Intrinsic rate of growth per timestep"
-end
-
-@premix @Timestep struct Layers{L,TI}
-    layer::L          | nothing  | false | _           | "Data layer"
-    timeinterp::TI    | 1        | false | _           | "Precalculated interpolation indices"
 end
 
 @premix @columns struct CarryCap{CC}
@@ -45,11 +34,9 @@ DynamicGrids.precalcrules(rule::GrowthMapRule, data) = begin
     if :timestep in fieldnames(typeof(rule))
         rule = precaltimestep(rule, data)
     end
-    DynamicGrids.precalcrules(layer(rule), rule, data)
+    precalclayer(layer(rule), rule, data)
 end
-DynamicGrids.precalcrules(::AbstractMatrix, rule::GrowthMapRule, data) = rule
-DynamicGrids.precalcrules(::AbstractArray{<:Any,3}, rule::GrowthMapRule, data) =
-    @set rule.timeinterp = precalc_time_interpolation(layer(rule), rule, data)
+
 DynamicGrids.precalcrules(rule::GrowthRule, data) = 
     if :timestep in fieldnames(typeof(rule))
         precaltimestep(rule, data)
