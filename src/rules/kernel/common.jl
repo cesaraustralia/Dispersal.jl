@@ -35,7 +35,7 @@ DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 kernel(hood::DispersalKernel) = hood.kernel
 formulation(hood::DispersalKernel) = hood.formulation
 
-@inline neighbors(hood::DispersalKernel, rule, buf, state) = 
+@inline applykernel(hood::DispersalKernel, buf) = 
     @inbounds return buf ⋅ kernel(hood)
 
 

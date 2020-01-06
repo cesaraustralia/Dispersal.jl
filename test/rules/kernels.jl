@@ -1,5 +1,5 @@
-using DynamicGrids, Dispersal, Test
-
+using DynamicGrids, Dispersal, Test, DimensionalData
+using DimensionalData: DimensionalArray, X, Y, Time
 
 init =  [0.0 0.0 0.0 0.0   0.0 0.0 0.0;
          0.0 0.0 0.0 0.0   0.0 0.0 0.0;
@@ -8,14 +8,6 @@ init =  [0.0 0.0 0.0 0.0   0.0 0.0 0.0;
          0.0 0.0 0.0 0.0   0.0 0.0 0.0;
          0.0 0.0 0.0 0.0   0.0 0.0 0.0;
          0.0 0.0 0.0 0.0   0.0 0.0 0.0]
-
-test1 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0 100.0 0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0]
 
 test2 = [0.0  0.0  4.0  4.0  4.0  4.0  4.0;
          0.0  0.0  4.0  4.0  4.0  4.0  4.0;
@@ -39,21 +31,76 @@ struct TestFormulation <: KernelFormulation end
 # Dispersal in radius 2 neighborhood
 hood = DispersalKernel{2}(; formulation=TestFormulation())
 
-rules = Ruleset(InwardsPopulationDispersal(hood); init=init)
+rules = Ruleset(InwardsPopulationDispersal(;neighborhood=hood); init=init)
 output = ArrayOutput(init, 3)
 sim!(output, rules; tspan=(1, 3))
-output[1]
-output[2]
-test2
-output[3]
-test3
-@test output[1] == test1
+@test output[1] == init
 @test output[2] == test2
 @test output[3] ≈ test3
 
 rules = Ruleset(OutwardsPopulationDispersal(hood); init=init)
 output = ArrayOutput(init, 3)
 sim!(output, rules; tspan=(1, 3))
-@test output[1] == test1
+@test output[1] == init
 @test output[2] == test2
 @test_broken output[3] ≈ test3
+
+
+layerdata = cat([1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                 1.0  1.0  1.0  1.0  1.0  1.0  1.0],
+                [0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                 0.0  0.0  0.0  0.0  1.0  1.0  1.0],
+                [1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                 1.0  1.0  1.0  1.0  0.0  0.0  0.0]; dims=3)
+
+layer = DimensionalArray(layerdata, (X(1:7), Y(1:7), Time(1:3))) 
+
+init =  [0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 9.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 9.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0]
+
+test2 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+         0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+         0.0  9.0  0.0  0.0  0.0  0.0  0.0;
+         0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+
+test3 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+         1.0  1.0  1.0  0.0  0.0  0.0  0.0;
+         1.0  1.0  1.0  0.0  0.0  0.0  0.0;
+         1.0  1.0  1.0  0.0  0.0  0.0  0.0]
+
+threshold = 0.5
+hood = DispersalKernel{1}(; formulation=TestFormulation())
+rules = Ruleset(SwitchedInwardsPopulationDispersal(;neighborhood=hood, threshold=threshold, layer=layer); init=init)
+
+output = ArrayOutput(init, 4)
+sim!(output, rules; tspan=(1, 4))
+
+@test output[1] == init
+@test output[2] == test2
+@test output[3] == test3
