@@ -1,4 +1,4 @@
-using DynamicGrids, Dispersal, Test, Statistics
+using Dispersal, Test, Statistics
 using Dispersal: precalc_human_dispersal!, upsample_index, initdownsample,
                  init_dest_shortlist, CellGravity, CellInterval, downsample!
 

@@ -1,4 +1,4 @@
-using DynamicGrids, Dispersal, Test, DimensionalData
+using Dispersal, Test, DimensionalData
 using DimensionalData: DimensionalArray, X, Y, Time
 
 init =  [0.0 0.0 0.0 0.0   0.0 0.0 0.0;

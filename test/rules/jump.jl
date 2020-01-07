@@ -1,4 +1,4 @@
-using DynamicGrids, Dispersal, Test
+using Dispersal, Test
 
 init = [0 0 0 0 0;
         0 0 0 0 0;

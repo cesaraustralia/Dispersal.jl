@@ -58,11 +58,6 @@ export ExactExponentialGrowth, ExactLogisticGrowth
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
 
-export DetectionModel, ThresholdDetection
-
-export Detection, QuarantinedHumanDispersal, Cost
-
-
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
        ColorRegionFit, Accuracy
 
@@ -92,9 +87,6 @@ include("rules/growth.jl")
 include("rules/human.jl")
 include("rules/jump.jl")
 include("rules/allee.jl")
-include("interactions/quarantine.jl")
-include("interactions/detection.jl")
-include("interactions/costs.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
 include("optimisation/output.jl")
