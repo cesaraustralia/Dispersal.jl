@@ -7,32 +7,25 @@ in its [`DispersalNeighborhood`](@ref). This should be more efficient than
 inwards dispersal when a small number of cells are occupied, but less efficient 
 when a large proportion of the grid is occupied.
 """
-abstract type OutwardsDispersal{R} <: PartialNeighborhoodRule{R} end
-
-# Get the radius from the kernel for all OutwardsDispersal
-(::Type{T})(kernel, args...) where T <: OutwardsDispersal = 
-    T{radius(kernel),typeof(kernel),typeof.(args)...}(kernel, args...)
+abstract type OutwardsDispersal <: PartialNeighborhoodRule end
 
 """
 Cells in the surrounding [`DispersalNeighborhood`](@ref) have some propability of 
 invasion if the current cell is occupied.
 $(FIELDDOCTABLE)
 """
-@Kernel @Probabilistic struct OutwardsBinaryDispersal{R} <: OutwardsDispersal{R} end
+@Kernel @Probabilistic struct OutwardsBinaryDispersal{} <: OutwardsDispersal end
 
 """
 Dispersal reduces the current cell population, increasing the populations of the 
 cells in the surrounding [`DispersalNeighborhood`](@ref).
 $(FIELDDOCTABLE)
 """
-@Kernel struct OutwardsPopulationDispersal{R} <: OutwardsDispersal{R} end
-
-DynamicGrids.radius(rule::OutwardsDispersal) = radius(rule.neighborhood)
-
+@Kernel struct OutwardsPopulationDispersal{} <: OutwardsDispersal end
 
 @inline applyrule!(rule::OutwardsDispersal, data, state, index) = begin
     hood = neighborhood(rule)
-    sum = mapreduceneighbors(setneighbor!, data, hood, rule, state, index)
+    sum = mapsetneighbor!(data, hood, rule, state, index)
     update_state!(data, hood, state, index, sum)
 end
 

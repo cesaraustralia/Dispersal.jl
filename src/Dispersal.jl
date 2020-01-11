@@ -29,7 +29,7 @@ import Base: getindex, setindex!, lastindex, size, length, push!
 
 
 import DynamicGrids: applyrule, applyrule!, applyinteraction, applyinteraction!,
-       neighbors, neighborhood, setneighbor!, mapreduceneighbors,
+       neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, framesize, mask, overflow, cellsize, ruleset,
        currenttime, currenttimestep, starttime, stoptime, timestep, tspan
 

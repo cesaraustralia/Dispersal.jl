@@ -1,6 +1,5 @@
 using SafeTestsets
 
-@time @safetestset "integration" begin include("integration.jl") end
 @time @safetestset "downsampling" begin include("downsampling.jl") end
 @time @safetestset "layers" begin include("layers.jl") end
 @time @safetestset "human dispersal" begin include("rules/human.jl") end
@@ -9,4 +8,5 @@ using SafeTestsets
 @time @safetestset "allee effects" begin include("rules/allee.jl") end
 @time @safetestset "growth" begin include("rules/growth.jl") end
 # @time @safetestset "optimisation" begin include("optimisation/optimisation.jl") end
-@time @safetestset "frame_processing" begin include("optimisation/output.jl") end
+@time @safetestset "ouput" begin include("optimisation/output.jl") end
+@time @safetestset "integration" begin include("integration.jl") end
