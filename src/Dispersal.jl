@@ -57,6 +57,7 @@ export ExactExponentialGrowth, ExactLogisticGrowth
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
+export LayerCopy
 
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
        ColorRegionFit, Accuracy
@@ -77,9 +78,9 @@ const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Limits),
     $(DOCSTRING)
     """
 
+include("rules/mixins.jl")
 include("downsampling.jl")
 include("layers.jl")
-include("rules/mixins.jl")
 include("rules/kernel/common.jl")
 include("rules/kernel/inwards.jl")
 include("rules/kernel/outwards.jl")

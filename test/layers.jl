@@ -1,9 +1,9 @@
 using Dispersal, Test, Unitful
-using Dispersal: layer, cyclic, precalc_time_interpolation, timestep
+using Dispersal: layer, cyclic_index, precalc_time_interpolation, timestep
 using DimensionalData: DimensionalArray, X, Y, Time
 using Unitful: d
 
-suitlayer1 = [0.1 0.2; 
+suitlayer1 = [0.1 0.2;
               0.3 0.4]
 
 @testset "layer returns the layer value" begin
@@ -13,18 +13,18 @@ end
 
 
 @testset "sequence cycling" begin
-    @test cyclic(-4, 2) == 2
-    @test cyclic(-3, 2) == 1
-    @test cyclic(-2, 2) == 2
-    @test cyclic(-1, 2) == 1
-    @test cyclic(0, 2) == 2
-    @test cyclic(1, 2) == 1
-    @test cyclic(2, 2) == 2
-    @test cyclic(3, 2) == 1
-    @test cyclic(4, 2) == 2
-    @test cyclic(20, 10) == 10
-    @test cyclic(21, 10) == 1
-    @test cyclic(27, 10) == 7
+    @test cyclic_index(-4, 2) == 2
+    @test cyclic_index(-3, 2) == 1
+    @test cyclic_index(-2, 2) == 2
+    @test cyclic_index(-1, 2) == 1
+    @test cyclic_index(0, 2) == 2
+    @test cyclic_index(1, 2) == 1
+    @test cyclic_index(2, 2) == 2
+    @test cyclic_index(3, 2) == 1
+    @test cyclic_index(4, 2) == 2
+    @test cyclic_index(20, 10) == 10
+    @test cyclic_index(21, 10) == 1
+    @test cyclic_index(27, 10) == 7
 end
 
 a = cat([0.1 0.2; 0.3 0.4], [1.5 1.6; 1.7 1.8]; dims=3)

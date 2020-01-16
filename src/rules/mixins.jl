@@ -1,6 +1,6 @@
 # Rule mixins
 
-@chain columns @description @limits @flattenable @default_kw 
+@chain columns @description @limits @flattenable @default_kw
 
 @mix @columns struct Probabilistic{PT}
     # Field            | Default | Flatn | Limits     | Description
@@ -12,8 +12,9 @@ end
     nsteps::S          | 1.0     | false | _          | "The exact nsteps timestep, updated by precalcrule"
 end
 
-@mix @Timestep struct Layers{L,TI}
-    layer::L           | nothing | false | _          | "Data layer"
-    timeinterp::TI     | 1       | false | _          | "Precalculated interpolation indices"
-end
-
+precalctimestep(rule, data) = precalctimestep(rule.timestep, rule, data)
+precalctimestep(ruletimestep::DatePeriod, rule, data) =
+    @set rule.nsteps = currenttimestep(data) / Millisecond(ruletimestep)
+precalctimestep(ruletimestep::Nothing, rule, data) = @set rule.nsteps = 1
+precalctimestep(ruletimestep, rule, data) =
+    @set rule.nsteps = timestep(data) / ruletimestep
