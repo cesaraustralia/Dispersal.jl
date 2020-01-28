@@ -1,5 +1,5 @@
 using Dispersal, Test, Unitful
-using Dispersal: layer, cyclic_index, precalc_time_interpolation, timestep
+using Dispersal: layer, cyclic_index, precalc_timeindex, timestep
 using DimensionalData: DimensionalArray, X, Y, Time
 using Unitful: d
 
@@ -41,8 +41,8 @@ suitseq = DimensionalArray(a, dimz)
         times = (0d, 20d), (16d, 14d), (19d, 11d), (5d, 45d)#, (15d, 55d)
 
         for (t1, t2) in times
-            interp1 = precalc_time_interpolation(suitseq, rule, data, t1)
-            interp2 = precalc_time_interpolation(suitseq, rule, data, t2)
+            interp1 = precalc_timeindex(suitseq, rule, data, t1)
+            interp2 = precalc_timeindex(suitseq, rule, data, t2)
             @test interp1 == interp2
         end
 
@@ -50,7 +50,7 @@ suitseq = DimensionalArray(a, dimz)
 
     @testset "layers returns first frame values at 0.5 through the timespan" begin
         t = 5d
-        interp = precalc_time_interpolation(suitseq, rule, data, t)
+        interp = precalc_timeindex(suitseq, rule, data, t)
         @test layer(suitseq, data, (1, 1), interp) == 0.1
         @test layer(suitseq, data, (1, 2), interp) == 0.2
         @test layer(suitseq, data, (2, 1), interp) == 0.3
@@ -59,7 +59,7 @@ suitseq = DimensionalArray(a, dimz)
 
     @testset "layers returns second frame values at 1.5 times through the timespan" begin
         t = 15d
-        interp = precalc_time_interpolation(suitseq, rule, data, t)
+        interp = precalc_timeindex(suitseq, rule, data, t)
         @test layer(suitseq, data, (1, 1), interp) == 1.5
         @test layer(suitseq, data, (1, 2), interp) == 1.6
         @test layer(suitseq, data, (2, 1), interp) == 1.7
@@ -68,7 +68,7 @@ suitseq = DimensionalArray(a, dimz)
 
     @testset "layers returns the second frame one timestep in" begin
         t = 10d
-        interp = precalc_time_interpolation(suitseq, rule, data, t)
+        interp = precalc_timeindex(suitseq, rule, data, t)
         @test layer(suitseq, data, (1, 1), interp) ≈ 1.5
         @test layer(suitseq, data, (1, 2), interp) ≈ 1.6
         @test layer(suitseq, data, (2, 1), interp) ≈ 1.7

@@ -8,6 +8,17 @@ end
     carrycap::CC      | 100000.0 | true  | (0.0, 1e9)  | "Carrying capacity for each cell. Not currently scaled by area."
 end
 
+@mix @columns struct Timestep{TS,S}
+    timestep::TS       | nothing | false | _          | "Timestep converted from sim data. Needs to be separate from rate for DateTime"
+    nsteps::S          | 1.0     | false | _          | "The exact nsteps timestep, updated by precalcrule"
+end
+
+precalctimestep(rule, data) = precalctimestep(rule.timestep, rule, data)
+precalctimestep(ruletimestep::DatePeriod, rule, data) =
+    @set rule.nsteps = typeof(rule.nsteps)(currenttimestep(data) / Millisecond(ruletimestep))
+precalctimestep(ruletimestep::Nothing, rule, data) = @set rule.nsteps = oneunit(rule.nsteps)
+precalctimestep(ruletimestep, rule, data) =
+    @set rule.nsteps = typeof(rule.nsteps)(timestep(data) / ruletimestep)
 
 """
 Extends CellRule for rules of growth dynamics

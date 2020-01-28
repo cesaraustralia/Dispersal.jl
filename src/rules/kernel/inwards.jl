@@ -53,7 +53,6 @@ end
     end
 
 DynamicGrids.precalcrules(rule::SwitchedInwardsPopulationDispersal, data) = begin
-    rule = precaltimestep(rule, data)
     precalclayer(layer(rule), rule, data)
 end
 
