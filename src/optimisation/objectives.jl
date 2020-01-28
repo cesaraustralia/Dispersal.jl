@@ -71,7 +71,7 @@ RegionOutput(objective::Objective; kwargs...) where T = begin
     RegionOutput(; frames=predictions, objective=objective, kwargs...)
 end
 
-DynamicGrids.storeframe!(output::RegionOutput, data::DynamicGrids.SimData, f) = begin
+DynamicGrids.storegrid!(output::RegionOutput, data::DynamicGrids.SimData, f) = begin
     step = stepfromframe(objective(output), f)
     predictions = output[1]
     for j in 1:framesize(data)[2], i in 1:framesize(data)[1]
@@ -100,7 +100,7 @@ Set region presence status in non-zero blocks
     return
 end
 
-DynamicGrids.showframe(o::RegionOutput, ruleset::Ruleset, f) = nothing
+DynamicGrids.showgrid(o::RegionOutput, ruleset::Ruleset, f) = nothing
 
 """
 Implementation of a loss objective that converts cell data to regional

@@ -67,7 +67,7 @@ end
                         4.0 1.0 0.25;
                         1.0 1.0 0.25]
 
-    @test DynamicGrids.normaliseframe(output[3], 0.25, 4) == [0.2  0.2  1.0;
+    @test DynamicGrids.normalisegrid(output[3], 0.25, 4) == [0.2  0.2  1.0;
                                                               1.0  0.2  0.0;
                                                               0.2  0.2  0.0]
 

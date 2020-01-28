@@ -1,5 +1,5 @@
 using DynamicGrids, Dispersal, Test, Colors, FieldDefaults
-import DynamicGrids: frametoimage, @Image, @Graphic, @Output
+import DynamicGrids: grid2image, @Image, @Graphic, @Output
 
 @Image @Graphic @Output mutable struct TestImageOutput{} <: ImageOutput{T} end
 
@@ -36,5 +36,5 @@ import DynamicGrids: frametoimage, @Image, @Graphic, @Output
     output = TestImageOutput(init)
 
     # This output needs an update anyway
-    @test_broken image == frametoimage(processor, output, Ruleset(), init, 1)
+    @test_broken image == grid2image(processor, output, Ruleset(), init, 1)
 end

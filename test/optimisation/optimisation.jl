@@ -1,6 +1,6 @@
 using DynamicGrids, Dispersal, Test, Colors, Flatten, LossFunctions, Optim
 using Dispersal: stepfromframe
-using DynamicGrids: frametoimage
+using DynamicGrids: grid2image
 
 @testset "step from frame" begin
     # stepfromframe(framesperstep, frame)
