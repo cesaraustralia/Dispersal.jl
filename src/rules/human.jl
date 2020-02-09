@@ -250,7 +250,7 @@ This used to make sense to remove exp(), but probably should be done
 on the fly now.
 """
 precalc_dispersal_probs!(dispersal_probs, human_activity, dispersalperpop) = begin
-    maximum(skipmissing(human_activity)) * dispersalperpop > oneunit(dispersalperpop) && 
+    maximum(skipmissing(human_activity)) * dispersalperpop > oneunit(dispersalperpop) &&
         error("dispersalperpop is too high: more propagules can be sent than populaiton")
     dispersal_probs .= human_activity .* dispersalperpop
 end
@@ -284,35 +284,49 @@ end
         # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
         DynamicGrids.ismasked(data, dest_index...) && continue
         DynamicGrids.isinbounds(dest_index, framesize(data), overflow(data)) || continue
-        # Disperse to the cell. 
+        # Disperse to the cell.
         data[dest_index...] += dispersers
         # Track how many have allready dispersed
         dispersed += dispersers
     end
-    data[index...] -= dispersed 
+    data[index...] -= dispersed
 end
 
 
 # Utilities - removed for memory/performance improvement. Could be returned
 # as an optional process.
 
-# """
-# Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
-# This lets you view the contents of a cell in an Output display.
+"""
+Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
+This lets you view the contents of a cell in an Output display.
 
-# ## Arguments:
-# `a`: A matrix of the same size the precalculation was performed on
-# `cells`: A vector of [`CellInterval`](@ref)
-# """
-# populate!(a::AbstractMatrix, cells::Missing, scale) = a
-# populate!(a::AbstractMatrix, cells::AbstractVector{<:CellInterval}, scale) = begin
-    # for cell in cells
-        # a[upsample_index(cell.index, scale)...] = populate_val(a, cell)
-    # end
-    # a
-# end
+## Arguments:
+`a`: A matrix of the same size the precalculation was performed on
+`cells`: A vector of [`CellInterval`](@ref)
+"""
+populate!(A::AbstractMatrix, rule::HumanDispersal) = begin
+    shortlists = rule.dest_shortlists
+    for I in CartesianIndices(shortlists)
+        if ismissing(shortlists[I])
+            #A[upsample_index(Tuple(I), rule.scale)...] = missing
+        else
+            populate!(A, shortlists[I], rule.scale)
+        end
+    end
+    return A
+end
+populate!(A::AbstractMatrix, cells::AbstractVector, scale) = begin
+    lastcumprop = 0.0
+    for cell in cells
+        I = upsample_index(cell.index, scale)
+        val = A[I...]
+        if ismissing(val)
+            A[I...] = cell.cumprop - lastcumprop
+        else
+            A[I...] += cell.cumprop - lastcumprop
+        end
+    end
+    return A
+end
 
-# populate_val(a::AbstractMatrix{<:Integer}, cell) = 1
-# populate_val(a::AbstractMatrix, cell) = cell.fraction
-
-# populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
+populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)

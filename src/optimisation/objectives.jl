@@ -75,7 +75,7 @@ DynamicGrids.storegrid!(output::RegionOutput, data::DynamicGrids.SimData, f) = b
     step = stepfromframe(objective(output), f)
     predictions = output[1]
     for j in 1:framesize(data)[2], i in 1:framesize(data)[1]
-        DynamicGrids.blockdo!(data, output, i, j, step, predictions)
+        DynamicGrids.celldo!(data, output, i, j, step, predictions)
     end
 end
 
@@ -84,14 +84,14 @@ DynamicGrids.initframes!(output::RegionOutput, init) = begin
     predictions = output[1]
     predictions .= false
     for j in 1:size(init, 2), i in 1:size(init, 1)
-        DynamicGrids.blockdo!(init, output, i, j, step, predictions)
+        DynamicGrids.celldo!(init, output, i, j, step, predictions)
     end
 end
 
 """
 Set region presence status in non-zero blocks
 """
-@inline DynamicGrids.blockdo!(data, output::RegionOutput, i, j, step, predictions) = begin
+@inline DynamicGrids.celldo!(data, output::RegionOutput, i, j, step, predictions) = begin
     obj = objective(output)
     data[i, j] > obj.detectionthreshold || return
     region = obj.regionlookup[i, j]
