@@ -1,4 +1,4 @@
-using DynamicGrids: normalise, minval, maxval, ismasked, rgb
+using DynamicGrids: normalise, minval, maxval, ismasked, rgb24
 
 """
 An image procesor to visualise the model fit, for a live version of
@@ -41,17 +41,17 @@ DynamicGrids.grid2image(p::ColorRegionFit, output::ImageOutput, ruleset::Ruleset
             normed = normalise(x, min, max)
             if p.objective.occurance[region, step]
                 if !(p.truezerocolor isa Nothing) && normed == zero(normed) 
-                    rgb(p.falsezerocolor)
+                    rgb24(p.falsezerocolor)
                 else
-                    rgb(p.truescheme, normed)
+                    rgb24(p.truescheme, normed)
                 end
             else
                 if !(p.falsezerocolor isa Nothing) && normed == zero(normed) 
-                    rgb(p.truezerocolor)
+                    rgb24(p.truezerocolor)
                 elseif x > obj.detectionthreshold 
-                    rgb(p.falsescheme, normed)
+                    rgb24(p.falsescheme, normed)
                 else
-                    rgb(p.truescheme, normed)
+                    rgb24(p.truescheme, normed)
                 end
             end
         else
