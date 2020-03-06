@@ -125,6 +125,7 @@ HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
                    human_buffer, dist_buffer)
 end
 
+getindex(rule::HumanDispersal, I...) = getindex(rule.dest_shortlists, I...)
 
 # Precalculation
 
@@ -315,6 +316,9 @@ populate!(A::AbstractMatrix, rule::HumanDispersal) = begin
     end
     return A
 end
+populate!(A::AbstractMatrix, rule::HumanDispersal, I...) =
+    populate!(A::AbstractMatrix, rule[I...], rule.scale)
+populate!(A::AbstractMatrix, cells::Missing, scale) = missing
 populate!(A::AbstractMatrix, cells::AbstractVector, scale) = begin
     lastcumprop = 0.0
     for cell in cells
