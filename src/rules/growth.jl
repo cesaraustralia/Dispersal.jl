@@ -5,21 +5,9 @@
     carrycap::CC      | 100000.0 | true  | (0.0, 1e9)  | "Carrying capacity for each cell. Not currently scaled by area."
 end
 
-@mix @columns struct Timestep{TS,NS}
-    timestep::TS      | nothing  | false | _           | "Timestep converted from sim data. Needs to be separate from rate for DateTime"
-    nsteps::NS        | 1.0      | false | _           | "The exact nsteps timestep, updated by precalcrule"
-end
-
 @mix @Timestep struct InstrinsicGrowthRate{GR}
     intrinsicrate::GR | 0.1      | true  | (0.0, 10.0) | "Intrinsic rate of growth per timestep"
 end
-
-precalctimestep(rule, data) = precalctimestep(rule.timestep, rule, data)
-precalctimestep(ruletimestep::DatePeriod, rule, data) =
-    @set rule.nsteps = typeof(rule.nsteps)(currenttimestep(data) / Millisecond(ruletimestep))
-precalctimestep(ruletimestep::Nothing, rule, data) = @set rule.nsteps = oneunit(rule.nsteps)
-precalctimestep(ruletimestep, rule, data) =
-    @set rule.nsteps = typeof(rule.nsteps)(timestep(data) / ruletimestep)
 
 """
 Extends CellRule for rules of growth dynamics

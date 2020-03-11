@@ -298,28 +298,29 @@ end
 # as an optional process.
 
 """
-Populate a matrix from a shortlist of cells from one cell in the precalculated matrix
-This lets you view the contents of a cell in an Output display.
+    populate!(A::AbstractMatrix, rule::HumanDispersal, [I...])
 
-## Arguments:
-`a`: A matrix of the same size the precalculation was performed on
-`cells`: A vector of [`CellInterval`](@ref)
+Populate a matrix with the precalculated destinations from a 
+[`HumanDispersal`](@ref) rule - either all of the or some subset
+if passed the `I...` indexing arguments. This is useful for plotting 
+dispersal destinations, especially when used with GeoData.jl
 """
-populate!(A::AbstractMatrix, rule::HumanDispersal) = begin
-    shortlists = rule.dest_shortlists
+populate!(A::AbstractMatrix, rule::HumanDispersal) = 
+    populate!(A, rule.dest_shortlists, rule)
+populate!(A::AbstractMatrix, rule::HumanDispersal, I...) =
+    populate!(A::AbstractMatrix, rule[I...], rule.scale)
+populate!(A::AbstractMatrix, shortlists::AbstractArray, scale=1) = begin
     for I in CartesianIndices(shortlists)
         if ismissing(shortlists[I])
             #A[upsample_index(Tuple(I), rule.scale)...] = missing
         else
-            populate!(A, shortlists[I], rule.scale)
+            populate!(A, shortlists[I], scale)
         end
     end
     return A
 end
-populate!(A::AbstractMatrix, rule::HumanDispersal, I...) =
-    populate!(A::AbstractMatrix, rule[I...], rule.scale)
 populate!(A::AbstractMatrix, cells::Missing, scale) = missing
-populate!(A::AbstractMatrix, cells::AbstractVector, scale) = begin
+populate!(A::AbstractMatrix, cells::AbstractVector, scale=1) = begin
     lastcumprop = 0.0
     for cell in cells
         I = upsample_index(cell.index, scale)
@@ -333,4 +334,11 @@ populate!(A::AbstractMatrix, cells::AbstractVector, scale) = begin
     return A
 end
 
-populate(cells, sze, scale) = populate!(zeros(Float64, sze), cells, scale)
+"""
+    populate(cells::AbstractVector, size::Tuple, [scale::Int=1])
+
+Returns an array of size `size` populated from the vector
+of positions in `cells` rescaled by `scale`.
+"""
+populate(cells::AbstractVector, size::Tuple, scale::Int=1) = 
+    populate!(zeros(Float64, size), cells, scale)
