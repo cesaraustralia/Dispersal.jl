@@ -19,7 +19,6 @@ NetCDF and GeoTiff files, respectively.
 # using Pkg
 # Pkg.add(PackageSpec(url="https://github.com/rafaqz/GeoData.jl", rev="master"))
 using GeoData, DimensionalData
-using GeoData: Time
 using DimensionalData: setdim, rebuild
 using Dispersal, Dates, NCDatasets, ArchGDAL, Plots
 basedir = joinpath(dirname(Base.pathof(Dispersal)), "../docs")
@@ -68,19 +67,19 @@ growthrates = NCDarray(growthratesfilepath)[aust...]# |> x -> permutedims(x, (La
 # Set the length of the timestep. TODO: get this automatically from NetCDF units
 
 ```{julia; eval=false}
-growthrates = setdim(growthrates, rebuild(dims(growthrates, GeoData.Time); grid=RegularGrid(; step=timestep)))
+growthrates = setdim(growthrates, rebuild(dims(growthrates, Ti); grid=RegularGrid(; step=timestep)))
 ```
 
 Plot the growth layer:
 
 ```{julia; results=hidden}
 using Plots
-growthrates[GeoData.Time(1)] |> plot
+growthrates[Ti(1)] |> plot
 savefig(joinpath(basedir, "build/assets/growthrates.png"))
 ```
 
 Create a `ExactLogisticGrowthMap` rule from the layer, here we use
-unitful units for the layers' `Time` dimension:
+unitful units for the layers' time dimension:
 
 ```{julia; results=hidden}
 carrycap = 1e8
@@ -134,9 +133,16 @@ dist_exponent = 2.0
 dispersalperpop = 1e-9
 max_dispersers = 500.0
 shortlist_len = 100
-@time humandisp = HumanDispersal(parent(humanpop); scale=scale, shortlist_len=shortlist_len, dispersalperpop=dispersalperpop,
-                                 max_dispersers=max_dispersers, human_exponent=human_exponent,
-                                 dist_exponent=dist_exponent, timestep=timestep);
+@time humandisp = HumanDispersal(
+    human_pop=parent(humanpop), 
+    scale=scale, 
+    shortlist_len=shortlist_len, 
+    dispersalperpop=dispersalperpop,
+    max_dispersers=max_dispersers, 
+    human_exponent=human_exponent,
+    dist_exponent=dist_exponent, 
+    timestep=timestep
+);
 ```
 
 ### Define initialisation data
@@ -145,7 +151,7 @@ Make a zeros array and populate the starting cells. We need to replace the `miss
 values with something else Dispersal.jl init can't contain `missing` or it will spread everywhere:
 
 ```{julia; results=hidden}
-init = replace_missing(growthrates[GeoData.Time(1)], NaN) |> zero
+init = replace_missing(growthrates[Ti(1)], NaN) |> zero
 
 incursion = [(36.9677,-122.0294),
              (37.3226,-121.8921),
@@ -155,9 +161,9 @@ incursion = [(36.9677,-122.0294),
              (38.5249,-121.9708),
              (37.2502,-119.751)]
 
-# Using `Near` finds the nearest cell to the coordinates
+# Using `Contains` finds the interval that contains the coordinates
 for (lat, lon) in incursion
-    init[Lat(Near(lat)), Lon(Near(lon))] = 1e7
+    init[Lat(Contains(lat)), Lon(Contains(lon))] = 1e7
 end
 ```
 
@@ -176,21 +182,23 @@ savefig("build/assets/mask.png")
 ### Define a combined ruleset
 
 ```{julia; results=hidden}
-ruleset = Ruleset(humandisp, Chain(localdisp, allee, growth);
-                  init=init,
-                  mask=masklayer,
-                  timestep=timestep,
-                  minval=0.0,
-                  maxval=carrycap);
+ruleset = Ruleset(
+    humandisp, Chain(localdisp, allee, growth);
+    init=init,
+    mask=masklayer,
+    timestep=timestep,
+    minval=0.0,
+    maxval=carrycap
+);
 ```
 
 ---
 
 ## Output
 
-The simplest and most performant output for a simulation is an ArrayOutput,
-which simply writes the simulation to a preallocated array without visualising
-it.
+The simplest and oftern the most performant output for a simulation is an 
+ArrayOutput, which simply writes the simulation to a preallocated array 
+without visualising it.
 
 ```{julia; results=hidden}
 output = ArrayOutput(init, nframes)
@@ -216,8 +224,8 @@ You can use the built-in `Greyscale` scheme, or any scheme from
 
 ```{julia; results=hidden}
 using ColorSchemes, Colors
-#scheme = ColorSchemes.autumn1
 scheme = ColorSchemes.Oranges_3
+#scheme = ColorSchemes.autumn1
 
 ## Frame Processing Colors
 zerocolor = RGB24(0.7)
@@ -285,7 +293,12 @@ case set `store` to false.
 
 ```{julia; eval=false}
 using DynamicGridsInteract
-output = InteractOutput(init, ruleset; fps=10, store=true, processor=processor, slider_throttle=1.0)
+output = InteractOutput(init, ruleset; 
+    fps=10, 
+    store=true, 
+    processor=processor, 
+    slider_throttle=1.0,
+)
 display(output)
 ```
 
@@ -295,7 +308,12 @@ This will create a standalone desktop app wrapping the InteractOutput. Unfortuna
 the compile and load time for electron can take quite a while.
 
 ```{julia; eval=false}
-output = ElectronOutput(init, ruleset; fps=10, store=true, processor=processor, slider_throttle=1.0)
+output = ElectronOutput(init, ruleset; 
+    fps=10, 
+    store=true, 
+    processor=processor, 
+    slider_throttle=1.0,
+)
 ```
 
 ### Serving web pages
@@ -307,7 +325,12 @@ copy of the internal `InteractOutput` for each new connection. Changes in one
 connection will not effect anything in the others.
 
 ```{julia; eval=false}
-output = ServerOutput(init, model; port=8000, fps=10, processor=processor, slider_throttle=1.0)
+output = ServerOutput(init, model; 
+    port=8000, 
+    fps=10, 
+    processor=processor, 
+    slider_throttle=1.0,
+)
 ```
 
 ### Run in a GTK window
@@ -320,7 +343,11 @@ screenspace to viewing the simulation.
 
 ```{julia; eval=false}
 using DynamicGridsGtk
-output = GtkOutput(init .* 0; fps=10, store=true, processor=processor)
+output = GtkOutput(init .* 0; 
+    fps=10, 
+    store=true, 
+    processor=processor
+)
 sim!(output, ruleset; tspan=tspan)
 ```
 
