@@ -13,8 +13,6 @@ and plotting based on the fraction of total gravity.
 """
 struct CellInterval{P,I}
     cumprop::P
-    # fraction::P
-    # gravity::M
     index::I
 end
 
@@ -284,7 +282,7 @@ end
         dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
         # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
         DynamicGrids.ismasked(data, dest_index...) && continue
-        DynamicGrids.isinbounds(dest_index, framesize(data), overflow(data)) || continue
+        DynamicGrids.isinbounds(dest_index, gridsize(data), overflow(data)) || continue
         # Disperse to the cell.
         data[W][dest_index...] += dispersers
         # Track how many have allready dispersed
@@ -299,6 +297,7 @@ end
 
 """
     populate!(A::AbstractMatrix, rule::HumanDispersal, [I...])
+    populate!(A::AbstractMatrix, cells::AbstractArray, [scale=1])
 
 Populate a matrix with the precalculated destinations from a 
 [`HumanDispersal`](@ref) rule - either all of the or some subset
@@ -320,7 +319,7 @@ populate!(A::AbstractMatrix, shortlists::AbstractArray, scale=1) = begin
     return A
 end
 populate!(A::AbstractMatrix, cells::Missing, scale) = missing
-populate!(A::AbstractMatrix, cells::AbstractVector, scale=1) = begin
+populate!(A::AbstractMatrix, cells::AbstractVector{CellInterval}, scale=1) = begin
     lastcumprop = 0.0
     for cell in cells
         I = upsample_index(cell.index, scale)
