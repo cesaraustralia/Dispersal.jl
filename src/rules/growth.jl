@@ -1,16 +1,17 @@
 # Mixins
 
-@premix @Timestep struct InstrinsicGrowthRate{GR}
-    intrinsicrate::GR  | 0.1     | true  | (0.0, 10.0) | "Intrinsic rate of growth per timestep"
-end
-
-@premix @columns struct CarryCap{CC}
+@mix @columns struct CarryCap{CC}
+    # Field           | Default  | Flat  | Bounds      | Description
     carrycap::CC      | 100000.0 | true  | (0.0, 1e9)  | "Carrying capacity for each cell. Not currently scaled by area."
 end
 
-@mix @columns struct Timestep{TS,S}
-    timestep::TS       | nothing | false | _          | "Timestep converted from sim data. Needs to be separate from rate for DateTime"
-    nsteps::S          | 1.0     | false | _          | "The exact nsteps timestep, updated by precalcrule"
+@mix @columns struct Timestep{TS,NS}
+    timestep::TS      | nothing  | false | _           | "Timestep converted from sim data. Needs to be separate from rate for DateTime"
+    nsteps::NS        | 1.0      | false | _           | "The exact nsteps timestep, updated by precalcrule"
+end
+
+@mix @Timestep struct InstrinsicGrowthRate{GR}
+    intrinsicrate::GR | 0.1      | true  | (0.0, 10.0) | "Intrinsic rate of growth per timestep"
 end
 
 precalctimestep(rule, data) = precalctimestep(rule.timestep, rule, data)
@@ -26,7 +27,7 @@ Extends CellRule for rules of growth dynamics
 For best performance these should be chained with other
 CellRule or following an NeighborhoodRule.
 """
-abstract type GrowthRule <: CellRule end
+abstract type GrowthRule{R,W} <: CellRule{R,W} end
 
 
 """
@@ -36,7 +37,7 @@ growth rate layer.
 [GrowthMaps.jl](http://github.com/cesaraustralia/GrowthMaps.jl)
 can produce these growth maps from environmental data.
 """
-abstract type GrowthMapRule <: GrowthRule end
+abstract type GrowthMapRule{R,W} <: GrowthRule{R,W} end
 
 layer(rule::GrowthMapRule) = rule.layer
 timeinterp(rule::GrowthMapRule) = rule.timeinterp
@@ -62,7 +63,7 @@ DynamicGrids.precalcrules(rule::GrowthRule, data) =
 Simple fixed exponential growth rate using exact solution.
 $(FIELDDOCTABLE)
 """
-@InstrinsicGrowthRate struct ExactExponentialGrowth{} <: GrowthRule end
+@InstrinsicGrowthRate struct ExactExponentialGrowth{R,W} <: GrowthRule{R,W} end
 
 @inline applyrule(rule::ExactExponentialGrowth, data, state, args...) =
     state * exp(rule.intrinsicrate * rule.nsteps)
@@ -71,7 +72,7 @@ $(FIELDDOCTABLE)
 Simple fixed logistic growth rate using exact solution
 $(FIELDDOCTABLE)
 """
-@CarryCap @InstrinsicGrowthRate struct ExactLogisticGrowth{} <: GrowthRule end
+@InstrinsicGrowthRate @CarryCap struct ExactLogisticGrowth{R,W} <: GrowthRule{R,W} end
 
 @inline applyrule(rule::ExactLogisticGrowth, data, state, index, args...) = begin
     @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) *
@@ -82,7 +83,7 @@ end
 Exponential growth based on a growth rate layer using exact solution.
 $(FIELDDOCTABLE)
 """
-@Timestep @Layers struct ExactExponentialGrowthMap{} <: GrowthMapRule end
+@Timestep @Layers struct ExactExponentialGrowthMap{R,W} <: GrowthMapRule{R,W} end
 
 @inline applyrule(rule::ExactExponentialGrowthMap, data, state, index, args...) = begin
     intrinsicrate = layer(rule, data, index)
@@ -95,7 +96,7 @@ Logistic growth based on a growth rate layer, using exact solution.
 Saturation only applies with positive growth
 $(FIELDDOCTABLE)
 """
-@CarryCap @Timestep @Layers struct ExactLogisticGrowthMap{} <: GrowthMapRule end
+@Layers @Timestep @CarryCap struct ExactLogisticGrowthMap{R,W} <: GrowthMapRule{R,W} end
 
 @inline applyrule(rule::ExactLogisticGrowthMap, data, state, index, args...) = begin
     @inbounds intrinsicrate = layer(rule, data, index)
@@ -111,7 +112,7 @@ end
 Simple layer mask. Values below a certain threshold are replaced with zero.
 $(FIELDDOCTABLE)
 """
-@Timestep @Layers struct MaskGrowthMap{ST} <: GrowthMapRule
+@Layers @Timestep struct MaskGrowthMap{R,W,ST} <: GrowthMapRule{R,W}
     threshold::ST | 0.5 | true  | (0.0, 1.0) | "Minimum viability index."
 end
 

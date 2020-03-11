@@ -63,7 +63,7 @@ scale value is good for use in a live interface.
 
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct HumanDispersal{HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP,B} <: PartialRule
+@description @limits @flattenable struct HumanDispersal{R,W,HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP,B} <: PartialRule{R,W}
     # Field                | Flatten | Limits
     human_pop::HP          | false   | _               | _
     cellsize::CS           | false   | _               | _
@@ -80,36 +80,36 @@ $(FIELDDOCTABLE)
     dispersal_probs::DP    | false   | _               | _
     human_buffer::B        | false   | _               | _
     dist_buffer::B         | false   | _               | _
-    function HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
+    function HumanDispersal{R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
                             human_exponent::HE, dist_exponent::DE, dispersalperpop::PA,
                             max_dispersers::MD, shortlist_len::SL, timestep::TS,
                             dest_shortlists::PC, proportion_covered::PR, dispersal_probs::DP,
                             human_buffer::B, dist_buffer::B
-                           ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}
+                           ) where {R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}
 
         precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
                                  human_exponent, dist_exponent, shortlist_len, human_buffer, dist_buffer)
         precalc_dispersal_probs!(dispersal_probs, human_pop, dispersalperpop)
 
-        new{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
+        new{R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
                                  dist_exponent, dispersalperpop, max_dispersers, shortlist_len, timestep, dest_shortlists,
                                  proportion_covered, dispersal_probs, human_buffer, dist_buffer)
     end
 end
 
-function HumanDispersal(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
+function HumanDispersal{R,W}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
                         human_exponent::HE, dist_exponent::DE, dispersalperpop::PA,
                         max_dispersers::MD, shortlist_len::SL, timestep::TS,
                         dest_shortlists::PC, proportion_covered::PR, dispersal_probs::DP,
                         human_buffer::B, dist_buffer::B
-                       ) where {HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}
-    HumanDispersal{HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
+                       ) where {R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}
+    HumanDispersal{R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
                              dist_exponent, dispersalperpop, max_dispersers, shortlist_len, timestep, dest_shortlists,
                              proportion_covered, dispersal_probs, human_buffer, dist_buffer)
 end
 
-HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
-               human_exponent=1.0, dist_exponent=1.0, dispersalperpop=1e-3,
+HumanDispersal(; grid=:_default_, human_pop=human_pop, cellsize=1.0, scale=4,
+               aggregator=mean, human_exponent=1.0, dist_exponent=1.0, dispersalperpop=1e-3,
                max_dispersers=100.0, shortlist_len=100, timestep=1) = begin
 
     # Allocate memory
@@ -119,7 +119,7 @@ HumanDispersal(human_pop; cellsize=1.0, scale=4, aggregator=mean,
     dist_buffer = initdownsample(human_pop, scale)
     dest_shortlists = init_dest_shortlist(shortlist_len, size(human_buffer))
 
-    HumanDispersal(human_pop, cellsize, scale, aggregator, human_exponent,
+    HumanDispersal{grid,grid}(human_pop, cellsize, scale, aggregator, human_exponent,
                    dist_exponent, dispersalperpop, max_dispersers, shortlist_len,
                    timestep, dest_shortlists, proportion_covered, dispersal_probs,
                    human_buffer, dist_buffer)
@@ -257,7 +257,7 @@ precalc_dispersal_probs!(dispersal_probs, human_activity, dispersalperpop) = beg
 end
 
 # DynamicGrids Interface
-@inline applyrule!(rule::HumanDispersal, data, state, index) = begin
+@inline applyrule!(rule::HumanDispersal{R,W}, data, state, index) where {R,W} = begin
     dispersalprob = rule.dispersal_probs[index...]
     ismissing(dispersalprob) && return
     shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
@@ -286,11 +286,11 @@ end
         DynamicGrids.ismasked(data, dest_index...) && continue
         DynamicGrids.isinbounds(dest_index, framesize(data), overflow(data)) || continue
         # Disperse to the cell.
-        data[dest_index...] += dispersers
+        data[W][dest_index...] += dispersers
         # Track how many have allready dispersed
         dispersed += dispersers
     end
-    data[index...] -= dispersed
+    data[W][index...] -= dispersed
 end
 
 

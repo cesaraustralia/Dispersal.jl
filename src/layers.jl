@@ -81,7 +81,7 @@ DynamicGrids.stoptime(A::AbstractArray) = lastindex(A, 3)
 Simple rule that copies a layer to a grid over time. This can be used for
 comparing simulation dynamics to layer dynamics.
 """
-@Layers struct LayerCopy{L} <: Rule end
+@Layers struct LayerCopy{R,W} <: Rule{R,W} end
 
 DynamicGrids.applyrule(rule::LayerCopy, data, state, index, args...) =
     layer(rule, data, index)

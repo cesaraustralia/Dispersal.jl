@@ -153,7 +153,7 @@ end
     output = ArrayOutput(init, 3)
     mask = MaskGrowthMap(layer=suit, threshold=1.1)
     ruleset = Ruleset(mask; init=init)
-    data = SimData(ruleset, init, 1)
+    data = SimData(init, ruleset, 1)
 
     @test applyrule(mask, data, 5, (1, 1)) === 0
     @test applyrule(mask, data, 5, (2, 2)) === 5

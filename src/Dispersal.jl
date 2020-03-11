@@ -28,7 +28,7 @@ using DimensionalData: Time
 import Base: getindex, setindex!, lastindex, size, length, push!
 
 
-import DynamicGrids: applyrule, applyrule!, applyinteraction, applyinteraction!,
+import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, framesize, mask, overflow, cellsize, ruleset,
        currenttime, currenttimestep, starttime, stoptime, timestep, tspan
