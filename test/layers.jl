@@ -1,6 +1,5 @@
 using Dispersal, Test, Unitful, DimensionalData
 using Dispersal: layer, cyclic_index, precalc_timeindex, timestep
-using DimensionalData: RegularGrid
 using Unitful: d
 
 suitlayer1 = [0.1 0.2;
@@ -27,7 +26,7 @@ end
 end
 
 a = cat([0.1 0.2; 0.3 0.4], [1.5 1.6; 1.7 1.8]; dims=3)
-dimz = X(1:2), Y(1:2), Ti(0d:10d:10d; grid=RegularGrid())
+dimz = X(1:2), Y(1:2), Ti(0d:10d:10d)
 suitseq = DimensionalArray(a, dimz)
 
 @testset "sequence of layers" begin

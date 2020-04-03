@@ -13,14 +13,14 @@ struct TestFormulation <: KernelFormulation end
     @test sum(dk) ≈ 1.0
 end
 
-@testset "binary dispersal and mask" begin
+@testset "binary dispersal and growth mask" begin
     init = [0 0; 0 1]
     radius = 1
     hood = DispersalKernel{radius}()
 
     # time sequence of layers
     a = cat([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8], dims=3)
-    dimz = X(1:2), Y(1:2), Ti(1d:10d:11d; grid=RegularGrid())
+    dimz = X(1:2), Y(1:2), Ti(1d:10d:11d)
     suitseq = DimensionalArray(a, dimz)
 
     # Regular
@@ -34,7 +34,7 @@ end
     output2 = ArrayOutput(init, 25)
 
     sim!(output1, ruleset1; tspan=(1d, 25d))
-    #sim!(output2, ruleset2; tspan=(1d, 25d))
+    sim!(output2, ruleset2; tspan=(1d, 25d))
 
     results = [[0 0; 0 1],
                [0 0; 0 1],
@@ -48,7 +48,9 @@ end
 
     @testset "Rounded" begin
         @test output1[[1, 2, 5, 8, 10, 15, 20, 22, 25]] == results
-        @test_broken output2[[1, 2, 5, 8, 10, 15, 20, 22, 25]] == results
+        @test output2[[1, 2, 5, 8, 10, 15, 20, 22, 25]] == results
+        output1[[1, 2, 5, 8, 10, 15, 20, 22, 25]]
+        output2[[1, 2, 5, 8, 10, 15, 20, 22, 25]]
     end
 
     # @testset "Interpolated" begin
@@ -211,11 +213,11 @@ end
         @test in_output[3] ≈ test3
 
         # As subrules
-        rules = Ruleset(Chain(inwards, mask); init=init, timestep=Day(1))
-        @test_broken sim!(output, rules; tspan=(Date(2001,1,1), Date(2001,1,3)))
-        @test_broken output[1] == test1
-        @test_broken output[2] == test2
-        @test_broken output[3] ≈ test3
+        rules = Ruleset(Chain(inwards, mask); init=init, timestep=1d)
+        sim!(in_output, rules; tspan=(4d, 6d))
+        @test in_output[1] == test1
+        @test in_output[2] == test2
+        @test in_output[3] ≈ test3
     end
 
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin

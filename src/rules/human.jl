@@ -255,23 +255,24 @@ precalc_dispersal_probs!(dispersal_probs, human_activity, dispersalperpop) = beg
 end
 
 # DynamicGrids Interface
-@inline applyrule!(rule::HumanDispersal{R,W}, data, state, index) where {R,W} = begin
-    dispersalprob = rule.dispersal_probs[index...]
+@inline applyrule!(rule::HumanDispersal{R,W}, data, population, index) where {R,W} = begin
+    population > zero(population) || return
+    @inbounds dispersalprob = rule.dispersal_probs[index...]
     ismissing(dispersalprob) && return
-    shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
+    @inbounds shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
     ismissing(shortlist) && return
 
     # Find the expected number of dispersers given population, dispersal prob and timeframe
-    isnan(state) && println("state", state, " at time: ", currenttime(data))
+    isnan(population) && println("population", population, " at time: ", currenttime(data))
     isnan(dispersalprob) && println("dispersalprob", dispersalprob)
-    total_dispersers = trunc(Int, state * dispersalprob)
+    total_dispersers = trunc(Int, population * dispersalprob)
     total_dispersers >= zero(total_dispersers) || return
 
     # Int max number of dispersers in any single dispersal event
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
-    dispersed = zero(state)
+    dispersed = zero(population)
     while dispersed < total_dispersers
         # Select a subset of the remaining dispersers for a dispersal event
         dispersers = min(rand(1:max_dispersers), total_dispersers - dispersed)
@@ -284,11 +285,14 @@ end
         DynamicGrids.ismasked(data, dest_index...) && continue
         DynamicGrids.isinbounds(dest_index, gridsize(data), overflow(data)) || continue
         # Disperse to the cell.
-        data[W][dest_index...] += dispersers
+        @inbounds data[W][dest_index...] += dispersers
         # Track how many have allready dispersed
         dispersed += dispersers
     end
-    data[W][index...] -= dispersed
+    if dispersed > zero(population)
+        @inbounds data[W][index...] -= dispersed
+    end
+    return
 end
 
 
@@ -299,12 +303,12 @@ end
     populate!(A::AbstractMatrix, rule::HumanDispersal, [I...])
     populate!(A::AbstractMatrix, cells::AbstractArray, [scale=1])
 
-Populate a matrix with the precalculated destinations from a 
+Populate a matrix with the precalculated destinations from a
 [`HumanDispersal`](@ref) rule - either all of the or some subset
-if passed the `I...` indexing arguments. This is useful for plotting 
+if passed the `I...` indexing arguments. This is useful for plotting
 dispersal destinations, especially when used with GeoData.jl
 """
-populate!(A::AbstractMatrix, rule::HumanDispersal) = 
+populate!(A::AbstractMatrix, rule::HumanDispersal) =
     populate!(A, rule.dest_shortlists, rule)
 populate!(A::AbstractMatrix, rule::HumanDispersal, I...) =
     populate!(A::AbstractMatrix, rule[I...], rule.scale)
@@ -319,7 +323,7 @@ populate!(A::AbstractMatrix, shortlists::AbstractArray, scale=1) = begin
     return A
 end
 populate!(A::AbstractMatrix, cells::Missing, scale) = missing
-populate!(A::AbstractMatrix, cells::AbstractVector{CellInterval}, scale=1) = begin
+populate!(A::AbstractMatrix, cells::AbstractVector{<:Union{<:CellInterval,Missing}}, scale=1) = begin
     lastcumprop = 0.0
     for cell in cells
         I = upsample_index(cell.index, scale)
@@ -339,5 +343,5 @@ end
 Returns an array of size `size` populated from the vector
 of positions in `cells` rescaled by `scale`.
 """
-populate(cells::AbstractVector, size::Tuple, scale::Int=1) = 
+populate(cells::AbstractVector, size::Tuple, scale::Int=1) =
     populate!(zeros(Float64, size), cells, scale)

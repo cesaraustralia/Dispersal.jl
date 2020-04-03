@@ -53,8 +53,10 @@ $(FIELDDOCTABLE)
 """
 @InstrinsicGrowthRate struct ExactExponentialGrowth{R,W} <: GrowthRule{R,W} end
 
-@inline applyrule(rule::ExactExponentialGrowth, data, state, args...) =
-    state * exp(rule.intrinsicrate * rule.nsteps)
+@inline applyrule(rule::ExactExponentialGrowth, data, population, args...) = begin
+    population > zero(population) || return zero(population)
+    population * exp(rule.intrinsicrate * rule.nsteps)
+end
 
 """
 Simple fixed logistic growth rate using exact solution
@@ -62,8 +64,9 @@ $(FIELDDOCTABLE)
 """
 @InstrinsicGrowthRate @CarryCap struct ExactLogisticGrowth{R,W} <: GrowthRule{R,W} end
 
-@inline applyrule(rule::ExactLogisticGrowth, data, state, index, args...) = begin
-    @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) *
+@inline applyrule(rule::ExactLogisticGrowth, data, population, index, args...) = begin
+    population > zero(population) || return zero(population)
+    @fastmath (population * rule.carrycap) / (population + (rule.carrycap - population) *
                                          exp(-rule.intrinsicrate * rule.nsteps))
 end
 
@@ -73,9 +76,10 @@ $(FIELDDOCTABLE)
 """
 @Timestep @Layers struct ExactExponentialGrowthMap{R,W} <: GrowthMapRule{R,W} end
 
-@inline applyrule(rule::ExactExponentialGrowthMap, data, state, index, args...) = begin
+@inline applyrule(rule::ExactExponentialGrowthMap, data, population, index, args...) = begin
+    population > zero(population) || return zero(population)
     intrinsicrate = layer(rule, data, index)
-    @fastmath state * exp(intrinsicrate * rule.nsteps)
+    @fastmath population * exp(intrinsicrate * rule.nsteps)
 end
 
 """
@@ -86,13 +90,14 @@ $(FIELDDOCTABLE)
 """
 @Layers @Timestep @CarryCap struct ExactLogisticGrowthMap{R,W} <: GrowthMapRule{R,W} end
 
-@inline applyrule(rule::ExactLogisticGrowthMap, data, state, index, args...) = begin
+@inline applyrule(rule::ExactLogisticGrowthMap, data, population, index, args...) = begin
+    population > zero(population) || return zero(population)
     @inbounds intrinsicrate = layer(rule, data, index)
     if intrinsicrate > zero(intrinsicrate)
-        @fastmath (state * rule.carrycap) / (state + (rule.carrycap - state) *
+        @fastmath (population * rule.carrycap) / (population + (rule.carrycap - population) *
                                              exp(-intrinsicrate * rule.nsteps))
     else
-        @fastmath state * exp(intrinsicrate * rule.nsteps)
+        @fastmath population * exp(intrinsicrate * rule.nsteps)
     end
 end
 
@@ -104,5 +109,5 @@ $(FIELDDOCTABLE)
     threshold::ST | 0.5 | true  | (0.0, 1.0) | "Minimum viability index."
 end
 
-@inline applyrule(rule::MaskGrowthMap, data, state, index, args...) =
-    layer(rule, data, index) >= rule.threshold ? state : zero(state)
+@inline applyrule(rule::MaskGrowthMap, data, population, index, args...) =
+    layer(rule, data, index) >= rule.threshold ? population : zero(population)

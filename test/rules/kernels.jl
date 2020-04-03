@@ -68,7 +68,7 @@ layerdata = cat([1.0  1.0  1.0  1.0  1.0  1.0  1.0
                  1.0  1.0  1.0  1.0  0.0  0.0  0.0
                  1.0  1.0  1.0  1.0  0.0  0.0  0.0]; dims=3)
 
-layer = DimensionalArray(layerdata, (X(1:7), Y(1:7), Time(1:3; grid=RegularGrid()))) 
+layer = DimensionalArray(layerdata, (X(1:7), Y(1:7), Time(1:3))) 
 
 init =  [0.0 0.0 0.0 0.0 0.0 0.0 0.0;
          0.0 0.0 0.0 0.0 0.0 0.0 0.0;
