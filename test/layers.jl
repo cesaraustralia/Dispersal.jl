@@ -1,6 +1,5 @@
-using Dispersal, Test, Unitful
+using Dispersal, Test, Unitful, DimensionalData
 using Dispersal: layer, cyclic_index, precalc_timeindex, timestep
-using DimensionalData: DimensionalArray, X, Y, Time
 using Unitful: d
 
 suitlayer1 = [0.1 0.2;
@@ -10,7 +9,6 @@ suitlayer1 = [0.1 0.2;
     @test layer(suitlayer1, nothing, (1, 1), 34325) == 0.1
     @test layer(suitlayer1, nothing, (2, 2), 7685) == 0.4
 end
-
 
 @testset "sequence cycling" begin
     @test cyclic_index(-4, 2) == 2
@@ -28,13 +26,13 @@ end
 end
 
 a = cat([0.1 0.2; 0.3 0.4], [1.5 1.6; 1.7 1.8]; dims=3)
-dimz = X(1:2), Y(1:2), Time(0d:10d:10d)
+dimz = X(1:2), Y(1:2), Ti(0d:10d:10d)
 suitseq = DimensionalArray(a, dimz)
 
 @testset "sequence of layers" begin
-    rule = ExactExponentialGrowth(intrinsicrate=1.0)
+    rule = ExactExponentialGrowth(; intrinsicrate=1.0)
     ruleset = Ruleset(rule; timestep=1d)
-    data = DynamicGrids.SimData(ruleset, [], 0d)
+    data = DynamicGrids.SimData([], ruleset, 0d)
 
     @testset "layers sequences are interpolated over timespans" begin
         ind = ((1, 1), (1, 2), (2, 1), (2, 2))

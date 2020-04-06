@@ -2,7 +2,7 @@
 """
 Inwards neighborhood based dispersal models.
 """
-abstract type InwardsDispersal <: NeighborhoodRule end
+abstract type InwardsDispersal{R,W} <: NeighborhoodRule{R,W} end
 
 """
 Binary present/absent dispersal within a [`DispersalKernel`](@ref). 
@@ -12,7 +12,7 @@ The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 $(FIELDDOCTABLE)
 """
-@Probabilistic @Kernel struct InwardsBinaryDispersal{} <: InwardsDispersal end
+@Probabilistic @Kernel struct InwardsBinaryDispersal{R,W} <: InwardsDispersal{R,W} end
 
 
 @inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, 
@@ -34,13 +34,13 @@ randomise dispersal jumps.
 
 $(FIELDDOCTABLE)
 """
-@Kernel struct InwardsPopulationDispersal{} <: InwardsDispersal end
+@Kernel struct InwardsPopulationDispersal{R,W} <: InwardsDispersal{R,W} end
 
 @inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, 
                   index, hoodbuffer) = 
     applykernel(neighborhood(rule), hoodbuffer)
 
-@Layers @Kernel struct SwitchedInwardsPopulationDispersal{Th} <: InwardsDispersal 
+@Layers @Kernel struct SwitchedInwardsPopulationDispersal{R,W,Th} <: InwardsDispersal{R,W} 
     threshold::Th
 end
 
@@ -63,7 +63,7 @@ using a dispersal kernel. Dispersal amounts are randomised with a Poisonn
 distribution.
 $(FIELDDOCTABLE)
 """
-@Kernel struct PoissonInwardsPopulationDispersal{} <: InwardsDispersal end
+@Kernel struct PoissonInwardsPopulationDispersal{R,W} <: InwardsDispersal{R,W} end
 
 @inline applyrule(rule::PoissonInwardsPopulationDispersal, data, state::AbstractFloat, 
                   index, hoodbuffer) = begin

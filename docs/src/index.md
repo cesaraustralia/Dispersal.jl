@@ -62,13 +62,34 @@ display(output[3])
 ## Neighborhood Rules
 
 Rules that consider the neighborhood of cells surrounding the current cell.
-These disperse inwards to the current cell from the surrounding cell.
+These disperse population inwards to the current cell when populations exist 
+in the surrounding cells.
 
 ```@docs
 InwardsDispersal
 InwardsBinaryDispersal
 InwardsPopulationDispersal
 PoissonInwardsPopulationDispersal
+```
+
+## Partial Neighborhood Rules
+
+Partial neighborhood rules that disperse outwards to the neighborhood 
+when a local population exists in the current cell. These methods
+are harder to optimise and will generally have worse performance.
+
+```@docs
+OutwardsDispersal
+OutwardsBinaryDispersal
+OutwardsPopulationDispersal
+```
+
+## Dispersal kernels 
+
+Kernels extend `DynamicGrids.Neighborhood`, and use `neighbors()` methods.
+
+```@docs
+DispersalKernel
 ```
 
 ### Distance methods
@@ -83,25 +104,6 @@ CentroidToArea
 CentroidToCentroid
 AreaToCentroid
 AreaToArea
-```
-
-## Partial Neighborhood Rules
-
-Partial neighborhood rules that disperse outwards to the neighborhood 
-when local populations exist.
-
-```@docs
-OutwardsDispersal
-OutwardsBinaryDispersal
-OutwardsPopulationDispersal
-```
-
-## Dispersal kernels 
-
-Kernels extend `DynamicGrids.Neighborhood`, and use `neighbors()` methods.
-
-```@docs
-DispersalKernel
 ```
 
 ## Cell rules
@@ -141,6 +143,8 @@ JumpDispersal
 
 ```@docs
 HumanDispersal
+populate!
+populate
 ```
 
 

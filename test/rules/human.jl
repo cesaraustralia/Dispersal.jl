@@ -50,7 +50,8 @@ dest_shortlists = init_dest_shortlist(shortlist_len, size(human_buffer))
 dist_buffer
 
 precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
-                         human_exponent, dist_exponent, shortlist_len, human_buffer, dist_buffer)
+                         human_exponent, dist_exponent, shortlist_len, human_buffer, 
+                         dist_buffer)
 
 @testset "Downsample works" begin
     for i in 1:length(human_buffer)
@@ -82,7 +83,6 @@ end
 @testset "precalc is simmetrical with simmetrical inputs" begin
     a = zeros(5, 5)
     b = zeros(5, 5)
-
     # populate!(a, dest_shortlists[1, 1], scale)
     # populate!(b, dest_shortlists[3, 3], scale)
     # @test reverse(a, dims=1) == reverse(b, dims=2)
@@ -131,9 +131,12 @@ end
     #             0 0 0 0 0]
 
     dispersalperpop = 0.1
-    rules = Ruleset(HumanDispersal(human_pop, dispersalperpop=dispersalperpop, cellsize=cellsize, scale=scale,
-                                  aggregator=aggregator, human_exponent=human_exponent, max_dispersers=max_dispersers,
-                                  dist_exponent=dist_exponent, shortlist_len=shortlist_len); init=init)
+    rules = Ruleset(
+        HumanDispersal(human_pop=human_pop, dispersalperpop=dispersalperpop, cellsize=cellsize, scale=scale,
+            aggregator=aggregator, human_exponent=human_exponent, max_dispersers=max_dispersers,
+            dist_exponent=dist_exponent, shortlist_len=shortlist_len); 
+        init=init
+    )
     output = ArrayOutput(init, 3)
 
     for i = 1:100

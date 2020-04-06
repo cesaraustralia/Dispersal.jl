@@ -1,5 +1,6 @@
-@mix @columns struct Kernel{N}
-    neighborhood::N | DispersalKernel{3}() | true  | _ | "Normalised proportions of dispersal to surrounding cells"
+@mix @columns struct Kernel{NH}
+    # Field          | Default              | Flat | Bounds | Description
+    neighborhood::NH | DispersalKernel{3}() | true | _      | "Normalised proportions of dispersal to surrounding cells"
 end
 
 """
@@ -10,6 +11,7 @@ a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
 @columns struct DispersalKernel{R,F,K,C,D} <: AbstractRadialNeighborhood{R}
+    # Field           | Default                | Flat  | Bounds      | Description
     formulation::F    | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
     kernel::K         | nothing                | false | _           | "Kernal matrix"
     cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
@@ -110,7 +112,8 @@ dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cells
 Calculates probability of dispersal between source cell centroid and destination cell area.
 """
 @columns struct CentroidToArea <: DistanceMethod
-    subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
+    # Field        | Default | Flat | Bounds      | Description
+    subsample::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 
 dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented yet")
@@ -119,7 +122,8 @@ dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented ye
 Calculates probability of dispersal between source cell area and destination centroid.
 """
 @columns struct AreaToCentroid <: DistanceMethod
-    subsample::Int | 10.0 | true | (2.0, 40.0) | "Subsampling for brute-force integration"
+    # Field        | Default | Flat | Bounds      | Description
+    subsample::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
 
