@@ -79,7 +79,7 @@ DynamicGrids.storegrid!(output::RegionOutput, data::DynamicGrids.SimData, f) = b
     end
 end
 
-DynamicGrids.initframes!(output::RegionOutput, init) = begin
+DynamicGrids.initgrids!(output::RegionOutput, init) = begin
     step = stepfromframe(objective(output), 1)
     predictions = output[1]
     predictions .= false
