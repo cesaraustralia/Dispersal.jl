@@ -18,9 +18,8 @@ NetCDF and GeoTiff files, respectively.
 ```{julia; results=hidden}
 # using Pkg
 # Pkg.add(PackageSpec(url="https://github.com/rafaqz/GeoData.jl", rev="master"))
-using GeoData, DimensionalData
-using DimensionalData: setdim, rebuild
-using Dispersal, Dates, NCDatasets, ArchGDAL, Plots
+using GeoData, DimensionalData, Dispersal, Dates, NCDatasets, ArchGDAL, Plots
+using DimensionalData: rebuild, Forward, Reverse
 basedir = joinpath(dirname(Base.pathof(Dispersal)), "../docs")
 ```
 
@@ -30,59 +29,60 @@ We use DateTime units of for the timestep:
 
 ```{julia; results=hidden}
 timestep = Month(1);
-tspan = DateTime(2016, 1), DateTime(2016, 12)
+tspan = DateTime(2016, 1), DateTime(2018, 12)
 nframes = length(tspan[1]:timestep:tspan[2])
-aust = Lon(DimensionalData.Between(113.338953078, 153.569469029)),
-       Lat(DimensionalData.Between(-43.6345972634, -10.6681857235))
+aust = Lon(Between(113.338953078, 153.569469029)),
+       Lat(Between(-43.6345972634, -10.6681857235));
 ```
 
 ---
 
-## Define a RuleSet
+### Define a `RuleSet`: climate driven population growth
 
 This will involve combining multiple dispersal componenents into a single
 `RuleSet` object: population growth, local dispersal, Allee effects, and human
 dispersal.
 
-
-### Climate driven population growth
-
 Follow the [examples tutorial](https://rafaqz.github.io/GrowthRates.jl/dev/example/index.html) over
 at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl). To skip this step
 just download the output saved in the example:
 
-```{julia; eval=false}
+```{julia; results=hidden}
 dataurl = "https://media.githubusercontent.com/media/cesaraustralia/Dispersal.jl/data"
 growthratesfilename = "growthrates.ncd"
 growthratesfilepath = joinpath(basedir, growthratesfilename)
-isfile(growthratesfilepath) || download(joinpath(dataurl, growthratesfilename), joinpath(basedir, growthratesfilename))
+isfile(growthratesfilepath) ||
+  download(joinpath(dataurl, growthratesfilename), joinpath(basedir, growthratesfilename));
 ```
 
 And select just the bounding box for Australia, and set the dimension order to Lat/Lon:
 
-```{julia; eval=false}
-growthrates = NCDarray(growthratesfilepath)[aust...]# |> x -> permutedims(x, (Lat, Lon, GeoData.Time))
+```{julia; results=hidden}
+growthrates = NCDarray(growthratesfilepath)[aust...] |>
+    A -> permutedims(A, (Lat, Lon, Ti)) |>
+    A -> reorderarray(A, (Lat(Forward()), Lon(Forward())));
 ```
 
-# Set the length of the timestep. TODO: get this automatically from NetCDF units
+Set the length of the timestep. TODO: get this automatically from NetCDF units in GeoData.jl
 
-```{julia; eval=false}
-growthrates = setdim(growthrates, rebuild(dims(growthrates, Ti); grid=RegularGrid(; step=timestep)))
+```{julia; results=hidden}
+ti = dims(growthrates, Ti)
+mode = Sampled(order(ti), Regular(timestep), Intervals(Start()))
+growthrates = setdims(growthrates, rebuild(ti; mode=mode));
 ```
 
 Plot the growth layer:
 
 ```{julia; results=hidden}
-using Plots
 growthrates[Ti(1)] |> plot
-savefig(joinpath(basedir, "build/assets/growthrates.png"))
+savefig(joinpath(basedir, "build/assets/growthrates.png"));
 ```
 
 Create a `ExactLogisticGrowthMap` rule from the layer, here we use
 unitful units for the layers' time dimension:
 
 ```{julia; results=hidden}
-carrycap = 1e8
+carrycap = 1e9
 growth = ExactLogisticGrowthMap(layer=growthrates, carrycap=carrycap);
 ```
 
@@ -112,36 +112,31 @@ First we'll open an input tiff, and move it to a memory backed `GeoArray`.
 ```{julia; results=hidden}
 humanpop_filename = "population_density.tif"
 humanpop_filepath = joinpath(basedir, humanpop_filename)
-isfile(humanpop_filepath) || download(joinpath(dataurl, humanpop_filename), humanpop_filepath)
+isfile(humanpop_filepath) || download(joinpath(dataurl, humanpop_filename), humanpop_filepath);
 ```
 
 Again select the Australian bounds. This time we also select the first Band.
 Tiff data always has bands, even when there is only one:
 
-```{julia; results=hidden}
-humanpop = GDALarray(humanpop_filepath)[Band(1), aust...] # |> x -> permutedims(x, (Lat, Lon))
-savefig(joinpath(basedir, "build/assets/humanpop.png"))
+```{julia; results=hidden
+humanpop = GDALarray(humanpop_filepath; usercrs=EPSG(4326))[Band(1), aust...] |>
+    A -> permutedims(A, (Lat, Lon)) |> reorderarray
+savefig(joinpath(basedir, "build/assets/humanpop.png"));
 ```
 
-![popgrowth](../assets/humanpop.png)
+![popgrowth](assets/humanpop.png)
 
 
 ```{julia; results=hidden}
-scale = 8
-human_exponent = 2.0
-dist_exponent = 2.0
-dispersalperpop = 1e-9
-max_dispersers = 500.0
-shortlist_len = 100
 @time humandisp = HumanDispersal(
-    human_pop=parent(humanpop), 
-    scale=scale, 
-    shortlist_len=shortlist_len, 
-    dispersalperpop=dispersalperpop,
-    max_dispersers=max_dispersers, 
-    human_exponent=human_exponent,
-    dist_exponent=dist_exponent, 
-    timestep=timestep
+    human_exponent=2.0,
+    dist_exponent=2.0,
+    dispersalperpop=1e-9,
+    max_dispersers=500.0,
+    shortlist_len=50,
+    timestep=timestep,
+    human_pop=parent(humanpop),
+    scale=8,
 );
 ```
 
@@ -163,8 +158,8 @@ incursion = [(36.9677,-122.0294),
 
 # Using `Contains` finds the interval that contains the coordinates
 for (lat, lon) in incursion
-    init[Lat(Contains(lat)), Lon(Contains(lon))] = 1e7
-end
+    init[Lat(Near(lat)), Lon(Near(lon))] = 1e7
+end;
 ```
 
 ### Define a masking layer
@@ -172,12 +167,12 @@ end
 This layer lets the simulation know which cells should be ignored.
 
 ```{julia; results=hidden}
-masklayer = GeoData.boolmask(growthrates[GeoData.Time(1)])
+masklayer = boolmask(growthrates[Ti(1)])
 plot(masklayer)
-savefig("build/assets/mask.png")
+savefig(joinpath(basedir, "build/assets/mask.png"));
 ```
 
-![mask](../assets/mask.png)
+![mask](assets/mask.png)
 
 ### Define a combined ruleset
 
@@ -188,7 +183,7 @@ ruleset = Ruleset(
     mask=masklayer,
     timestep=timestep,
     minval=0.0,
-    maxval=carrycap
+    maxval=carrycap,
 );
 ```
 
@@ -196,12 +191,12 @@ ruleset = Ruleset(
 
 ## Output
 
-The simplest and oftern the most performant output for a simulation is an 
-ArrayOutput, which simply writes the simulation to a preallocated array 
+The simplest and oftern the most performant output for a simulation is an
+ArrayOutput, which simply writes the simulation to a preallocated array
 without visualising it.
 
 ```{julia; results=hidden}
-output = ArrayOutput(init, nframes)
+output = ArrayOutput(init, nframes);
 ```
 
 ### Run a simulation
@@ -209,7 +204,7 @@ output = ArrayOutput(init, nframes)
 To run a simulation, we pass in the output and rulset.
 
 ```{julia; results=hidden}
-sim!(output, ruleset; tspan=tspan)
+sim!(output, ruleset; tspan=tspan);
 ```
 
 ### Save a gif of your simulation
@@ -237,10 +232,10 @@ With a non-image output like ArrayOuput we need to pass in the image processor
 manually.
 
 ```{julia; results=hidden}
-savegif(joinpath(basedir, "build/assets/sim.gif"), output; minval=0.0, maxval=1e7, processor=processor, fps=10)
+savegif(joinpath(basedir, "build/assets/sim.gif"), output; minval=0.0, maxval=1e7, processor=processor, fps=10);
 ```
 
-![Drosphila suzukii spread](../assets/sim.gif)
+![Drosphila suzukii spread](assets/sim.gif)
 
 
 ## Live simulation outputs
@@ -253,13 +248,14 @@ heavy graphics and web dependencies separate form the rest of the framework.
 ### REPL output
 
 You can view a simulation over SSH or just in your local console using the
-included `REPLOutput`. It doesn't work so well in Juno, so we only recommend
+included `REPLOutput`. It doesn't work so well in Atom/Juno, so we only recommend
 using it in a real terminal. It also works better in a terminal where you can
 easily reduce the font size.
 
 ```{julia; results=hidden}
 using Crayons
 output = REPLOutput(init; style=Block(), fps=5, color=:white, store=false)
+sim!(output, ruleset; tspan=tspan);
 ```
 
 The `Braile()` style is half the dimensions of the `Block()` style, but doen't
@@ -267,6 +263,7 @@ look as clear.
 
 ```{julia; results=hidden}
 output = REPLOutput(init; style=Braile(), fps=5, color=:white, store=false)
+sim!(output, ruleset; tspan=tspan);
 ```
 
 
@@ -290,13 +287,13 @@ pane in Juno. See the example above to define an image processor. Setting
 converted to a gif. Really long simulations may use your avilable ram, in which
 case set `store` to false.
 
-
 ```{julia; eval=false}
 using DynamicGridsInteract
-output = InteractOutput(init, ruleset; 
-    fps=10, 
-    store=true, 
-    processor=processor, 
+output = InteractOutput(init, ruleset;
+    tspan=tspan,
+    fps=10,
+    store=true,
+    processor=processor,
     slider_throttle=1.0,
 )
 display(output)
@@ -308,10 +305,11 @@ This will create a standalone desktop app wrapping the InteractOutput. Unfortuna
 the compile and load time for electron can take quite a while.
 
 ```{julia; eval=false}
-output = ElectronOutput(init, ruleset; 
-    fps=10, 
-    store=true, 
-    processor=processor, 
+output = ElectronOutput(init, ruleset;
+    tspan=tspan,
+    fps=10,
+    store=true,
+    processor=processor,
     slider_throttle=1.0,
 )
 ```
@@ -325,13 +323,16 @@ copy of the internal `InteractOutput` for each new connection. Changes in one
 connection will not effect anything in the others.
 
 ```{julia; eval=false}
-output = ServerOutput(init, model; 
-    port=8000, 
-    fps=10, 
-    processor=processor, 
+output = ServerOutput(init, model;
+    tspan=tspan,
+    fps=10,
+    processor=processor,
     slider_throttle=1.0,
+    port=8080,
 )
 ```
+
+If run locally, the interface should be served at the address "localhost:8080" in your web browser.
 
 ### Run in a GTK window
 
@@ -343,9 +344,9 @@ screenspace to viewing the simulation.
 
 ```{julia; eval=false}
 using DynamicGridsGtk
-output = GtkOutput(init .* 0; 
-    fps=10, 
-    store=true, 
+output = GtkOutput(init .* 0;
+    fps=10,
+    store=true,
     processor=processor
 )
 sim!(output, ruleset; tspan=tspan)

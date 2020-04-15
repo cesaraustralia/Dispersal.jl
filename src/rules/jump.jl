@@ -1,10 +1,18 @@
-"Extends PartialRule for jump dispersal rules"
+"""
+Abstract supertype that extends [`PartialRule`](@ref) for jump dispersal rules
+"""
 abstract type AbstractJumpDispersal{R,W} <: PartialRule{R,W} end
 
 """
+    JumpDispersal(spotrange)
+    JumpDispersal{R,W}(spotrange)
+    JumpDispersal(; spotrange=30.0)
+
 Jump dispersal simulates random long distance dispersal events. A random cell within 
-the spotrange is invaded.  A [`Mask`](@ref) rule may be useful 
-aftwer this rule, as dispersal events may be to anywhere on the grid within the given range.
+the `spotrange` is invaded. 
+
+Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
+
 $(FIELDDOCTABLE)
 """
 @Probabilistic struct JumpDispersal{R,W,SR} <: AbstractJumpDispersal{R,W}

@@ -1,24 +1,41 @@
 using DynamicGrids: init
 
-"Use Thread.@threads to run replicate simulations"
-struct ThreadedReplicates end
-"Use @distributed to run replicate simulations"
-struct DistributedReplicates end
-"Use a single processor to run replicate simulations"
-struct SingleCoreReplicates end
+"""
+Optimisation mode for running replicate simulations inside an optimiser.
+"""
+abstract type Replicates end
+"""
+Use Thread.@threads to run replicate simulations
+"""
+struct ThreadedReplicates <: Replicates end
+"""
+Use @distributed to run replicate simulations
+"""
+struct DistributedReplicates <: Replicates end
+"""
+Use a single processor to run replicate simulations
+"""
+struct SingleCoreReplicates <: Replicates end
 
 """
-Parametrizer object to use with Optim.jl or similar
+    Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, 
+                 starttime, stoptime, threading)
+
+Parametrizer functor to use with Optim.jl or similar.
 
 # Arguments
-`ruleset::Ruleset`: simulation ruleset, with `init` array attached
-`objective::Objective`: objective data
-`transform`: single argument function to transform targets and predictions before the loss function
-`loss`: LossFunctions.jl loss function
-`ngroups`: number of replicate simulation
-`groupsize`: number of simulations in a group. Larger groups may inprove distributed performance.
-`tstop`: length of simulation
-`output`: optional output type. By default an ArrayOutput will be generated.
+
+- `ruleset::Ruleset`: simulation ruleset, with `init` array attached
+- `output::Output`: optional output type. By default an ArrayOutput will be generated.
+- `objective::Objective`: objective data
+- `transform`: single argument function to transform targets and predictions before the loss function
+- `loss`: LossFunctions.jl loss function
+- `ngroups::Int`: number of replicate simulation
+- `groupsize::Int`: number of simulations in a group. Larger groups may inprove distributed performance.
+- `starttime`: start time for a simulation
+- `stoptime`: end time for a simulation
+- `threading::Replicates`: Type to define threading mode for simulation replicates: 
+  `SingleCoreReplicates`, `ThreadedReplicates`, `DistributedReplicates`
 """
 struct Parametriser{RU,OP,OB,TR,L,NR,GS,TSta,TSto,TH,D,TB,PB,RE}
     ruleset::RU

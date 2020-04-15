@@ -1,6 +1,6 @@
 """
-Objectives map simulation outputs to predictions that
-can be compared to target data using a loss function.
+Abstract supertype. `Objective`s map simulation outputs to predictions 
+that can be compared to target data using a loss function.
 
 They must implement [`predictions`](@ref)and [`targets`](@ref) methods.
 """
@@ -15,6 +15,7 @@ function targets end
 
 """
     predictions(obj::Objective, output::Output)
+
 Methods that map an objective object and a simulation output to a
 prediction array.
 """
@@ -23,6 +24,8 @@ function predictions end
 
 
 """
+    SimpleObjective(targets)
+
 A basic objective that holds a target array uses the final frame of the
 simulation as the prediction.
 """
@@ -36,6 +39,8 @@ predictions(obj::SimpleObjective, output) = output[end]
 
 
 """
+    PresenceAbsenceObjective(detectionthreshold, occurance, framesperstep)
+
 Implementation of a loss objective that converts cell data to regional
 presence/absence and compares to a target of regional occurance data.
 
@@ -50,26 +55,23 @@ targets(obj::PresenceAbsenceObjective) = obj.occurance
 predictions(obj::PresenceAbsenceObjective, output) = output[end]
 
 
-# RegionObjective and supporting types/methods #################
+# RegionObjective and supporting types/methods
 
 """
-A minimal low-memory output that stores the inhabited regions for
-each timestep, as required by the [`RegionObjection`](@ref).
+    RegionOutput(init; nframes, objective)
 
-### Arguments:
-- `frames`: Single init array or vector of arrays
-- `tstop`: The length of the output.
+A minimal low-memory output that stores the inhabited regions for
+each timestep, as required by the [`RegionObjective`](@ref).
 """
 DynamicGrids.@Output mutable struct RegionOutput{O} <: Output{T}
     objective::O | nothing
 end
-
-objective(o::RegionOutput) = o.objective
-
 RegionOutput(objective::Objective; kwargs...) where T = begin
     predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
     RegionOutput(; frames=predictions, objective=objective, kwargs...)
 end
+
+objective(o::RegionOutput) = o.objective
 
 DynamicGrids.storegrid!(output::RegionOutput, data::DynamicGrids.SimData, f) = begin
     step = stepfromframe(objective(output), f)

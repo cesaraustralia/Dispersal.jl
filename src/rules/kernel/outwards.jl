@@ -1,24 +1,39 @@
 
 """
-Extends PartialNeighborhoodRule for outwards dispersal.
+Abstract supertype that extends `PartialNeighborhoodRule` for neighborhood-based 
+dispersal rules that update surounding cells based on the values of the 
+current cell, as if dispersing outwards from the current cell.
 
-Outwards dispersal calculates dispersal *from* the current cell to cells
-in its [`DispersalNeighborhood`](@ref). This should be more efficient than 
-inwards dispersal when a small number of cells are occupied, but less efficient 
+The result should be identical to [`InwardsDispersal`](@ref) but may be more 
+efficient than when a small number of cells are occupied. It is less efficient 
 when a large proportion of the grid is occupied.
 """
 abstract type OutwardsDispersal{R,W} <: PartialNeighborhoodRule{R,W} end
 
 """
-Cells in the surrounding [`DispersalNeighborhood`](@ref) have some propability of 
+    OutwardsBinaryDispersal(neighborhood)
+    OutwardsBinaryDispersal(; neighborhood=DispersalKernel{3}())
+    OutwardsBinaryDispersal{R,W}(neighborhood)
+
+Cells in the surrounding neighborhood have some propability of 
 invasion if the current cell is occupied.
+
+Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
+
 $(FIELDDOCTABLE)
 """
 @Kernel @Probabilistic struct OutwardsBinaryDispersal{R,W} <: OutwardsDispersal{R,W} end
 
 """
+    OutwardsPopulationDispersal(neighborhood)
+    OutwardsPopulationDispersal(; neighborhood=DispersalKernel{3}())
+    OutwardsPopulationDispersal{R,W}(neighborhood)
+
 Dispersal reduces the current cell population, increasing the populations of the 
-cells in the surrounding [`DispersalNeighborhood`](@ref).
+cells in the surrounding neighborhood.
+
+Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
+
 $(FIELDDOCTABLE)
 """
 @Kernel struct OutwardsPopulationDispersal{R,W} <: OutwardsDispersal{R,W} end

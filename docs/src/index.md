@@ -8,57 +8,6 @@ CurrentModule = Dispersal
 Dispersal
 ```
 
-## Examples
-
-This is the general pattern of running rules in Dispersal.jl.
-
-We define initial conditions. Then we run a dispersal
-simulation that combines local and jump dispersal, for three timesteps.
-
-```@example
-using Dispersal
-
-# Define a simple init array the same size as your suitability layer, and seed it.
-
-init = [0  0  0  0  0  0  0;
-        0  0  0  0  0  0  0;
-        0  0  0  0  0  0  0;
-        0  0  0  0  0  0  0;
-        0  0  1  0  0  0  0;
-        0  0  0  0  0  0  0;
-        0  0  0  0  0  0  0]
-
-# Define an array that represents habitat suitability
-suitability = [0.5 0.0 0.3 0.0 0.0 0.3 0.0;
-               0.0 0.2 0.8 0.0 0.9 0.6 0.0;
-               0.0 0.5 1.0 1.0 1.0 0.0 0.0;
-               0.0 0.0 1.0 1.0 0.7 0.0 0.0;
-               0.0 0.0 0.6 1.0 0.0 0.0 0.0;
-               0.0 0.1 0.6 0.0 0.0 0.0 0.0;
-               0.0 0.0 0.0 0.0 0.0 0.0 0.7]
-
-
-# Define the neighborhood, using the dispersal kernel and a radius
-hood = DispersalKernel{2}(; formulation=ExponentialKernel(1.0), 
-                            distancemethod=CentroidToCentroid())
-
-# Define disersal rules
-localdisp = InwardsBinaryDispersal(neighborhood=hood)
-jumpdisp = JumpDispersal()
-growth = MaskGrowthMap(; layer=suitability)
-
-# Set the output type
-output = ArrayOutput(init, 3)
-
-# Run the simulation
-sim!(output, Ruleset(localdisp, jumpdisp, growth); init=init, tspan=(1, 3))
-
-display(output[1])
-display(output[2])
-display(output[3])
-```
-
-
 ## Neighborhood Rules
 
 Rules that consider the neighborhood of cells surrounding the current cell.
@@ -90,6 +39,8 @@ Kernels extend `DynamicGrids.Neighborhood`, and use `neighbors()` methods.
 
 ```@docs
 DispersalKernel
+KernelFormulation
+ExponentialKernel
 ```
 
 ### Distance methods
@@ -114,8 +65,10 @@ Rules that simply transform the state of a single cell, ignoring the rest of the
 ### Growth rules
 
 ```@docs
+GrowthRule
 ExactExponentialGrowth
 ExactLogisticGrowth
+GrowthMapRule
 ExactExponentialGrowthMap
 ExactLogisticGrowthMap
 MaskGrowthMap
@@ -159,7 +112,12 @@ Parametriser
 Objective
 SimpleObjective
 RegionObjective
+RegionOutput
 ColorRegionFit
+Replicates
+DistributedReplicates
+SingleCoreReplicates
+ThreadedReplicates
 targets
 predictions
 ```

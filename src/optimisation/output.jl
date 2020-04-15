@@ -1,16 +1,20 @@
 using DynamicGrids: normalise, minval, maxval, ismasked, rgb24
 
 """
-An image procesor to visualise the model fit, for a live version of
-the region fitting optimiser.
+    ColorRegionFit(objective, truescheme, falsescheme, falsepositivecolor, 
+                   truenegativecolor, falsenegativecolor, maskcolor)
 
-Fields:
-`objective` : a RegionObjective object
-`truepositivecolor` : color of true positive fit, etc.
-`falsepositivecolor`
-`truenegativecolor`
-`falsenegativecolor`
-`maskcolor` : color when a cell region of zero or lower
+An image procesor for visualising the match between predictions and observed 
+regional occupancy. A live version of the region fitting optimiser.
+
+## Arguments:
+
+- `objective` : a RegionObjective object
+- `truescheme` : ColorSchemes.jl scheme or `Greyscale()` for true positive fit, etc.
+- `falsescheme` : ColorSchemes.jl scheme or `Greyscale()` for true positive fit, etc.
+- `truezerocolor` : `Color`, `Real` beteeen 0.0 and 1.0 or 3 tuple of `Real`.
+- `falsezerocolor` : `Color`, `Real` beteeen 0.0 and 1.0 or 3 tuple of `Real`.
+- `maskcolor` : `Color` or `Real` 0.0 to 1.0 to use when a cell is masked.
 """
 struct ColorRegionFit{O,P,N,TZ,FZ,M} <: GridProcessor
     objective::O
@@ -21,12 +25,6 @@ struct ColorRegionFit{O,P,N,TZ,FZ,M} <: GridProcessor
     maskcolor::M
 end
 
-"""
-    grid2image(p::ColorRegionFit, output, ruleset, frame, t)
-
-Visualise the match between predictions and observed regional occupancy 
-during live simulations.
-"""
 DynamicGrids.grid2image(p::ColorRegionFit, output::ImageOutput, ruleset::Ruleset, frame, t) = begin
     step = stepfromframe(p.objective, t)
     img = similar(frame, RGB24)

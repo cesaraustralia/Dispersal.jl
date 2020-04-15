@@ -1,6 +1,13 @@
 """ 
-Enforces extinction in a cell with a population below the minimum number of 
-individuals required to maintain a population. 
+    AlleeExtinction(minfounders)
+    AlleeExtinction(; minfounders=5.0)
+    AlleeExtinction{R,W}(minfounders)
+
+Causes extinction in a cell when a population is below the 
+minimum number of individuals required to maintain it. 
+
+Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
+
 $(FIELDDOCTABLE)
 """
 @columns struct AlleeExtinction{R,W,MF} <: CellRule{R,W}

@@ -3,12 +3,18 @@ using Documenter, Dispersal, Weave, IJulia
 basedir = @__DIR__
 
 example = joinpath(basedir, "src/example.jmd")
-# Remove YAML
-mdlines = readlines(example)
-md = join(mdlines[findall(x -> x=="---", mdlines)[2]+1:end], "\n")
-# Format code blocks for jldoctest 
-md = replace(md, Regex("```julia.*") => "```jldoctest")
-write(joinpath(basedir, "src/example.md"), md)
+
+mdpath = joinpath(basedir, "src/example.md")
+notebookdir = joinpath(basedir, "build/notebook")
+
+mkpath(joinpath(basedir, "build/assets"))
+mkpath(notebookdir)
+
+# Generate examples latex and images
+weave(example, out_path=mdpath, doctype="github")
+
+# Generate examples notebook
+convert_doc(example, joinpath(notebookdir, "example.ipynb"))
 
 # Generate HTML docs
 makedocs(
@@ -17,18 +23,9 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Examples" => "example.md"
-    ]
+    ],
+    clean = false,
 )
-
-pdfdir = joinpath(basedir, "build/pdf")
-notebookdir = joinpath(basedir, "build/notebook")
-mkpath.((pdfdir, notebookdir))
-
-# Generate examples pdf
-weave(example, out_path=pdfdir, doctype="pandoc2pdf")
-
-# Generate examples notebook
-convert_doc(example, joinpath(notebookdir, "example.ipynb"))
 
 deploydocs(
     repo = "github.com/cesaraustralia/Dispersal.jl.git",

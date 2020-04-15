@@ -4,8 +4,9 @@
 end
 
 """
-A neighborhood built from a dispersal kernel function and a cell radius.
-Can be built directly by passing in the array, radius and overflow
+    DispersalKernel{Radius}(formulation::F, kernel::K, cellsize::C, distancemethod::D)
+    DispersalKernel{Radius}(; formulation=ExponentialKernel(1.0), cellsize=1.0, distancemethod=CentroidToCentroid())
+
 arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 $(FIELDDOCTABLE)
@@ -37,7 +38,7 @@ DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 kernel(hood::DispersalKernel) = hood.kernel
 formulation(hood::DispersalKernel) = hood.formulation
 
-@inline applykernel(hood::DispersalKernel, buf) = 
+@inline applykernel(hood::DispersalKernel, buf) =
     @inbounds return buf ⋅ kernel(hood)
 
 
@@ -94,13 +95,16 @@ scale(x) = x ./= sum(x)
 
 
 """
-Methods for calculating distances and dispersal probabilities between cells in a grid.
+Abstract supertype for methods of calculating distances and dispersal probabilities
+between cells in a grid.
 """
 abstract type DistanceMethod end
 
 subsample(method::DistanceMethod) = method.subsample
 
 """
+    CentroidToCentroid()
+
 Calculates probability of dispersal between source and destination cell centroids
 This is the obvious, naive method, but it will not handle low grid resolution well.
 """
@@ -109,7 +113,12 @@ struct CentroidToCentroid <: DistanceMethod end
 dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize |> f
 
 """
+    CentroidToCentroid(subsample)
+    CentroidToCentroid(; subsample=10.0)
+
 Calculates probability of dispersal between source cell centroid and destination cell area.
+
+$(FIELDDOCTABLE)
 """
 @columns struct CentroidToArea <: DistanceMethod
     # Field        | Default | Flat | Bounds      | Description
@@ -119,7 +128,12 @@ end
 dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented yet")
 
 """
+    AreaToCentroid(subsample)
+    AreaToCentroid(; subsample=10.0)
+
 Calculates probability of dispersal between source cell area and destination centroid.
+
+$(FIELDDOCTABLE)
 """
 @columns struct AreaToCentroid <: DistanceMethod
     # Field        | Default | Flat | Bounds      | Description
@@ -139,7 +153,13 @@ AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
 end
 
 """
+    AreaToArea(subsample)
+    AreaToArea(; subsample=10.0)
+
+
 Calculates probability of dispersal between source and destination cell areas.
+
+$(FIELDDOCTABLE)
 """
 struct AreaToArea <: DistanceMethod
     subsample::Int
@@ -162,12 +182,22 @@ end
 
 
 """
-Functors for calculating the probability of dispersal between two points.
+Abstract supertype for functors for calculating the probability of 
+dispersal between two points.
+
+Concrete implementations must define functor methods with the form:
+```julia
+(k::SomeKernel)(x) = ? # do something with `x` and `k`"
+```
 """
 abstract type KernelFormulation end
 
 """
+    ExponentialKernel(λ)
+
 Probability of dispersal with a negatitve exponential relationship to distance.
+
+$(FIELDDOCTABLE)
 """
 @description @limits @flattenable struct ExponentialKernel{P} <: KernelFormulation
     λ::P    | true  | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"

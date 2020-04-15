@@ -1,7 +1,7 @@
 
 @mix @columns struct Layers{L,TI}
-    layer::L           | nothing | false | _          | "Data layer"
-    timeindex::TI      | 1       | false | _          | "Precalculated interpolation indices"
+    layer::L           | nothing | false | _ | "`Matrix` or 3d `Array` with a time dimension. A `DimensionalArray` is required if the simulation uses real dates or times"
+    timeindex::TI      | 1       | false | _ | "Precalculated interpolation indices. Not set by users"
 end
 
 """
@@ -78,8 +78,12 @@ DynamicGrids.stoptime(A::AbstractArray) = lastindex(A, 3)
 
 
 """
+    LayerCopy(layer, timeindex)
+
 Simple rule that copies a layer to a grid over time. This can be used for
 comparing simulation dynamics to layer dynamics.
+
+$(FIELDDOCTABLE)
 """
 @Layers struct LayerCopy{R,W} <: Rule{R,W} end
 

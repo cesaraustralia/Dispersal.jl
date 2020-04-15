@@ -8,7 +8,7 @@ mutable struct CellGravity{M,I}
 end
 
 """
-CellGravity allows ordering a list by the cumulative proportion of the total gravity,
+CellInterval allows ordering a list by the cumulative proportion of the total gravity,
 and plotting based on the fraction of total gravity.
 """
 struct CellInterval{P,I}
@@ -16,13 +16,13 @@ struct CellInterval{P,I}
     index::I
 end
 
-########################################################################################
-# Sorting
-#
-# isless is used to teratively sort lists and search in funcitons like
-# searchsortedfirst() and partialsort!
-# we define isless on CellGravity.gravity in order to sort margnitudes in order.
-# maintaining proportion when using searchsortedfirst.
+#============================================================================
+Sorting
+
+isless is used to iteratively sort lists and search in funcitons like
+`searchsortedfirst` and `partialsort!`. We define `isless` on `CellGravity.gravity` in 
+order to sortby margnitudes  using `searchsortedfirst`, while tracking the original index.
+=# 
 
 import Base: isless, +
 isless(x::CellGravity, y::CellGravity) = isless(x.gravity, y.gravity)
@@ -47,7 +47,24 @@ const Precalc = Union{Vector{Interval},Missing}
 const Prop = Union{Float32,Missing}
 
 """
-HumanDispersal Rules human-driven dispersal patterns using population data.
+    HumanDispersal{R,W}(human_pop, cellsize, scale, aggregator,
+                        human_exponent, dist_exponent, dispersalperpop,
+                        max_dispersers, shortlist_len, timestep,
+                        dest_shortlists, proportion_covered, dispersal_probs,
+                        human_buffer, dist_buffer)
+    HumanDispersal(; grid=:_default_, 
+                   human_pop, 
+                   cellsize=1.0, 
+                   scale=4,
+                   aggregator=mean, 
+                   human_exponent=1.0, 
+                   dist_exponent=1.0, 
+                   dispersalperpop=1e-3,
+                   max_dispersers=100.0, 
+                   shortlist_len=100, 
+                   timestep=1)
+
+Human-driven dispersal patterns using population data.
 
 Transport connections between grid cells are calculated using distance and human population,
 modified with the `human_exponent` and `dist_exponent` parameters. A shortlist of the most
@@ -57,27 +74,27 @@ The time taken for precalulation will depend on the `scale` argument. Values abo
 will downsample the grid to improve precalulation time and runtime performance. A high
 scale value is good for use in a live interface.
 
-## Arguments
+## Keyword Arguments
 
 $(FIELDDOCTABLE)
 """
 @description @limits @flattenable struct HumanDispersal{R,W,HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP,B} <: PartialRule{R,W}
     # Field                | Flatten | Limits
-    human_pop::HP          | false   | _               | _
-    cellsize::CS           | false   | _               | _
-    scale::S               | false   | _               | _
+    human_pop::HP          | false   | _               | "An array match the grid size containing human population data."
+    cellsize::CS           | false   | _               | "The size of the cell width, assuming they are square"
+    scale::S               | false   | _               | ""
     aggregator::AG         | false   | _               | "A function that aggregates scaled down cells"
     human_exponent::HE     | true    | (1.0, 3.0)      | "Human population exponent"
     dist_exponent::DE      | true    | (1.0, 3.0)      | "Distance exponent"
     dispersalperpop::EA    | true    | (0.0, 1e-8)     | "Scales the number of dispersing individuals by human activity (ie population^human_exponent)"
     max_dispersers::MD     | true    | (50.0, 10000.0) | "Maximum number of dispersers in a dispersal events"
     shortlist_len::SL      | false   | _               | "Length of dest shortlist"
-    timestep::TS           | false   | _               | _
-    dest_shortlists::PC    | false   | _               | _
-    proportion_covered::PR | false   | _               | _
-    dispersal_probs::DP    | false   | _               | _
-    human_buffer::B        | false   | _               | _
-    dist_buffer::B         | false   | _               | _
+    timestep::TS           | false   | _               | "The mean length of the timestep"
+    dest_shortlists::PC    | false   | _               | "Array of destination vectors for each cell. Automatically calculated"
+    proportion_covered::PR | false   | _               | "Not currently used"
+    dispersal_probs::DP    | false   | _               | "precalculated dispersal probabilities"
+    human_buffer::B        | false   | _               | "Buffer array used in precalculation"
+    dist_buffer::B         | false   | _               | "Buffer array used in precalculation"
     function HumanDispersal{R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
                             human_exponent::HE, dist_exponent::DE, dispersalperpop::PA,
                             max_dispersers::MD, shortlist_len::SL, timestep::TS,
@@ -106,7 +123,7 @@ function HumanDispersal{R,W}(human_pop::HP, cellsize::CS, scale::S, aggregator::
                              proportion_covered, dispersal_probs, human_buffer, dist_buffer)
 end
 
-HumanDispersal(; grid=:_default_, human_pop=human_pop, cellsize=1.0, scale=4,
+HumanDispersal(; grid=:_default_, human_pop, cellsize=1.0, scale=4,
                aggregator=mean, human_exponent=1.0, dist_exponent=1.0, dispersalperpop=1e-3,
                max_dispersers=100.0, shortlist_len=100, timestep=1) = begin
 
@@ -295,9 +312,6 @@ end
     return
 end
 
-
-# Utilities - removed for memory/performance improvement. Could be returned
-# as an optional process.
 
 """
     populate!(A::AbstractMatrix, rule::HumanDispersal, [I...])
