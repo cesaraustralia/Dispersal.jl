@@ -1,9 +1,8 @@
 using DynamicGrids, Dispersal, Test, Colors, Flatten, LossFunctions, Optim
-using Dispersal: stepfromframe
+using Dispersal: stepfromframe, SingleCoreReplicates, ThreadedReplicates
 using DynamicGrids: grid2image
 
 @testset "step from frame" begin
-    # stepfromframe(framesperstep, frame)
     @test stepfromframe(1, 1, 1) == 1
     @test stepfromframe(1, 5, 1) == 5
     @test stepfromframe(2, 1, 1) == 1
@@ -42,9 +41,27 @@ end
     output = ArrayOutput(init, stoptime)
     objective = SimpleObjective(target)
     loss = LogitDistLoss()
-    parametriser = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, starttime, stoptime)
-    res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
+
+    p = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, starttime, stoptime);
+    @test DynamicGrids.ruleset(p::Parametriser) === ruleset
+    @test Dispersal.output(p::Parametriser) === output
+    @test Dispersal.transform(p::Parametriser) == p.transform
+    @test Dispersal.objective(p::Parametriser) === objective
+    @test Dispersal.loss(p::Parametriser) === loss
+    @test Dispersal.ngroups(p::Parametriser) == 1
+    @test Dispersal.groupsize(p::Parametriser) == 1
+    @test Dispersal.threading(p::Parametriser) == SingleCoreReplicates()
+    @test DynamicGrids.starttime(p::Parametriser) == 1
+    @test DynamicGrids.stoptime(p::Parametriser) == 4
+    @test Dispersal.data(p::Parametriser) == p.data
+    @test Dispersal.targetbuffer(p::Parametriser) == target
+    @test Dispersal.targetbuffer(p::Parametriser) !== target
+    @test Dispersal.predictionbuffer(p::Parametriser) == target
+    @test Dispersal.predictionbuffer(p::Parametriser) !== target
+
+    res = Optim.optimize(p, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
     @test res.minimizer[1] ≈ rate atol=4
+
 end
 
 @testset "RegionObjective" begin
@@ -69,13 +86,25 @@ end
     detectionthreshold = 0.1
     transform = x -> 2x - 1
 
-
-    # TODO test the result with a real dispersal function and predict parameters
     objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep, 1)
     output = RegionOutput(init, starttime=starttime, stoptime=stoptime, objective=objective)
     ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
     loss = ZeroOneLoss()
-    parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, stoptime)
-    parametriser(flatten(ruleset))
-    res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
+
+    @testset "SingleCoreReplicates" begin
+        threading = SingleCoreReplicates()
+        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, stoptime, threading)
+        parametriser(flatten(ruleset))
+        res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
+    end
+
+    @testset "ThreadedReplicates" begin
+        threading = ThreadedReplicates()
+        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, stoptime, threading)
+        parametriser(flatten(ruleset))
+        res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
+    end
+
+    # TODO test the result with a real dispersal function and predict parameters
+
 end

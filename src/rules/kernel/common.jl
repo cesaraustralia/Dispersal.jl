@@ -18,12 +18,6 @@ $(FIELDDOCTABLE)
     cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
     distancemethod::D | CentroidToCentroid()   | false | _           | "Method for calculating distance between cells"
 
-    DispersalKernel{R}(; kwargs...) where {R,F,K,C,D} = begin
-        args = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
-        DispersalKernel{R,typeof.(args)...}(args...)
-    end
-    DispersalKernel{R}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} =
-        DispersalKernel{R,F,K,C,D}(formulation, kernel, cellsize, distancemethod)
     DispersalKernel{R,F,K,C,D}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} = begin
         # Convert kenel the type of the init array
         kernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
@@ -31,6 +25,12 @@ $(FIELDDOCTABLE)
         new{R,F,typeof(kernel),C,D}(formulation, kernel, cellsize, distancemethod)
     end
 end
+DispersalKernel{R}(; kwargs...) where {R,F,K,C,D} = begin
+    args = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
+    DispersalKernel{R,typeof.(args)...}(args...)
+end
+DispersalKernel{R}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} =
+    DispersalKernel{R,F,K,C,D}(formulation, kernel, cellsize, distancemethod)
 
 ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
 

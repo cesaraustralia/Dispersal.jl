@@ -34,7 +34,7 @@ replaced with an external interpolation package.
 precalc_timeindex(layer, rule, data, t=currenttime(data)) = begin
     # Convert Month etc timesteps to a realised DateTime period
     layerstep = length(starttime(layer):timestep(layer):t)
-    cyclic_index(layerstep, size(layer, Time))
+    cyclic_index(layerstep, size(layer, Ti))
 end
 # Interpolated version
 # Base.@propagate_inbounds precalc_timeindex(layers, rule, data) = begin
@@ -67,13 +67,13 @@ cyclic_index(i::Integer, len::Integer) =
 
 # Get time step/start/stop from AbstractDimensionalArray
 # Integer fallbacks are for other array types is the indices of dim 3
-DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, Time))
+DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, Ti))
 DynamicGrids.timestep(A::AbstractArray) = 1
 
-DynamicGrids.starttime(A::AbstractDimensionalArray) = first(dims(A, Time))
+DynamicGrids.starttime(A::AbstractDimensionalArray) = first(dims(A, Ti))
 DynamicGrids.starttime(A::AbstractArray) = firstindex(A, 3)
 
-DynamicGrids.stoptime(A::AbstractDimensionalArray) = last(dims(A, Time))
+DynamicGrids.stoptime(A::AbstractDimensionalArray) = last(dims(A, Ti))
 DynamicGrids.stoptime(A::AbstractArray) = lastindex(A, 3)
 
 

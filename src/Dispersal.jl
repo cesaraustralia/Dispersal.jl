@@ -3,6 +3,7 @@ module Dispersal
 @doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
 using ConstructionBase,
+      Colors,
       Dates,
       DimensionalData,
       Distributed,
@@ -31,7 +32,8 @@ import Base: getindex, setindex!, lastindex, size, length, push!
 import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, gridsize, mask, overflow, cellsize, ruleset, inbounds,
-       currenttime, currenttimestep, starttime, stoptime, timestep, tspan
+       currenttime, currenttimestep, starttime, stoptime, timestep, tspan,
+       WritableGridData
 
 import ConstructionBase: constructorof
 

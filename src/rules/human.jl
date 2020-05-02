@@ -16,13 +16,11 @@ struct CellInterval{P,I}
     index::I
 end
 
-#============================================================================
-Sorting
-
+#= Sorting
 isless is used to iteratively sort lists and search in funcitons like
-`searchsortedfirst` and `partialsort!`. We define `isless` on `CellGravity.gravity` in 
+`searchsortedfirst` and `partialsort!`. We define `isless` on `CellGravity.gravity` in
 order to sortby margnitudes  using `searchsortedfirst`, while tracking the original index.
-=# 
+=#
 
 import Base: isless, +
 isless(x::CellGravity, y::CellGravity) = isless(x.gravity, y.gravity)
@@ -39,30 +37,20 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 +(x::CellGravity, y) = +(x.gravity, y)
 
 
-# Define types used in the precalculation
-const Index = Tuple{Int16,Int16}
-const Interval = CellInterval{Float32,Index}
-const Gravity = CellGravity{Float32,Index}
-const Precalc = Union{Vector{Interval},Missing}
-const Prop = Union{Float32,Missing}
-
 """
-    HumanDispersal{R,W}(human_pop, cellsize, scale, aggregator,
-                        human_exponent, dist_exponent, dispersalperpop,
-                        max_dispersers, shortlist_len, timestep,
-                        dest_shortlists, proportion_covered, dispersal_probs,
-                        human_buffer, dist_buffer)
-    HumanDispersal(; grid=:_default_, 
-                   human_pop, 
-                   cellsize=1.0, 
+    HumanDispersal{R,W}(human_pop, cellsize, scale, aggregator, human_exponent, 
+                        dist_exponent, dispersalperpop, max_dispersers, nshortlisted, 
+                        dest_shortlists, proportion_covered, human_buffer, distances)
+    HumanDispersal(; grid=:_default_,
+                   human_pop,
+                   cellsize=1.0,
                    scale=4,
-                   aggregator=mean, 
-                   human_exponent=1.0, 
-                   dist_exponent=1.0, 
+                   aggregator=mean,
+                   human_exponent=1.0,
+                   dist_exponent=1.0,
                    dispersalperpop=1e-3,
-                   max_dispersers=100.0, 
-                   shortlist_len=100, 
-                   timestep=1)
+                   max_dispersers=100.0,
+                   nshortlisted=100)
 
 Human-driven dispersal patterns using population data.
 
@@ -78,214 +66,192 @@ scale value is good for use in a live interface.
 
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct HumanDispersal{R,W,HP,CS,S,AG,HE,DE,EA,MD,SL,TS,PC,PR,DP,B} <: PartialRule{R,W}
-    # Field                | Flatten | Limits
+@description @limits @flattenable struct HumanDispersal{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B} <: PartialRule{R,W}
+    # Field                | Flatten | Limits          | Description
     human_pop::HP          | false   | _               | "An array match the grid size containing human population data."
     cellsize::CS           | false   | _               | "The size of the cell width, assuming they are square"
     scale::S               | false   | _               | ""
     aggregator::AG         | false   | _               | "A function that aggregates scaled down cells"
     human_exponent::HE     | true    | (1.0, 3.0)      | "Human population exponent"
     dist_exponent::DE      | true    | (1.0, 3.0)      | "Distance exponent"
-    dispersalperpop::EA    | true    | (0.0, 1e-8)     | "Scales the number of dispersing individuals by human activity (ie population^human_exponent)"
+    dispersalperpop::DP    | true    | (0.0, 1e-8)     | "Scales the number of dispersing individuals by human activity (ie population^human_exponent)"
     max_dispersers::MD     | true    | (50.0, 10000.0) | "Maximum number of dispersers in a dispersal events"
-    shortlist_len::SL      | false   | _               | "Length of dest shortlist"
-    timestep::TS           | false   | _               | "The mean length of the timestep"
+    nshortlisted::SL       | false   | _               | "Length of dest shortlist"
     dest_shortlists::PC    | false   | _               | "Array of destination vectors for each cell. Automatically calculated"
-    proportion_covered::PR | false   | _               | "Not currently used"
-    dispersal_probs::DP    | false   | _               | "precalculated dispersal probabilities"
     human_buffer::B        | false   | _               | "Buffer array used in precalculation"
-    dist_buffer::B         | false   | _               | "Buffer array used in precalculation"
-    function HumanDispersal{R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
-                            human_exponent::HE, dist_exponent::DE, dispersalperpop::PA,
-                            max_dispersers::MD, shortlist_len::SL, timestep::TS,
-                            dest_shortlists::PC, proportion_covered::PR, dispersal_probs::DP,
-                            human_buffer::B, dist_buffer::B
-                           ) where {R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}
+    distances::B           | false   | _               | "Buffer array used in precalculation"
+    function HumanDispersal{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
+                            human_exponent::HE, dist_exponent::DE, dispersalperpop::DP,
+                            max_dispersers::MD, nshortlisted::SL, dest_shortlists::PC,
+                            human_buffer::B, distances::B
+                           ) where {R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}
 
         precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
-                                 human_exponent, dist_exponent, shortlist_len, human_buffer, dist_buffer)
-        precalc_dispersal_probs!(dispersal_probs, human_pop, dispersalperpop)
-
-        new{R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
-                                 dist_exponent, dispersalperpop, max_dispersers, shortlist_len, timestep, dest_shortlists,
-                                 proportion_covered, dispersal_probs, human_buffer, dist_buffer)
+                                 human_exponent, dist_exponent, nshortlisted, human_buffer, distances)
+        new{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}(human_pop, cellsize, scale, aggregator, human_exponent,
+                                 dist_exponent, dispersalperpop, max_dispersers, nshortlisted, dest_shortlists,
+                                 human_buffer, distances)
     end
 end
-
-function HumanDispersal{R,W}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
-                        human_exponent::HE, dist_exponent::DE, dispersalperpop::PA,
-                        max_dispersers::MD, shortlist_len::SL, timestep::TS,
-                        dest_shortlists::PC, proportion_covered::PR, dispersal_probs::DP,
-                        human_buffer::B, dist_buffer::B
-                       ) where {R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}
-    HumanDispersal{R,W,HP,CS,S,AG,HE,DE,PA,MD,SL,TS,PC,PR,DP,B}(human_pop, cellsize, scale, aggregator, human_exponent,
-                             dist_exponent, dispersalperpop, max_dispersers, shortlist_len, timestep, dest_shortlists,
-                             proportion_covered, dispersal_probs, human_buffer, dist_buffer)
+HumanDispersal{R,W}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
+    human_exponent::HE, dist_exponent::DE, dispersalperpop::DP, max_dispersers::MD, 
+    nshortlisted::SL, dest_shortlists::PC, human_buffer::B, distances::B
+    ) where {R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B} = begin
+    HumanDispersal{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}(human_pop, cellsize, scale, 
+        aggregator, human_exponent, dist_exponent, dispersalperpop, max_dispersers, 
+        nshortlisted, dest_shortlists, human_buffer, distances)
 end
-
-HumanDispersal(; grid=:_default_, human_pop, cellsize=1.0, scale=4,
-               aggregator=mean, human_exponent=1.0, dist_exponent=1.0, dispersalperpop=1e-3,
-               max_dispersers=100.0, shortlist_len=100, timestep=1) = begin
-
+HumanDispersal(; grid=:_default_, human_pop, cellsize=1.0, scale=4, aggregator=mean, 
+               human_exponent=1.0, dist_exponent=1.0, dispersalperpop=1e-3,
+               max_dispersers=100.0, nshortlisted=100) = begin
     # Allocate memory
-    proportion_covered = nothing
-    dispersal_probs = zeros(Union{typeof(dispersalperpop), Missing}, size(human_pop))
     human_buffer = initdownsample(human_pop, scale)
-    dist_buffer = initdownsample(human_pop, scale)
-    dest_shortlists = init_dest_shortlist(shortlist_len, size(human_buffer))
+    distances = initdownsample(human_pop, scale)
+    dest_shortlists = alloc_dest_shortlist(nshortlisted, size(human_buffer))
 
     HumanDispersal{grid,grid}(human_pop, cellsize, scale, aggregator, human_exponent,
-                   dist_exponent, dispersalperpop, max_dispersers, shortlist_len,
-                   timestep, dest_shortlists, proportion_covered, dispersal_probs,
-                   human_buffer, dist_buffer)
+                   dist_exponent, dispersalperpop, max_dispersers, nshortlisted,
+                   dest_shortlists, human_buffer, distances)
 end
 
 getindex(rule::HumanDispersal, I...) = getindex(rule.dest_shortlists, I...)
 
-# Precalculation
+
+# Precalculation ###################################################
+
+# Define types used in the precalculation
+const Index = Tuple{Int16,Int16}
+const Interval = CellInterval{Float32,Index}
+const Precalc = Union{Vector{Interval},Missing}
+const Gravity = CellGravity{Float32,Index}
+const Prop = Union{Float32,Missing}
+
+# Memory preallocation utilities
+alloc_dest_shortlist(nshortlisted, (h, w)) =
+    Precalc[Vector{Interval}(undef, nshortlisted) for i in 1:h, j in 1:w]
+
+alloc_threads(human_buffer, nshortlisted) =
+    [alloc_gravities(human_buffer, nshortlisted) for thread in 1:Threads.nthreads()]
+
+alloc_gravities(human, nshortlisted) = begin
+    gravities = Matrix{Gravity}(undef, size(human)...)
+    for j in 1:size(gravities, 2), i in 1:size(gravities, 1)
+        gravities[i, j] = Gravity(0.0f0, (i, j))
+    end
+    gravity_vector = deepcopy(vec(gravities))
+    gravities, gravity_vector
+end
 
 """
 Precalculate a dispersal shortlist for each cell
 """
 precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
-                        human_exponent, dist_exponent, shortlist_len, human_buffer, dist_buffer) = begin
+                        human_exponent, dist_exponent, nshortlisted, human_buffer, distances) = begin
     # Limit shortlist cells to the total available
-    @assert shortlist_len <= length(human_buffer)
+    @assert nshortlisted <= length(human_buffer)
 
-    # Downsample and get final matrix dimensions
+    # Copy downsampled human_pop matrix to human_buffer
     downsample!(human_buffer, human_pop, aggregator, scale)
 
-    # Precalculate exponentiation of human population matrix
-    human_buffer .^= human_exponent
+    precalc_human_exponent!(human_buffer, human_exponent)
+    precalc_distances!(distances, dist_exponent, cellsize, scale)
 
-    # Precalculated distances matrix
-    for j in 1:size(dist_buffer, 2), i in 1:size(dist_buffer, 1)
-        dist_buffer[i, j] = (centercenter_distance(i, j) * cellsize * scale) ^ dist_exponent
+    # Calculate cell gravities by column in separate threads
+    thread_alloc = alloc_threads(human_buffer, nshortlisted)
+    Threads.@threads for j in 1:size(human_buffer, 2)
+        precalc_col!(dest_shortlists, nshortlisted, human_buffer, distances, thread_alloc, j)
+    end
+end
+
+precalc_human_exponent!(human_pop::Matrix, human_exponent::Number) =
+    human_pop .^= human_exponent
+
+precalc_distances!(distances::Matrix, dist_exponent, cellsize, scale) = begin
+    for j in 1:size(distances, 2), i in 1:size(distances, 1)
+        distances[i, j] = (centercenter_distance(i, j) * cellsize * scale) ^ dist_exponent
     end
     # First cell uses the mean distance from cell centre
-    dist_buffer[1, 1] = (cellsize * scale / 6 * (sqrt(2) + log(1 + sqrt(2)))) ^ dist_exponent
+    distances[1, 1] = (cellsize * scale / 6 * (sqrt(2) + log(1 + sqrt(2)))) ^ dist_exponent
+    return distances
+end
 
-    col_mem = [allocate_column(human_buffer, shortlist_len) for thread in 1:Threads.nthreads()]
+centercenter_distance(a, b) = sqrt((a - 1)^2 + (b - 1)^2)
 
-    Threads.@threads for j in 1:size(human_buffer, 2)
-        precalc_col!(dest_shortlists, shortlist_len, human_buffer, dist_buffer, col_mem, j)
+# Precalculate human dispersal shortlist for every cell in a column.
+# Working on columns is a clean way to spread the load accross multiple processors.
+function precalc_col!(dest_shortlists, nshortlisted, human, distances, thread_alloc, j)
+    col_alloc = thread_alloc[Threads.threadid()]
+    for i = 1:size(human, 1)
+        precalc_cell!(dest_shortlists, nshortlisted, human, distances, col_alloc, i, j)
     end
 end
 
-centercenter_distance(x, y) = sqrt((x - 1)^2 + (y - 1)^2)
-
-init_dest_shortlist(shortlist_len, (h, w)) = init_dest_shortlist(shortlist_len, h, w)
-init_dest_shortlist(shortlist_len, h, w) = Precalc[Vector{Interval}(undef, shortlist_len) for i in 1:h, j in 1:w]
-
-allocate_column(human, shortlist_len) = begin
-    h, w = size(human)
-    gravities = Matrix{Gravity}(undef, size(human)...)
-    for j in 1:size(gravities, 2), i in 1:size(gravities, 1)
-        gravities[i, j] = Gravity(0.0f0, (i, j))
+function precalc_cell!(dest_shortlists, nshortlisted, human, distances, (gravities, gravity_vector), i, j)
+    if ismissing(human[i, j])
+        dest_shortlists[i, j] = missing
+        return
     end
-    gravity_vector = Vector{Gravity}(undef, h * w)
-    gravity_shortlist = Vector{Gravity}(undef, shortlist_len)
-    interval_shortlist = Vector{Interval}(undef, shortlist_len)
-    gravities, gravity_vector, gravity_shortlist, interval_shortlist
+    # Calculate the gravity for all cells in the grid
+    assign_gravities!(gravities, human, distances, i, j)
+    gravity_vector .= vec(gravities)
+    # Sort the top nshortlisted gravities in-place, highest first.
+    partialsort!(gravity_vector, nshortlisted, rev=true)
+    # Select the top nshortlisted gravities, low to high
+    gravity_shortlist = view(gravity_vector, 1:nshortlisted)
+    # Convert shortlies gravities to intervals
+    gravity2inverval!(dest_shortlists[i, j], gravity_shortlist)
 end
 
-
-"""
-Precalculate human dispersal shortlist for every cell in a column.
-Working on columns is the cleanest way to spread the load accross multiple processors.
-"""
-function precalc_col!(dest_shortlists, shortlist_len, human, dist, colmem, j)
-    h, w = size(human)
-    F = eltype(human)
-    gravities, gravity_vector, gravity_shortlist, interval_shortlist = colmem[Threads.threadid()]
-
-    for i = 1:h
-        cumprop = 0.0f0
-
-        if ismissing(human[i, j])
-            dest_shortlists[i, j] = missing
-            # Update shortlist proportion matrix to check coverage of the distribution
-            # proportion_covered[i, j] = missing
-            continue
+function assign_gravities!(gravities, human, distances, i, j)
+    T = typeof(first(gravities).gravity)
+    for jj = 1:size(human, 2), ii = 1:size(human, 1)
+        gravities[ii, jj].gravity = if ismissing(human[ii, jj])
+            # Missing values are assigned a zero gravity to miss the shortlist
+            zero(T)
+        else
+            celldist = abs(i - ii) + 1, abs(j - jj) + 1
+            (human[ii, jj] / distances[celldist...])
         end
-
-        # Calculate the gravity for all cells in the grid
-        for ii = 1:h, jj = 1:w
-            gravities[ii, jj].gravity = if ismissing(human[ii, jj])
-                # Missing values are assigned a zero gravity to miss the shortlist
-                zero(gravities[1, 1].gravity)
-            else
-                (human[i, j] * human[ii, jj]) / (dist[abs(i - ii) + 1, abs(j - jj) + 1])
-            end
-        end
-
-        # Arrange gravities in a vector for 1 dimensional sorting
-        for n = 1:size(gravities, 1) * size(gravities, 2)
-            gravity_vector[n] = gravities[n]
-        end
-        # Sort the top shortlist_len gravities in-place, highest first.
-        partialsort!(gravity_vector, shortlist_len, rev=true)
-        # Copy sorted gravities to the shortlist
-        for i in 1:shortlist_len
-            gravity_shortlist[i] = gravity_vector[i]
-        end
-
-        # Sum gravities in the shortlist
-        shortlist_sum::F = sum(gravity_shortlist)
-
-        # Create a list of intervals from the sorted list of gravities.
-        # This will be used to choose to randomly select cells from the
-        # distribution of gravities
-        for (n, m) = enumerate(reverse(gravity_shortlist))
-            # Calculaate proportion of current gravity in the complete shortlist
-            gravityprop = m.gravity / shortlist_sum
-            # Track cumulative proportion for use with `searchsortedfirst()`
-            cumprop += gravityprop
-            # In case of float innacuracy, finish the distribution at 1.0
-            if n == shortlist_len
-                cumprop = oneunit(cumprop)
-            end
-            interval_shortlist[n] = CellInterval(cumprop, m.index)
-        end
-        # Update output matrix
-        dest_shortlists[i, j] .= interval_shortlist
-
-        # Update shortlist proportion matrix to check coverage of the distribution
-        # Sum all gravities
-        # total_sum::F = sum(gravities)
-        # prop = shortlist_sum / total_sum
-        # proportion_covered[i, j] = prop
     end
 end
 
+# Convert the gravity of a cell to an interval than can
+# be randomly selected with `rand()` and `searchsortedfirst`
+function gravity2inverval!(interval_shortlist, gravity_shortlist)
+    # Sum gravities in the shortlist
+    shortlist_sum = sum(gravity_shortlist)
+    nshortlisted = length(gravity_shortlist)
 
-"""
-Prealculate dispersal probailities for use in the rule
-
-This used to make sense to remove exp(), but probably should be done
-on the fly now.
-"""
-precalc_dispersal_probs!(dispersal_probs, human_activity, dispersalperpop) = begin
-    maximum(skipmissing(human_activity)) * dispersalperpop > oneunit(dispersalperpop) &&
-        error("dispersalperpop is too high: more propagules can be sent than populaiton")
-    dispersal_probs .= human_activity .* dispersalperpop
+    cumprop = 0.0f0
+    # Create a list of intervals from the sorted list of gravities.
+    # This will be used to randomly choose cells from the
+    # distribution of gravities
+    for (n, m) = enumerate(reverse(gravity_shortlist))
+        # Calculaate proportion of current gravity in the complete shortlist
+        gravityprop = m.gravity / shortlist_sum
+        # Track cumulative proportion for use with `searchsortedfirst()`
+        # In case of float innacuracy, finish the distribution at 1.0
+        cumprop = n == nshortlisted ? oneunit(cumprop) : cumprop + gravityprop
+        interval_shortlist[n] = CellInterval(cumprop, m.index)
+    end
+    interval_shortlist
 end
 
-# DynamicGrids Interface
+
+# DynamicGrids Interface ###################################################
+
 @inline applyrule!(rule::HumanDispersal{R,W}, data, population, index) where {R,W} = begin
-    population > zero(population) || return
-    @inbounds dispersalprob = rule.dispersal_probs[index...]
+    population == zero(population) && return
+    @inbounds dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
     ismissing(dispersalprob) && return
     @inbounds shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
     ismissing(shortlist) && return
 
     # Find the expected number of dispersers given population, dispersal prob and timeframe
-    isnan(population) && println("population", population, " at time: ", currenttime(data))
-    isnan(dispersalprob) && println("dispersalprob", dispersalprob)
     total_dispersers = trunc(Int, population * dispersalprob)
-    total_dispersers >= zero(total_dispersers) || return
+    total_dispersers == zero(total_dispersers) && return
 
-    # Int max number of dispersers in any single dispersal event
+    # Maximum number of discrete dispersers in any single dispersal event
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
@@ -313,6 +279,8 @@ end
 end
 
 
+# Examing the generated shorlists ######################################33
+
 """
     populate!(A::AbstractMatrix, rule::HumanDispersal, [I...])
     populate!(A::AbstractMatrix, cells::AbstractArray, [scale=1])
@@ -323,33 +291,42 @@ if passed the `I...` indexing arguments. This is useful for plotting
 dispersal destinations, especially when used with GeoData.jl
 """
 populate!(A::AbstractMatrix, rule::HumanDispersal) =
-    populate!(A, rule.dest_shortlists, rule)
+    populate!(A, rule.dest_shortlists, rule.scale)
 populate!(A::AbstractMatrix, rule::HumanDispersal, I...) =
     populate!(A::AbstractMatrix, rule[I...], rule.scale)
-populate!(A::AbstractMatrix, shortlists::AbstractArray, scale=1) = begin
+# All shortlists for all cells
+populate!(A::AbstractMatrix, shortlists::AbstractArray, scale::Int=1) = begin
     for I in CartesianIndices(shortlists)
-        if ismissing(shortlists[I])
-            #A[upsample_index(Tuple(I), rule.scale)...] = missing
-        else
-            populate!(A, shortlists[I], scale)
-        end
+        populate!(A, shortlists[I], scale)
     end
     return A
 end
-populate!(A::AbstractMatrix, cells::Missing, scale) = missing
-populate!(A::AbstractMatrix, cells::AbstractVector{<:Union{<:CellInterval,Missing}}, scale=1) = begin
+# Single shortlist for one cell
+populate!(A::AbstractMatrix, cells::AbstractVector{<:Union{<:CellInterval,Missing}}, scale::Int=1) = begin
     lastcumprop = 0.0
     for cell in cells
         I = upsample_index(cell.index, scale)
-        val = A[I...]
-        if ismissing(val)
-            A[I...] = cell.cumprop - lastcumprop
+        prop = cell.cumprop - lastcumprop
+        if ismissing(A[I...])
+            A[I...] = prop
         else
-            A[I...] += cell.cumprop - lastcumprop
+            A[I...] += prop
         end
+        lastcumprop = cell.cumprop
     end
     return A
 end
+populate!(A::AbstractMatrix, cells::Missing, scale::Int=1) = missing
+
+"""
+    populate(rule::HumanDispersal, [I...])
+
+Returns an array the size of human population matrix filled
+with all destination locataion, or with destinations specific
+to the passed-in indices `I`.
+"""
+populate(rule::HumanDispersal, args...) =
+    populate!(zeros(Float32, size(rule.human_pop)), rule, args...)
 
 """
     populate(cells::AbstractVector, size::Tuple, [scale::Int=1])
@@ -358,4 +335,4 @@ Returns an array of size `size` populated from the vector
 of positions in `cells` rescaled by `scale`.
 """
 populate(cells::AbstractVector, size::Tuple, scale::Int=1) =
-    populate!(zeros(Float64, size), cells, scale)
+    populate!(zeros(Float32, size), cells, scale)

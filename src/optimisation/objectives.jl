@@ -21,6 +21,7 @@ prediction array.
 """
 function predictions end
 
+predictions(obj::Objective, output) = output[end]
 
 
 """
@@ -34,8 +35,6 @@ struct SimpleObjective{T} <: Objective
 end
 
 targets(obj::SimpleObjective) = obj.targets
-
-predictions(obj::SimpleObjective, output) = output[end]
 
 
 """
@@ -53,57 +52,6 @@ end
 
 targets(obj::PresenceAbsenceObjective) = obj.occurance
 predictions(obj::PresenceAbsenceObjective, output) = output[end]
-
-
-# RegionObjective and supporting types/methods
-
-"""
-    RegionOutput(init; nframes, objective)
-
-A minimal low-memory output that stores the inhabited regions for
-each timestep, as required by the [`RegionObjective`](@ref).
-"""
-DynamicGrids.@Output mutable struct RegionOutput{O} <: Output{T}
-    objective::O | nothing
-end
-RegionOutput(objective::Objective; kwargs...) where T = begin
-    predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
-    RegionOutput(; frames=predictions, objective=objective, kwargs...)
-end
-
-objective(o::RegionOutput) = o.objective
-
-DynamicGrids.storegrid!(output::RegionOutput, data::DynamicGrids.SimData, f) = begin
-    step = stepfromframe(objective(output), f)
-    predictions = output[1]
-    for j in 1:framesize(data)[2], i in 1:framesize(data)[1]
-        DynamicGrids.celldo!(data, output, i, j, step, predictions)
-    end
-end
-
-DynamicGrids.initgrids!(output::RegionOutput, init) = begin
-    step = stepfromframe(objective(output), 1)
-    predictions = output[1]
-    predictions .= false
-    for j in 1:size(init, 2), i in 1:size(init, 1)
-        DynamicGrids.celldo!(init, output, i, j, step, predictions)
-    end
-end
-
-"""
-Set region presence status in non-zero blocks
-"""
-@inline DynamicGrids.celldo!(data, output::RegionOutput, i, j, step, predictions) = begin
-    obj = objective(output)
-    data[i, j] > obj.detectionthreshold || return
-    region = obj.regionlookup[i, j]
-    region > zero(region) || return
-    predictions[region, step] = true
-    return
-end
-
-DynamicGrids.showgrid(o::RegionOutput, ruleset::Ruleset, f) = nothing
-
 """
 Implementation of a loss objective that converts cell data to regional
 presence/absence and compares to a target of regional occurance data.
@@ -119,8 +67,4 @@ struct RegionObjective{DT,RL,OC,FS,S} <: Objective
 end
 
 targets(obj::RegionObjective) = obj.occurance
-predictions(obj::RegionObjective, output::RegionOutput) = output[1]
-
-
-stepfromframe(objective::RegionObjective, t) = stepfromframe(objective.framesperstep, objective.start, t)
-stepfromframe(framesperstep, start, t) = (t - 2one(t) + start) ÷ framesperstep + one(t)
+predictions(obj::RegionObjective, output) = output[end]

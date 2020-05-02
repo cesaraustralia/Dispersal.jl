@@ -50,21 +50,21 @@ end
     grid[index...] = state - sum
 @inline update_state!(grid, hood, state, index, sum) = state
 
-@inline setneighbor!(data, hood, rule::OutwardsPopulationDispersal, 
+@inline setneighbor!(data::WritableGridData, hood::Neighborhood, rule::OutwardsPopulationDispersal, 
                      state::AbstractFloat, hood_index, dest_index) = begin
     @inbounds propagules = state * kernel(hood)[hood_index...]
     @inbounds data[dest_index...] += propagules
     propagules
 end
 
-@inline setneighbor!(data, hood, rule::OutwardsBinaryDispersal,
+@inline setneighbor!(data::WritableGridData, hood::Neighborhood, rule::OutwardsBinaryDispersal,
                      state::Integer, hood_index, dest_index) = begin
     @inbounds rand() * kernel(hood)[hood_index...] > rule.prob_threshold || return zero(state)
     @inbounds data[dest_index...] += oneunit(state)
     oneunit(state)
 end
 
-@inline setneighbor!(data, hood, rule::OutwardsBinaryDispersal, 
+@inline setneighbor!(data::WritableGridData, hood::Neighborhood, rule::OutwardsBinaryDispersal, 
                      state::Bool, hood_index, dest_index) = begin
     @inbounds rand() * kernel(hood)[hood_index...] > rule.prob_threshold || return zero(state)
     @inbounds data[dest_index...] |= oneunit(state)

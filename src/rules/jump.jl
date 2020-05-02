@@ -30,13 +30,13 @@ end
     rand() < rule.prob_threshold || return state
 
     # Randomly select spotting distance
-    rnge = rand(2) .* rule.spotrange
-    spot = tuple(unsafe_trunc.(Int64, rnge .+ index)...)
-    spot, is_inbounds = inbounds(spot, gridsize(data), RemoveOverflow())
+    rnge = -rule.spotrange:rule.spotrange
+    jump = (rand(rnge), rand(rnge))
+    jumpdest, is_inbounds = inbounds(jump .+ index, gridsize(data), RemoveOverflow())
 
     # Update spotted cell if it's on the grid
     if is_inbounds
-        @inbounds dest(data)[W][spot...] = state
+        @inbounds data[W][jumpdest...] = state
     end
 
     state

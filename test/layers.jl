@@ -73,3 +73,14 @@ suitseq = DimensionalArray(a, dimz)
         @test layer(suitseq, data, (2, 2), interp) ≈ 1.8
     end
 end
+
+@testset "start and stop times" begin
+    A = rand(4, 5, 10)
+    @test Dispersal.timestep(A) == 1
+    @test Dispersal.starttime(A) == 1
+    @test Dispersal.stoptime(A) == 10
+    A = DimensionalArray(rand(4, 5, 10), (X, Y, Ti(20:10:110)))
+    @test Dispersal.timestep(A) == 10
+    @test Dispersal.starttime(A) == 20
+    @test Dispersal.stoptime(A) == 110
+end
