@@ -168,6 +168,18 @@ end
                 0 0 0 0 0]
 
     combined = populate(humandisp)
+    sum(combined) ≈ 25
+    @test (combined .> 0) ==
+               [1 1 1 1 1
+                1 1 1 1 1
+                1 1 1 1 1
+                1 1 1 1 1
+                1 1 1 1 1]
+    # These are close but not exactly identical yet. Not sure why
+    @test_broken reverse(combined; dims=2) ≈ combined
+    @test_broken reverse(combined; dims=1) ≈ combined
+    reverse(combined; dims=1) 
+    combined
 end
 
 
@@ -182,14 +194,14 @@ end
     output = ArrayOutput(init, 10)
 
     for i = 1:100
-        println(i)
-        sim!(output, ruleset; init=init, tspan=(1, 4))
+        sim!(output, ruleset; init=init, tspan=(1, 10))
         @test init == output[1]
-        @test init != output[4]
+        @test init != output[10]
         # Population is allways maintained
         @test sum(init) == sum(output[2])
         @test sum(init) == sum(output[3])
-        @test sum(init) == sum(output[4])
+        @test sum(init) == sum(output[5])
+        @test sum(init) == sum(output[10])
     end
 
 end
