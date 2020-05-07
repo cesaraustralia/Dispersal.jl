@@ -1,6 +1,6 @@
 
 @mix @columns struct Layers{L,TI}
-    layer::L           | nothing | false | _ | "`Matrix` or 3d `Array` with a time dimension. A `DimensionalArray` is required if the simulation uses real dates or times"
+    layer::L           | nothing | false | _ | "`Matrix` or 3d `Array` with a time dimension. A `DimensionalArray` with a `TimeDim` as the third dim is required if the simulation uses real dates or times"
     timeindex::TI      | 1       | false | _ | "Precalculated interpolation indices. Not set by users"
 end
 
@@ -34,7 +34,7 @@ replaced with an external interpolation package.
 precalc_timeindex(layer, rule, data, t=currenttime(data)) = begin
     # Convert Month etc timesteps to a realised DateTime period
     layerstep = length(starttime(layer):timestep(layer):t)
-    cyclic_index(layerstep, size(layer, Ti))
+    cyclic_index(layerstep, size(layer, 3))
 end
 # Interpolated version
 # Base.@propagate_inbounds precalc_timeindex(layers, rule, data) = begin
@@ -67,13 +67,13 @@ cyclic_index(i::Integer, len::Integer) =
 
 # Get time step/start/stop from AbstractDimensionalArray
 # Integer fallbacks are for other array types is the indices of dim 3
-DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, Ti))
+DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, TimeDim))
 DynamicGrids.timestep(A::AbstractArray) = 1
 
-DynamicGrids.starttime(A::AbstractDimensionalArray) = first(dims(A, Ti))
+DynamicGrids.starttime(A::AbstractDimensionalArray) = first(dims(A, TimeDim))
 DynamicGrids.starttime(A::AbstractArray) = firstindex(A, 3)
 
-DynamicGrids.stoptime(A::AbstractDimensionalArray) = last(dims(A, Ti))
+DynamicGrids.stoptime(A::AbstractDimensionalArray) = last(dims(A, TimeDim))
 DynamicGrids.stoptime(A::AbstractArray) = lastindex(A, 3)
 
 
@@ -86,6 +86,7 @@ comparing simulation dynamics to layer dynamics.
 $(FIELDDOCTABLE)
 """
 @Layers struct LayerCopy{R,W} <: Rule{R,W} end
+LayerCopy(args...) = LayerCopy{Tuple{},:_default_,map(typeof,args)...}(args...)
 
 DynamicGrids.applyrule(rule::LayerCopy, data, state, index, args...) =
     layer(rule, data, index)

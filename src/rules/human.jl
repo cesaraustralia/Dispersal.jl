@@ -114,7 +114,11 @@ HumanDispersal(; grid=:_default_, human_pop, cellsize=1.0, scale=4, aggregator=m
                    dest_shortlists, human_buffer, distances)
 end
 
-getindex(rule::HumanDispersal, I...) = getindex(rule.dest_shortlists, I...)
+# Minimal Array interface
+
+size(rule::HumanDispersal) = size(parent(rule))
+getindex(rule::HumanDispersal, I...) = getindex(parent(rule), I...)
+parent(rule::HumanDispersal) = rule.dest_shortlists
 
 
 # Precalculation ###################################################

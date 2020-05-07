@@ -28,7 +28,6 @@ can produce these growth maps from environmental data.
 abstract type GrowthMapRule{R,W} <: GrowthRule{R,W} end
 
 layer(rule::GrowthMapRule) = rule.layer
-timeinterp(rule::GrowthMapRule) = rule.timeinterp
 
 DynamicGrids.precalcrules(rule::GrowthMapRule, data) = begin
     if :timestep in fieldnames(typeof(rule))
@@ -38,11 +37,7 @@ DynamicGrids.precalcrules(rule::GrowthMapRule, data) = begin
 end
 
 DynamicGrids.precalcrules(rule::GrowthRule, data) =
-    if :timestep in fieldnames(typeof(rule))
-        precalctimestep(rule, data)
-    else
-        rule
-    end
+    :timestep in fieldnames(typeof(rule)) ? precalctimestep(rule, data) : rule
 
 
 # Exact growth solutions

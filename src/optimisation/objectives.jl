@@ -37,21 +37,21 @@ end
 targets(obj::SimpleObjective) = obj.targets
 
 
-"""
-    PresenceAbsenceObjective(detectionthreshold, occurance, framesperstep)
+# """
+    # PresenceAbsenceObjective(detectionthreshold, occurance, framesperstep)
 
-Implementation of a loss objective that converts cell data to regional
-presence/absence and compares to a target of regional occurance data.
+# Implementation of a loss objective that converts cell data to regional
+# presence/absence and compares to a target of regional occurance data.
+# """
+# struct PresenceAbsenceObjective{DT,RL,OC,FS,S} <: Objective
+#     detectionthreshold::DT
+#     occurance::OC
+#     framesperstep::FS
+# end
 
-"""
-struct PresenceAbsenceObjective{DT,RL,OC,FS,S} <: Objective
-    detectionthreshold::DT
-    occurance::OC
-    framesperstep::FS
-end
+# targets(obj::PresenceAbsenceObjective) = obj.occurance
+# predictions(obj::PresenceAbsenceObjective, output) = output[end]
 
-targets(obj::PresenceAbsenceObjective) = obj.occurance
-predictions(obj::PresenceAbsenceObjective, output) = output[end]
 """
 Implementation of a loss objective that converts cell data to regional
 presence/absence and compares to a target of regional occurance data.

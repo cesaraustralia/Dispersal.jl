@@ -43,9 +43,7 @@ suitseq = DimensionalArray(a, dimz)
             interp2 = precalc_timeindex(suitseq, rule, data, t2)
             @test interp1 == interp2
         end
-
     end
-
     @testset "layers returns first frame values at 0.5 through the timespan" begin
         t = 5d
         interp = precalc_timeindex(suitseq, rule, data, t)
@@ -83,4 +81,15 @@ end
     @test Dispersal.timestep(A) == 10
     @test Dispersal.starttime(A) == 20
     @test Dispersal.stoptime(A) == 110
+end
+
+@testset "LayerCopy" begin
+    init = [0 0]
+    l = cat([1 2], [3 4]; dims=3)
+    @test LayerCopy(l, 1) === LayerCopy(layer=l)
+    @test LayerCopy{:a,:b}(layer=l, timeindex=2) === LayerCopy{:a,:b}(l, 2)
+    ruleset = Ruleset(LayerCopy(layer=l))
+    output = ArrayOutput(init, 3)
+    sim!(output, ruleset; init=init, tspan=(1, 3))
+    @test output == [[0 0], [3 4], [1 2]]
 end

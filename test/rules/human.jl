@@ -106,7 +106,7 @@ end
     @test dest_shortlists[1, 1][3].index == (2, 2)
 end
 
-@testset "HumanDispersal construction" begin
+@testset "populate and HumanDispersal construction" begin
     # Setup precalc
     human_pop = Union{Float32,Missing}[1 for i = 1:5, j = 1:5]
     init = zeros(Float32, size(human_pop)...)
@@ -134,8 +134,8 @@ end
 
     a = populate(humandisp, 1, 1)
     b = populate(humandisp, 5, 5)
-    c = populate(humandisp, 5, 3)
-    d = populate(humandisp, 3, 3)
+    c = populate(humandisp[5, 3], size(humandisp), scale)
+    d = populate(humandisp[3, 3], size(humandisp), scale)
 
     @test all(sum.((a, b, c, d)) .≈ 1)
 
@@ -180,6 +180,10 @@ end
     @test_broken reverse(combined; dims=1) ≈ combined
     reverse(combined; dims=1) 
     combined
+
+    @testset "populate handles missing" begin
+        @test populate!(init, missing, scale) === missing
+    end
 end
 
 
