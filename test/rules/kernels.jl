@@ -1,29 +1,7 @@
-using Dispersal, Test, DimensionalData
-using DimensionalData: DimensionalArray, X, Y, Time
-
-init =  [0.0 0.0 0.0 0.0   0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0   0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0 100.0 0.0 0.0;
-         0.0 0.0 0.0 0.0   0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0   0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0   0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0   0.0 0.0 0.0]
-
-test2 = [0.0  0.0  4.0  4.0  4.0  4.0  4.0;
-         0.0  0.0  4.0  4.0  4.0  4.0  4.0;
-         0.0  0.0  4.0  4.0  4.0  4.0  4.0;
-         0.0  0.0  4.0  4.0  4.0  4.0  4.0;
-         0.0  0.0  4.0  4.0  4.0  4.0  4.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0]
-
-test3 = [0.48  0.96  1.44  1.92  2.4  1.92  1.44;
-         0.64  1.28  1.92  2.56  3.2  2.56  1.92;
-         0.8   1.6   2.4   3.2   4.0  3.2   2.4 ;
-         0.64  1.28  1.92  2.56  3.2  2.56  1.92;
-         0.48  0.96  1.44  1.92  2.4  1.92  1.44;
-         0.32  0.64  0.96  1.28  1.6  1.28  0.96;
-         0.16  0.32  0.48  0.64  0.8  0.64  0.48]
+using Dispersal, Test, DimensionalData, Setfield, OffsetArrays, DynamicGrids, Random
+using DynamicGrids: WritableGridData, setneighbor!, SimData, grids, neighborhood,
+      mapsetneighbor!
+using Dispersal: dispersalprob
 
 struct TestFormulation <: KernelFormulation end
 (f::TestFormulation)(d) = 1.0
@@ -31,78 +9,189 @@ struct TestFormulation <: KernelFormulation end
 # Dispersal in radius 2 neighborhood
 hood = DispersalKernel{2}(; formulation=TestFormulation())
 
-ruleset = Ruleset(InwardsPopulationDispersal(;neighborhood=hood); init=init)
-output = ArrayOutput(init, 3)
-sim!(output, ruleset; tspan=(1, 3))
-@test output[1] == init
-@test output[2] == test2
-@test output[3] ≈ test3
+@testset "ConstructionBase compat" begin
+    hood2 = @set hood.distancemethod = AreaToArea(10.0)
+    @test hood2.distancemethod == AreaToArea(10.0)
+    @test DynamicGrids.radius(hood2) == 2
+    @test Dispersal.formulation(hood2) == TestFormulation()
+    @test hood2.cellsize == 1.0
+    @test hood2.kernel == hood.kernel
+    @test hood2.kernel !== hood.kernel
+    @test all(hood2.kernel .== 0.04)
+end
 
-ruleset = Ruleset(OutwardsPopulationDispersal(;neighborhood=hood); init=init)
-output = ArrayOutput(init, 3)
-sim!(output, ruleset; tspan=(1, 3))
-@test output[1] == init
-@test output[2] == test2
-@test_broken output[3] ≈ test3
+@testset "DistanceMethod" begin
+    cellsize = 1.0
+    f = identity
+    x, y = 10, 10
 
+    @test dispersalprob(f, CentroidToCentroid(), x, y, cellsize) == 10sqrt(2)
 
-layerdata = cat([1.0  1.0  1.0  1.0  1.0  1.0  1.0
-                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
-                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
-                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
-                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
-                 1.0  1.0  1.0  1.0  1.0  1.0  1.0
-                 1.0  1.0  1.0  1.0  1.0  1.0  1.0],
-                [0.0  0.0  0.0  0.0  1.0  1.0  1.0
-                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
-                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
-                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
-                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
-                 0.0  0.0  0.0  0.0  1.0  1.0  1.0
-                 0.0  0.0  0.0  0.0  1.0  1.0  1.0],
-                [1.0  1.0  1.0  1.0  0.0  0.0  0.0
-                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
-                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
-                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
-                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
-                 1.0  1.0  1.0  1.0  0.0  0.0  0.0
-                 1.0  1.0  1.0  1.0  0.0  0.0  0.0]; dims=3)
+    subsampling = (1.0, 2.0, 10.0, 20.0, 50.0, 70.0, 80.0)
 
-layer = DimensionalArray(layerdata, (X(1:7), Y(1:7), Time(1:3))) 
+    proba2c = map(subsampling) do ss
+        dispersalprob(f, AreaToCentroid(ss), x, y, cellsize)
+    end
+    @test proba2c[1] == 10sqrt(2)
+    @test issorted(proba2c)
+    @test proba2c[end] ≈ proba2c[end-1] atol=1e-5
 
-init =  [0.0 0.0 0.0 0.0 0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0 0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0 0.0 0.0 9.0;
-         0.0 0.0 0.0 0.0 0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0 0.0 0.0 0.0;
-         0.0 9.0 0.0 0.0 0.0 0.0 0.0;
-         0.0 0.0 0.0 0.0 0.0 0.0 0.0]
+    proba2a = map(subsampling) do ss
+        dispersalprob(f, AreaToArea(ss), x, y, cellsize)
+    end
+    @test proba2a[1] == 10sqrt(2)
+    @test issorted(proba2a)
+    @test proba2a[end] ≈ proba2a[end-1] atol=1e-5
+end
 
-test2 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
-         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
-         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  9.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+@testset "buildkernel" begin
+    #buildkernel(formulation, distancemethod, cellsize, r)
+end
 
-test3 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0;
-         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
-         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
-         0.0  0.0  0.0  0.0  0.0  1.0  1.0;
-         1.0  1.0  1.0  0.0  0.0  0.0  0.0;
-         1.0  1.0  1.0  0.0  0.0  0.0  0.0;
-         1.0  1.0  1.0  0.0  0.0  0.0  0.0]
+@testset "setneighbour!" begin
+    hood_index = (2, 2)
+    dest_index = (2, 2)
+    rule = OutwardsBinaryDispersal(; 
+        neighborhood=hood,
+        prob_threshold=0.0,
+    )
+    ruleset = Ruleset(rule)
+    Dispersal.kernel(hood)
 
-threshold = 0.5
-hood = DispersalKernel{1}(; formulation=TestFormulation())
-switched = SwitchedInwardsPopulationDispersal(; neighborhood=hood, 
-                                              threshold=threshold, layer=layer)
-ruleset = Ruleset(switched; init=init)
+    state = true
+    init = zeros(Bool, 5, 5)
+    simdata = SimData(init, ruleset, 1)
+    griddata = WritableGridData(first(grids(simdata)))
+    @test setneighbor!(griddata, neighborhood(rule), rule, state, hood_index, dest_index) == 1
+    @test DynamicGrids.dest(griddata) == OffsetArray(
+        [0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 1 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0], -1:7, -1:7)
+    @test mapsetneighbor!(griddata, neighborhood(rule), rule, state, (5, 5)) == 24
+    @test DynamicGrids.dest(griddata) == OffsetArray(
+        [0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 0 0 0 0 0 0
+         0 0 0 1 0 0 0 0 0
+         0 0 0 0 1 1 1 1 1
+         0 0 0 0 1 1 1 1 1
+         0 0 0 0 1 1 0 1 1
+         0 0 0 0 1 1 1 1 1
+         0 0 0 0 1 1 1 1 1], -1:7, -1:7)
+end
 
-output = ArrayOutput(init, 4)
-sim!(output, ruleset; tspan=(1, 4))
+init =  [0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 81. 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0]
 
-@test output[1] == init
-@test output[2] == test2
-@test output[3] == test3
+test2 = [0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 9.0 9.0 9.0 0.0 0.0;
+         0.0 0.0 0.0 9.0 9.0 9.0 0.0 0.0;
+         0.0 0.0 0.0 9.0 9.0 9.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0]
+
+test3 = [0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 1.0 2.0 3.0 2.0 1.0 0.0;
+         0.0 0.0 2.0 4.0 6.0 4.0 2.0 0.0;
+         0.0 0.0 3.0 6.0 9.0 6.0 3.0 0.0;
+         0.0 0.0 2.0 4.0 6.0 4.0 2.0 0.0;
+         0.0 0.0 1.0 2.0 3.0 2.0 1.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+         0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0]
+
+@testset "inwards" begin
+    hood = DispersalKernel{1}(; formulation=TestFormulation())
+    ruleset = Ruleset(InwardsPopulationDispersal(;neighborhood=hood); init=init)
+    output = ArrayOutput(init, 3)
+    sim!(output, ruleset; tspan=(1, 3))
+    @test output[1] == init
+    @test output[2] == test2
+    @test output[3] == test3
+end
+
+@testset "outwards" begin
+    hood = DispersalKernel{1}(; formulation=TestFormulation())
+    ruleset = Ruleset(OutwardsPopulationDispersal(;neighborhood=hood); init=init)
+    output = ArrayOutput(init, 3)
+    sim!(output, ruleset; tspan=(1, 3))
+    @test output[1] == init
+    @test output[2] == test2
+    @test output[3] == test3
+end
+
+@testset "switched inwards" begin
+    layerdata = cat([1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                     1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                     1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                     1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                     1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                     1.0  1.0  1.0  1.0  1.0  1.0  1.0
+                     1.0  1.0  1.0  1.0  1.0  1.0  1.0],
+                    [0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                     0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                     0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                     0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                     0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                     0.0  0.0  0.0  0.0  1.0  1.0  1.0
+                     0.0  0.0  0.0  0.0  1.0  1.0  1.0],
+                    [1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                     1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                     1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                     1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                     1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                     1.0  1.0  1.0  1.0  0.0  0.0  0.0
+                     1.0  1.0  1.0  1.0  0.0  0.0  0.0]; dims=3)
+
+    layer = DimensionalArray(layerdata, (X(1:7), Y(1:7), Ti(1:3))) 
+
+    init =  [0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+             0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+             0.0 0.0 0.0 0.0 0.0 0.0 9.0;
+             0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+             0.0 0.0 0.0 0.0 0.0 0.0 0.0;
+             0.0 9.0 0.0 0.0 0.0 0.0 0.0;
+             0.0 0.0 0.0 0.0 0.0 0.0 0.0]
+
+    test2 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+             0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+             0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+             0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  9.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  0.0  0.0  0.0  0.0  0.0  0.0]
+
+    test3 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+             0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+             0.0  0.0  0.0  0.0  0.0  1.0  1.0;
+             1.0  1.0  1.0  0.0  0.0  0.0  0.0;
+             1.0  1.0  1.0  0.0  0.0  0.0  0.0;
+             1.0  1.0  1.0  0.0  0.0  0.0  0.0]
+
+    threshold = 0.5
+    hood = DispersalKernel{1}(; formulation=TestFormulation())
+    switched = SwitchedInwardsPopulationDispersal(; neighborhood=hood, 
+                                                  threshold=threshold, layer=layer)
+    ruleset = Ruleset(switched; init=init)
+
+    output = ArrayOutput(init, 4)
+    sim!(output, ruleset; tspan=(1, 4))
+
+    @test output[1] == init
+    @test output[2] == test2
+    @test output[3] == test3
+end

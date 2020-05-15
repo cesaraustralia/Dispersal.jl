@@ -10,11 +10,11 @@ using Dispersal: precalc_human_dispersal!, upsample_index, initdownsample, downs
     @test g < CellGravity(6.0, (1, 1))
 end
 
-@testset "CellGravity sums and compares gravity" begin
-    i = CellInterval(5.0, (1, 1))
-    @test i > 4.0
-    @test i < 6.0
-    @test i < CellInterval(6.0, (1, 1))
+@testset "CellInterval sums and compares interval" begin
+    i = CellInterval(0.5, (1, 1))
+    @test i > 0.4
+    @test i < 0.6
+    @test i < CellInterval(0.6, (1, 1))
 end
 
 # Setup precalc
@@ -146,6 +146,7 @@ end
                 0 0 0 0 0
                 0 0 0 0 0]
 
+
     @test (b .> 0) ==
                [0 0 0 0 0
                 0 0 0 0 0
@@ -167,6 +168,30 @@ end
                 0 1 1 1 0
                 0 0 0 0 0]
 
+    @test populate(humandisp, 1, 1) ≈
+        reverse(populate(humandisp, 1, 5); dims=2) ≈
+        reverse(populate(humandisp, 5, 1); dims=1) ≈
+        reverse(reverse(populate(humandisp, 5, 5); dims=1); dims=2)
+    @test populate(humandisp, 2, 2) ≈
+        reverse(populate(humandisp, 2, 4); dims=2) ≈
+        reverse(populate(humandisp, 4, 2); dims=1) ≈
+        reverse(reverse(populate(humandisp, 4, 4); dims=1); dims=2)
+    @test populate(humandisp, 2, 3) ≈
+        rotr90(populate(humandisp, 3, 2)) ≈
+        rot180(populate(humandisp, 4, 3)) ≈
+        rotl90(populate(humandisp, 3, 4))
+
+    # Symmetry is close but not exactly identical due to truncation
+    # of the shortlist and row/column order. This causes small differences
+    # choosing the last item in the shortlist when the last index +1
+    # has the same gravity. It should make little real difference
+    # with larger shortlists as intervals at the end of the shortlist
+    # should be small.
+    @test (populate(humandisp, 1, 2) ≈
+        rotl90(populate(humandisp, 2, 5)) ≈
+        rot180(populate(humandisp, 5, 4)) ≈
+        rotl90(populate(humandisp, 2, 5))) == false
+
     combined = populate(humandisp)
     sum(combined) ≈ 25
     @test (combined .> 0) ==
@@ -175,11 +200,10 @@ end
                 1 1 1 1 1
                 1 1 1 1 1
                 1 1 1 1 1]
-    # These are close but not exactly identical yet. Not sure why
-    @test_broken reverse(combined; dims=2) ≈ combined
-    @test_broken reverse(combined; dims=1) ≈ combined
-    reverse(combined; dims=1) 
-    combined
+
+    # Again symmetry is not exact, there are small errors from truncation.
+    reverse(combined; dims=1) ≈ combined == false
+    reverse(combined; dims=2) ≈ combined == false
 
     @testset "populate handles missing" begin
         @test populate!(init, missing, scale) === missing

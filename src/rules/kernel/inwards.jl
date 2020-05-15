@@ -73,25 +73,3 @@ end
 
 DynamicGrids.precalcrules(rule::SwitchedInwardsPopulationDispersal, data) =
     precalclayer(layer(rule), rule, data)
-
-"""
-    PoissonInwardsPopulationDispersal(neighborhood)
-    PoissonInwardsPopulationDispersal(; neighborhood=DispersalKernel{3}())
-    PoissonInwardsPopulationDispersal{R,W}(neighborhood)
-
-Disperses to the current cells from the populations of the surrounding cells,
-using a dispersal kernel. Dispersal amounts are randomised with a Poisson
-distribution.
-
-Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
-
-$(FIELDDOCTABLE)
-"""
-@Kernel struct PoissonInwardsPopulationDispersal{R,W} <: InwardsDispersal{R,W} end
-
-@inline applyrule(rule::PoissonInwardsPopulationDispersal, data, state::AbstractFloat,
-                  index, hoodbuffer) = begin
-    p = sumneighbors(neighborhood(rule), hoodbuffer, state)
-    p > zero(p) ? typeof(state)(rand(Poisson(p))) : state
-end
-

@@ -10,6 +10,14 @@ when a large proportion of the grid is occupied.
 """
 abstract type OutwardsDispersal{R,W} <: PartialNeighborhoodRule{R,W} end
 
+@inline applyrule!(rule::OutwardsDispersal{R,W}, data, state, index) where {R,W} = begin
+    state == zero(state) && return
+    hood = neighborhood(rule)
+    sum = mapsetneighbor!(data[W], hood, rule, state, index)
+    update_state!(data[W], hood, state, index, sum)
+    return
+end
+
 """
     OutwardsBinaryDispersal(neighborhood)
     OutwardsBinaryDispersal(; neighborhood=DispersalKernel{3}())
@@ -38,30 +46,15 @@ $(FIELDDOCTABLE)
 """
 @Kernel struct OutwardsPopulationDispersal{R,W} <: OutwardsDispersal{R,W} end
 
-@inline applyrule!(rule::OutwardsDispersal{R,W}, data, state, index) where {R,W} = begin
-    state == zero(state) && return
-    hood = neighborhood(rule)
-    sum = mapsetneighbor!(data[W], hood, rule, state, index)
-    update_state!(data[W], hood, state, index, sum)
-    return
-end
-
-@inline update_state!(grid, hood, state::AbstractFloat, index, sum) = 
-    grid[index...] = state - sum
-@inline update_state!(grid, hood, state, index, sum) = state
+@inline update_state!(grid, hood, state, index, sum) = 
+    @inbounds return grid[index...] -= sum
+@inline update_state!(grid, hood, state::Bool, index, sum) = state
 
 @inline setneighbor!(data::WritableGridData, hood::Neighborhood, rule::OutwardsPopulationDispersal, 
                      state::AbstractFloat, hood_index, dest_index) = begin
     @inbounds propagules = state * kernel(hood)[hood_index...]
     @inbounds data[dest_index...] += propagules
     propagules
-end
-
-@inline setneighbor!(data::WritableGridData, hood::Neighborhood, rule::OutwardsBinaryDispersal,
-                     state::Integer, hood_index, dest_index) = begin
-    @inbounds rand() * kernel(hood)[hood_index...] > rule.prob_threshold || return zero(state)
-    @inbounds data[dest_index...] += oneunit(state)
-    oneunit(state)
 end
 
 @inline setneighbor!(data::WritableGridData, hood::Neighborhood, rule::OutwardsBinaryDispersal, 

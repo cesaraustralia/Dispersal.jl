@@ -49,7 +49,7 @@ buildkernel(formulation, distancemethod, cellsize, r) = begin
     r1 = r + one(r)
     # Paper: l. 97
     for x = 0:r, y = 0:r
-        # Calculate the distance from the center cell to this cell
+        # Calculate the distance effect from the center cell to this cell
         prob = dispersalprob(formulation, distancemethod, x, y, cellsize)
         # Update the kernel value based on the formulation and distance
         kernel[x + r1, y + r1] = prob
@@ -100,7 +100,7 @@ between cells in a grid.
 """
 abstract type DistanceMethod end
 
-subsample(method::DistanceMethod) = method.subsample
+subsampling(method::DistanceMethod) = method.subsampling
 
 """
     CentroidToCentroid()
@@ -110,26 +110,27 @@ This is the obvious, naive method, but it will not handle low grid resolution we
 """
 struct CentroidToCentroid <: DistanceMethod end
 
-dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = sqrt(x^2 + y^2) * cellsize |> f
+dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = 
+    sqrt(x^2 + y^2) * cellsize |> f
 
-"""
-    CentroidToCentroid(subsample)
-    CentroidToCentroid(; subsample=10.0)
-
-Calculates probability of dispersal between source cell centroid and destination cell area.
-
-$(FIELDDOCTABLE)
-"""
-@columns struct CentroidToArea <: DistanceMethod
+# """
+#     CentroidToCentroid(subsampling)
+#     CentroidToCentroid(; subsampling=10.0)
+# 
+# Calculates probability of dispersal between source cell centroid and destination cell area.
+# 
+# $(FIELDDOCTABLE)
+# """
+# @columns struct CentroidToArea <: DistanceMethod
     # Field        | Default | Flat | Bounds      | Description
-    subsample::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
-end
+    # subsampling::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
+# end
 
-dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented yet")
+# dispersalprob(f, dm::CentroidToArea, x, y, cellsize) = error("not implemented yet")
 
 """
-    AreaToCentroid(subsample)
-    AreaToCentroid(; subsample=10.0)
+    AreaToCentroid(subsampling)
+    AreaToCentroid(; subsampling=10.0)
 
 Calculates probability of dispersal between source cell area and destination centroid.
 
@@ -137,24 +138,24 @@ $(FIELDDOCTABLE)
 """
 @columns struct AreaToCentroid <: DistanceMethod
     # Field        | Default | Flat | Bounds      | Description
-    subsample::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
+    subsampling::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
-AreaToCentroid(subsample::Float64) = AreaToCentroid(round(Int, subsample))
+AreaToCentroid(subsampling::AbstractFloat) = AreaToCentroid(round(Int, subsampling))
 
 @inline dispersalprob(f, dm::AreaToCentroid, x, y, cellsize) = begin
     prob = zero(cellsize)
-    centerfirst = 1 / subsample(dm) / 2 - 0.5
+    centerfirst = 1 / subsampling(dm) / 2 - 0.5
     centerlast = centerfirst * -1
-    range = LinRange(centerfirst, centerlast, subsample(dm))
+    range = LinRange(centerfirst, centerlast, subsampling(dm))
     for j in range, i in range
         prob += sqrt((x + i)^2 + (y + j)^2) * cellsize |> f
     end
-    prob / subsample(dm)^2
+    prob / subsampling(dm)^2
 end
 
 """
-    AreaToArea(subsample)
-    AreaToArea(; subsample=10.0)
+    AreaToArea(subsampling)
+    AreaToArea(; subsampling=10.0)
 
 
 Calculates probability of dispersal between source and destination cell areas.
@@ -162,22 +163,22 @@ Calculates probability of dispersal between source and destination cell areas.
 $(FIELDDOCTABLE)
 """
 struct AreaToArea <: DistanceMethod
-    subsample::Int
+    subsampling::Int
 end
-AreaToArea(subsample::Float64) = AreaToArea(round(Int, subsample))
+AreaToArea(subsampling::AbstractFloat) = AreaToArea(round(Int, subsampling))
 
 @inline dispersalprob(f, dm::AreaToArea, x, y, cellsize) = begin
     prob = zero(cellsize)
     # Get the center point of the first cell (for both dimensions)
-    centerfirst = 1 / subsample(dm) / 2 - 0.5
+    centerfirst = 1 / subsampling(dm) / 2 - 0.5
     centerlast = centerfirst * -1
-    range = LinRange(centerfirst, centerlast, subsample(dm))
+    range = LinRange(centerfirst, centerlast, subsampling(dm))
     for i in range, j in range
         for a in range, b in range
             prob += sqrt((x + i + a)^2 + (y + j + b)^2) * cellsize |> f
         end
     end
-    prob / subsample(dm)^4
+    prob / subsampling(dm)^4
 end
 
 

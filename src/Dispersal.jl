@@ -37,7 +37,7 @@ import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
 
 import ConstructionBase: constructorof
 
-import FieldMetadata: @description, @limits, @flattenable,
+import FieldMetadata: @default, @description, @limits, @flattenable,
                       default, description, limits, flattenable
 
 

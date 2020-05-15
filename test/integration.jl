@@ -124,7 +124,7 @@ end
         @test output[2] == test2
         @test output[3] == test3
     end
-    @testset "outwards dispersal fills the grid where reachable and mask" begin
+    @testset "outwards binary dispersal fills the grid where reachable and suitable" begin
         outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
         rules = Ruleset(outwards, maskgrowth; init=init)
         output = ArrayOutput(init, 3)
@@ -186,17 +186,17 @@ end
              0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;
              0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;]
 
-    test3 = [0.0 0.0 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0 0.0;
-             0.0 0.0 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0 0.0;
-             0.0 0.0 1.28 0.0  1.92 0.0  1.92 1.28 0.0  0.0 0.0;
-             0.0 0.0 1.44 1.76 0.0  0.0  2.56 1.76 1.44 0.0 0.0;
-             0.0 0.0 1.6  0.0  2.56 2.88 3.2  2.24 0.0  0.0 0.0;
-             0.0 0.0 1.12 0.0  1.92 2.24 0.0  1.92 1.6  0.0 0.0;
-             0.0 0.0 0.8  1.12 1.44 0.0  2.08 1.44 1.12 0.0 0.0;
-             0.0 0.0 0.32 0.0  0.0  0.0  0.0  0.0  0.0  0.0 0.0;
-             0.0 0.0 0.16 0.16 0.32 0.48 0.64 0.48 0.48 0.0 0.0;
-             0.0 0.0 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0 0.0;
-             0.0 0.0 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0 0.0;]
+    test3 = [0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  0.0  1.28 0.0  1.92 0.0  1.92 1.28 0.0  0.0  0.0;
+             0.0  0.0  1.44 1.76 0.0  0.0  2.56 1.76 1.44 0.0  0.0;
+             0.0  0.0  1.6  0.0  2.56 2.88 3.2  2.24 0.0  0.0  0.0;
+             0.0  0.0  1.12 0.0  1.92 2.24 0.0  1.92 1.6  0.0  0.0;
+             0.0  0.0  0.8  1.12 1.44 0.0  2.08 1.44 1.12 0.0  0.0;
+             0.0  0.0  0.32 0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  0.0  0.16 0.16 0.32 0.48 0.64 0.48 0.48 0.0  0.0;
+             0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;
+             0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;]
 
     # Dispersal in radius 1 neighborhood
     mask = MaskGrowthMap(layer=suit)
@@ -228,6 +228,7 @@ end
         sim!(out_output, rules; tspan=(Date(2001, 1), Date(2001, 3)))
         @test out_output[1] == test1
         @test out_output[2] == test2
-        @test_broken out_output[3] ≈ test3
+        @test out_output[3] ≈ test3
     end
+
 end
