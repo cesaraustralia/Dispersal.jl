@@ -118,8 +118,9 @@ end
     dist_exponent = 1
     nshortlisted = 9
     dispersalperpop = 0.1
+    mode = BatchGroups()
 
-    humandisp = HumanDispersal(human_pop=human_pop, dispersalperpop=dispersalperpop, cellsize=cellsize, scale=scale,
+    humandisp = HumanDispersal(mode=mode, human_pop=human_pop, dispersalperpop=dispersalperpop, cellsize=cellsize, scale=scale,
        aggregator=aggregator, human_exponent=human_exponent, max_dispersers=max_dispersers,
        dist_exponent=dist_exponent, nshortlisted=nshortlisted);
     dest_shortlists = humandisp.dest_shortlists
@@ -213,6 +214,7 @@ end
 
 @testset "human dispersal simulation maintains total population" begin
     dispersalperpop = 0.1
+    mode = BatchGroups()
 
     humandisp = HumanDispersal(human_pop=human_pop, dispersalperpop=dispersalperpop, cellsize=cellsize, scale=scale,
        aggregator=aggregator, human_exponent=human_exponent, max_dispersers=max_dispersers,

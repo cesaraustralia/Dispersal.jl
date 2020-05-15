@@ -55,6 +55,8 @@ export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDis
 
 export AlleeExtinction, JumpDispersal, HumanDispersal
 
+export BatchGroups, HeirarchicalGroups
+
 export ExactExponentialGrowth, ExactLogisticGrowth
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
