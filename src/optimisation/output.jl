@@ -1,4 +1,4 @@
-using DynamicGrids: normalise, minval, maxval, ismasked, rgb24
+using DynamicGrids: normalise, minval, maxval, ismasked, rgb
 
 """
     RegionOutput(init; nframes, objective)
@@ -86,27 +86,27 @@ DynamicGrids.grid2image(p::ColorRegionFit, output::ImageOutput, ruleset::Ruleset
     for i in CartesianIndices(img)
         region = p.objective.regionlookup[i]
         img[i] = if !(p.maskcolor isa Nothing) && ismasked(mask(ruleset), i) 
-            rgb24(p.maskcolor)
+            rgb(p.maskcolor)
         elseif region > zero(region)
             x = grid[i]
             normed = normalise(x, min, max)
             if p.objective.occurance[region, step]
                 if !(p.truezerocolor isa Nothing) && normed == zero(normed) 
-                    rgb24(p.falsezerocolor)
+                    rgb(p.falsezerocolor)
                 else
-                    rgb24(p.truescheme, normed)
+                    rgb(p.truescheme, normed)
                 end
             else
                 if !(p.falsezerocolor isa Nothing) && normed == zero(normed) 
-                    rgb24(p.truezerocolor)
+                    rgb(p.truezerocolor)
                 elseif x > obj.detectionthreshold 
-                    rgb24(p.falsescheme, normed)
+                    rgb(p.falsescheme, normed)
                 else
-                    rgb24(p.truescheme, normed)
+                    rgb(p.truescheme, normed)
                 end
             end
         else
-            rgb24(p.maskcolor)
+            rgb(p.maskcolor)
         end
     end
     img

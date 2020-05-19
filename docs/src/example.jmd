@@ -60,7 +60,7 @@ And select just the bounding box for Australia, and set the dimension order to L
 ```{julia; results=hidden}
 growthrates = NCDarray(growthratesfilepath)[aust...] |>
     A -> permutedims(A, (Lat, Lon, Ti)) |>
-    A -> reorderarray(A, (Lat(Forward()), Lon(Forward())));
+    A -> reorderarray(A, (Lat(Reverse()), Lon(Forward())));
 ```
 
 Set the length of the timestep. TODO: get this automatically from NetCDF units in GeoData.jl
@@ -129,13 +129,12 @@ savefig(joinpath(basedir, "build/assets/humanpop.png"));
 
 ```{julia; results=hidden}
 @time humandisp = HumanDispersal(
+    human_pop=parent(humanpop),
     human_exponent=2.0,
     dist_exponent=2.0,
     dispersalperpop=1e-9,
     max_dispersers=500.0,
-    shortlist_len=50,
-    timestep=timestep,
-    human_pop=parent(humanpop),
+    nshortlisted=50,
     scale=8,
 );
 ```
@@ -225,7 +224,8 @@ scheme = ColorSchemes.Oranges_3
 ## Frame Processing Colors
 zerocolor = RGB24(0.7)
 maskcolor = RGB24(0.0)
-processor = ColorProcessor(scheme, zerocolor, maskcolor);
+textconfig = TextConfig(font="arial")
+processor = ColorProcessor(scheme, zerocolor, maskcolor, textconfig);
 ```
 
 With a non-image output like ArrayOuput we need to pass in the image processor
@@ -299,6 +299,7 @@ output = InteractOutput(init, ruleset;
 display(output)
 ```
 
+
 ### Wrap the IneractOutput in a standalone desktop (electron) app
 
 This will create a standalone desktop app wrapping the InteractOutput. Unfortunately
@@ -323,7 +324,7 @@ copy of the internal `InteractOutput` for each new connection. Changes in one
 connection will not effect anything in the others.
 
 ```{julia; eval=false}
-output = ServerOutput(init, model;
+output = ServerOutput(init, ruleset;
     tspan=tspan,
     fps=10,
     processor=processor,

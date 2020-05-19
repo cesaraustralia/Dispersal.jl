@@ -38,10 +38,11 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 
 
 """
-    HumanDispersal{R,W}(human_pop, cellsize, scale, aggregator, human_exponent,
+    HumanDispersal{R,W}(mode, human_pop, cellsize, scale, aggregator, human_exponent,
                         dist_exponent, dispersalperpop, max_dispersers, nshortlisted,
                         dest_shortlists, proportion_covered, human_buffer, distances)
-    HumanDispersal(; grid=:_default_,
+    HumanDispersal(; read=:_default_, write=read,
+                   mode=BatchGroups(),
                    human_pop,
                    cellsize=1.0,
                    scale=4,
@@ -257,7 +258,7 @@ end
 
 abstract type TransportMode end
 
-@limits @default_kw struct HeirarchicalGroups{S} <: TransportMode 
+@limits @default_kw struct HeirarchicalGroups{S} <: TransportMode
     scalar::S | 1e-8 | (1e-6, 1e-9)
 end
 
@@ -306,7 +307,7 @@ disperse2dest!(data::DynamicGrids.WritableGridData, rule, shortlist, maybedisper
     upsample = upsample_index(shortlist[dest_id].index, rule.scale)
     dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
     # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
-    if !DynamicGrids.ismasked(data, dest_index...) && 
+    if !DynamicGrids.ismasked(data, dest_index...) &&
         DynamicGrids.isinbounds(dest_index, gridsize(data), overflow(data))
         # Disperse to the cell.
         data[dest_index...] += maybedispersing
