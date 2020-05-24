@@ -11,35 +11,38 @@ arguments, but preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 $(FIELDDOCTABLE)
 """
-@columns struct DispersalKernel{R,F,K,C,D} <: AbstractRadialNeighborhood{R}
+@columns struct DispersalKernel{R,F,K,C,D,B} <: AbstractRadialNeighborhood{R,B}
     # Field           | Default                | Flat  | Bounds      | Description
     formulation::F    | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
     kernel::K         | nothing                | false | _           | "Kernal matrix"
     cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
     distancemethod::D | CentroidToCentroid()   | false | _           | "Method for calculating distance between cells"
+    buffer::B         | nothing                | false | _           | "Neighborhood buffer"
 
-    DispersalKernel{R,F,K,C,D}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} = begin
+    DispersalKernel{R,F,K,C,D,B}(formulation::F, kernel::K, cellsize::C, distancemethod::D, buffer::B) where {R,F,K,C,D,B} = begin
         # Convert kenel the type of the init array
         kernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
         kernel = K <: Nothing ? kernel : K(kernel)
-        new{R,F,typeof(kernel),C,D}(formulation, kernel, cellsize, distancemethod)
+        new{R,F,typeof(kernel),C,D,B}(formulation, kernel, cellsize, distancemethod, buffer)
     end
 end
-DispersalKernel{R}(; kwargs...) where {R,F,K,C,D} = begin
+DispersalKernel{R}(; kwargs...) where R = begin
     args = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
     DispersalKernel{R,typeof.(args)...}(args...)
 end
-DispersalKernel{R}(formulation::F, kernel::K, cellsize::C, distancemethod::D) where {R,F,K,C,D} =
-    DispersalKernel{R,F,K,C,D}(formulation, kernel, cellsize, distancemethod)
+DispersalKernel{R}(args...) where R =
+    DispersalKernel{R,map(typeof, args)...}(args...)
 
 ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
 
 DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 kernel(hood::DispersalKernel) = hood.kernel
+neighbors(hood::DispersalKernel) = buffer(hood)
 formulation(hood::DispersalKernel) = hood.formulation
+buffer(hood::DispersalKernel) = hood.buffer
 
-@inline applykernel(hood::DispersalKernel, buf) =
-    @inbounds return buf ⋅ kernel(hood)
+@inline disperse(hood::DispersalKernel) =
+    @inbounds return buffer(hood) ⋅ kernel(hood)
 
 
 buildkernel(formulation, distancemethod, cellsize, r) = begin
