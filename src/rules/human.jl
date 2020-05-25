@@ -67,7 +67,7 @@ scale value is good for use in a live interface.
 
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D} <: PartialRule{R,W}
+@description @bounds @flattenable struct HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D} <: ManualRule{R,W}
     # Field                | Flatten | Limits          | Description
     mode::M                | false   | _               | "Dispersal mode"
     human_pop::HP          | false   | _               | "An array match the grid size containing human population data."
@@ -258,7 +258,7 @@ end
 
 abstract type TransportMode end
 
-@limits @default_kw struct HeirarchicalGroups{S} <: TransportMode
+@bounds @default_kw struct HeirarchicalGroups{S} <: TransportMode
     scalar::S | 1e-8 | (1e-6, 1e-9)
 end
 

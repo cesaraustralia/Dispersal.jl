@@ -37,8 +37,8 @@ import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
 
 import ConstructionBase: constructorof
 
-import FieldMetadata: @default, @description, @limits, @flattenable,
-                      default, description, limits, flattenable
+import FieldMetadata: @default, @description, @bounds, @flattenable,
+                      default, description, bounds, flattenable
 
 
 export AbstractDispersalKernel, DispersalKernel
@@ -72,7 +72,7 @@ export targets, predictions
 
 
 const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Limits),
-                                    (description, default, limits);
+                                    (description, default, bounds);
                                     truncation=(100,40,100))
 
 # Documentation templates

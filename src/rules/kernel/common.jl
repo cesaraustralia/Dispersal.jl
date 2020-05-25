@@ -203,7 +203,7 @@ Probability of dispersal with a negatitve exponential relationship to distance.
 
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct ExponentialKernel{P} <: KernelFormulation
+@description @bounds @flattenable struct ExponentialKernel{P} <: KernelFormulation
     λ::P    | true  | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
 end
 (f::ExponentialKernel)(distance) = exp(-distance / f.λ)
