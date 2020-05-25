@@ -1,7 +1,7 @@
 """
-Abstract supertype that extends [`PartialRule`](@ref) for jump dispersal rules
+Abstract supertype that extends [`ManualRule`](@ref) for jump dispersal rules
 """
-abstract type AbstractJumpDispersal{R,W} <: PartialRule{R,W} end
+abstract type AbstractJumpDispersal{R,W} <: ManualRule{R,W} end
 
 """
     JumpDispersal(spotrange)

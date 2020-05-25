@@ -27,10 +27,9 @@ $(FIELDDOCTABLE)
 @Probabilistic @Kernel struct InwardsBinaryDispersal{R,W} <: InwardsDispersal{R,W} end
 
 
-@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer,
-                  index, hoodbuffer) = begin
+@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, index) = begin
     # Combine neighborhood cells into a single scalar
-    s = sumneighbors(neighborhood(rule), hoodbuffer, state)
+    s = sum(neighborhood(rule))
 
     # Set to occupied if enough pressure from neighbors
     rand() ^ rule.prob_threshold > (one(s) - s) / one(s) ? oneunit(state) : state
@@ -54,9 +53,8 @@ $(FIELDDOCTABLE)
 """
 @Kernel struct InwardsPopulationDispersal{R,W} <: InwardsDispersal{R,W} end
 
-@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat,
-                  index, hoodbuffer) =
-    applykernel(neighborhood(rule), hoodbuffer)
+@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, index) =
+    disperse(neighborhood(rule))
 
 
 @Layers @Kernel struct SwitchedInwardsPopulationDispersal{R,W,Th} <: InwardsDispersal{R,W}
@@ -64,9 +62,9 @@ $(FIELDDOCTABLE)
 end
 
 @inline applyrule(rule::SwitchedInwardsPopulationDispersal, data, state::AbstractFloat,
-                  index, hoodbuffer) =
+                  index) =
     if layer(rule, data, index) > rule.threshold
-        applykernel(neighborhood(rule), hoodbuffer)
+        disperse(neighborhood(rule))
     else
         state
     end

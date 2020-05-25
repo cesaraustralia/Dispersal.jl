@@ -225,7 +225,7 @@ end
         outwards = OutwardsPopulationDispersal(neighborhood=hood)
         rules = Ruleset(outwards, mask; init=init, timestep=Month(1))
         out_output = ArrayOutput(init, 3)
-        sim!(out_output, rules; tspan=(Date(2001, 1), Date(2001, 3)))
+        sim!(out_output, rules; tspan=Date(2001, 1):Month(1):Date(2001, 3))
         @test out_output[1] == test1
         @test out_output[2] == test2
         @test out_output[3] ≈ test3

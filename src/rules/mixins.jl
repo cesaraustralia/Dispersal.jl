@@ -1,6 +1,6 @@
 # Rule mixins
 
-@chain columns @description @limits @flattenable @default_kw
+@chain columns @default_kw @flattenable @bounds @description 
 
 @mix @columns struct Probabilistic{PT}
     # Field            | Default | Flatn | Limits     | Description

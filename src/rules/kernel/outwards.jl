@@ -1,6 +1,6 @@
 
 """
-Abstract supertype that extends `PartialNeighborhoodRule` for neighborhood-based 
+Abstract supertype that extends `ManualNeighborhoodRule` for neighborhood-based 
 dispersal rules that update surounding cells based on the values of the 
 current cell, as if dispersing outwards from the current cell.
 
@@ -8,7 +8,7 @@ The result should be identical to [`InwardsDispersal`](@ref) but may be more
 efficient than when a small number of cells are occupied. It is less efficient 
 when a large proportion of the grid is occupied.
 """
-abstract type OutwardsDispersal{R,W} <: PartialNeighborhoodRule{R,W} end
+abstract type OutwardsDispersal{R,W} <: ManualNeighborhoodRule{R,W} end
 
 @inline applyrule!(rule::OutwardsDispersal{R,W}, data, state, index) where {R,W} = begin
     state == zero(state) && return

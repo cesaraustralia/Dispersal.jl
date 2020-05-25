@@ -33,12 +33,12 @@ import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, gridsize, mask, overflow, cellsize, ruleset, inbounds,
        currenttime, currenttimestep, starttime, stoptime, timestep, tspan,
-       WritableGridData
+       buffer, WritableGridData
 
 import ConstructionBase: constructorof
 
-import FieldMetadata: @default, @description, @limits, @flattenable,
-                      default, description, limits, flattenable
+import FieldMetadata: @default, @description, @bounds, @flattenable,
+                      default, description, bounds, flattenable
 
 
 export AbstractDispersalKernel, DispersalKernel
@@ -55,6 +55,8 @@ export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDis
 
 export AlleeExtinction, JumpDispersal, HumanDispersal
 
+export BatchGroups, HeirarchicalGroups
+
 export ExactExponentialGrowth, ExactLogisticGrowth
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
@@ -70,7 +72,7 @@ export targets, predictions
 
 
 const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Limits),
-                                    (description, default, limits);
+                                    (description, default, bounds);
                                     truncation=(100,40,100))
 
 # Documentation templates

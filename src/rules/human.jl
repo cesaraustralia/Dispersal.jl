@@ -38,10 +38,11 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 
 
 """
-    HumanDispersal{R,W}(human_pop, cellsize, scale, aggregator, human_exponent, 
-                        dist_exponent, dispersalperpop, max_dispersers, nshortlisted, 
+    HumanDispersal{R,W}(mode, human_pop, cellsize, scale, aggregator, human_exponent,
+                        dist_exponent, dispersalperpop, max_dispersers, nshortlisted,
                         dest_shortlists, proportion_covered, human_buffer, distances)
-    HumanDispersal(; grid=:_default_,
+    HumanDispersal(; read=:_default_, write=read,
+                   mode=BatchGroups(),
                    human_pop,
                    cellsize=1.0,
                    scale=4,
@@ -66,8 +67,9 @@ scale value is good for use in a live interface.
 
 $(FIELDDOCTABLE)
 """
-@description @limits @flattenable struct HumanDispersal{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B} <: PartialRule{R,W}
+@description @bounds @flattenable struct HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D} <: ManualRule{R,W}
     # Field                | Flatten | Limits          | Description
+    mode::M                | false   | _               | "Dispersal mode"
     human_pop::HP          | false   | _               | "An array match the grid size containing human population data."
     cellsize::CS           | false   | _               | "The size of the cell width, assuming they are square"
     scale::S               | false   | _               | ""
@@ -79,37 +81,30 @@ $(FIELDDOCTABLE)
     nshortlisted::SL       | false   | _               | "Length of dest shortlist"
     dest_shortlists::PC    | false   | _               | "Array of destination vectors for each cell. Automatically calculated"
     human_buffer::B        | false   | _               | "Buffer array used in precalculation"
-    distances::B           | false   | _               | "Buffer array used in precalculation"
-    function HumanDispersal{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
-                            human_exponent::HE, dist_exponent::DE, dispersalperpop::DP,
-                            max_dispersers::MD, nshortlisted::SL, dest_shortlists::PC,
-                            human_buffer::B, distances::B
-                           ) where {R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}
+    distances::D           | false   | _               | "Buffer array used in precalculation"
+    function HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D}(
+        mode::M, human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
+        human_exponent::HE, dist_exponent::DE, dispersalperpop::DP,
+        max_dispersers::MD, nshortlisted::SL, dest_shortlists::PC,
+        human_buffer::B, distances::B
+       ) where {R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D}
 
         precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
                                  human_exponent, dist_exponent, nshortlisted, human_buffer, distances)
-        new{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}(human_pop, cellsize, scale, aggregator, human_exponent,
+        new{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D}(mode, human_pop, cellsize, scale, aggregator, human_exponent,
                                  dist_exponent, dispersalperpop, max_dispersers, nshortlisted, dest_shortlists,
                                  human_buffer, distances)
     end
 end
-HumanDispersal{R,W}(human_pop::HP, cellsize::CS, scale::S, aggregator::AG,
-    human_exponent::HE, dist_exponent::DE, dispersalperpop::DP, max_dispersers::MD, 
-    nshortlisted::SL, dest_shortlists::PC, human_buffer::B, distances::B
-    ) where {R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B} = begin
-    HumanDispersal{R,W,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B}(human_pop, cellsize, scale, 
-        aggregator, human_exponent, dist_exponent, dispersalperpop, max_dispersers, 
-        nshortlisted, dest_shortlists, human_buffer, distances)
-end
-HumanDispersal(; grid=:_default_, human_pop, cellsize=1.0, scale=4, aggregator=mean, 
-               human_exponent=1.0, dist_exponent=1.0, dispersalperpop=1e-3,
-               max_dispersers=100.0, nshortlisted=100) = begin
+HumanDispersal(; read=:_default_, write=read, mode=BatchGroups(), human_pop, cellsize=1.0, scale=4,
+               aggregator=mean, human_exponent=1.0, dist_exponent=1.0,
+               dispersalperpop=1e-3, max_dispersers=100.0, nshortlisted=100) = begin
     # Allocate memory
     human_buffer = initdownsample(human_pop, scale)
     distances = initdownsample(human_pop, scale)
     dest_shortlists = alloc_dest_shortlist(nshortlisted, size(human_buffer))
 
-    HumanDispersal{grid,grid}(human_pop, cellsize, scale, aggregator, human_exponent,
+    HumanDispersal{read,write}(mode, human_pop, cellsize, scale, aggregator, human_exponent,
                    dist_exponent, dispersalperpop, max_dispersers, nshortlisted,
                    dest_shortlists, human_buffer, distances)
 end
@@ -119,6 +114,7 @@ end
 size(rule::HumanDispersal) = size(parent(rule))
 getindex(rule::HumanDispersal, I...) = getindex(parent(rule), I...)
 parent(rule::HumanDispersal) = rule.dest_shortlists
+mode(rule::HumanDispersal) = rule.mode
 
 
 # Precalculation ###################################################
@@ -146,9 +142,7 @@ alloc_gravities(human, nshortlisted) = begin
     gravities, gravity_vector
 end
 
-"""
-Precalculate a dispersal shortlist for each cell
-"""
+# Precalculate a dispersal shortlist for each cell
 precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
                         human_exponent, dist_exponent, nshortlisted, human_buffer, distances) = begin
     # Limit shortlist cells to the total available
@@ -167,9 +161,11 @@ precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator
     end
 end
 
+# Raise the human population/activity matrix to some exponent
 precalc_human_exponent!(human_pop::Matrix, human_exponent::Number) =
     human_pop .^= human_exponent
 
+# Generate a matrix of distances
 precalc_distances!(distances::Matrix, dist_exponent, cellsize, scale) = begin
     for j in 1:size(distances, 2), i in 1:size(distances, 1)
         distances[i, j] = (centercenter_distance(i, j) * cellsize * scale) ^ dist_exponent
@@ -206,6 +202,7 @@ function precalc_cell!(dest_shortlists, nshortlisted, human, distances, (graviti
     gravity2inverval!(dest_shortlists[i, j], gravity_shortlist)
 end
 
+# Calculate the gravity for all cells in the grid
 function assign_gravities!(gravities, human, distances, i, j)
     T = typeof(first(gravities).gravity)
     for jj = 1:size(human, 2), ii = 1:size(human, 1)
@@ -251,35 +248,73 @@ end
     @inbounds shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
     ismissing(shortlist) && return
 
-    # Find the expected number of dispersers given population, dispersal prob and timeframe
-    total_dispersers = trunc(Int, population * dispersalprob)
-    total_dispersers == zero(total_dispersers) && return
+    #= This formulation introduces a bias where total_dispersers is
+    close to max_disersers, for example, for chunks much less than max chunk
+    chunks size will allways equal the max chunk size, so the amount wont be random.
+    =#
+    dispersed = disperse!(data[W], mode(rule), rule, shortlist, dispersalprob, population, index)
+    data[W][index...] -= dispersed
+end
+
+abstract type TransportMode end
+
+@bounds @default_kw struct HeirarchicalGroups{S} <: TransportMode
+    scalar::S | 1e-8 | (1e-6, 1e-9)
+end
+
+@inline disperse!(data::WritableGridData, mode::HeirarchicalGroups, rule::HumanDispersal,
+                  shortlist, dispersalprob, population, index) = begin
+    dispersed = zero(population)
+    nevents = rand(Binomial(human_pop, dispersalperpop))
+    for i in 1:nevents
+        maybedispersing = rand(Poissonn(population * mode.scalar))
+        # Just exit the loop if we exceed the existing populaiton
+        (maybedispersing + dispersed > population) && break
+        dispersed += disperse2dest!(data, rule, shortlist, maybedispersing)
+    end
+    dispersed
+end
+
+struct BatchGroups <: TransportMode end
+
+@inline disperse!(data::WritableGridData, mode::BatchGroups, rule::HumanDispersal,
+                  shortlist, dispersalprob, population, index) = begin
+    # Find the expected number of dispersers given population and dispersal prob
+    total_dispersers = trunc(Int, min(population * dispersalprob, population))
 
     # Maximum number of discrete dispersers in any single dispersal event
+    # We never know this number, is this defensible
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
     dispersed = zero(population)
     while dispersed < total_dispersers
         # Select a subset of the remaining dispersers for a dispersal event
-        dispersers = min(rand(1:max_dispersers), total_dispersers - dispersed)
-        # Choose a cell to disperse to from the precalculated human dispersal distribution
-        dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
-        # Randomise cell destination within upsampled destination cells
-        upsample = upsample_index(shortlist[dest_id].index, rule.scale)
-        dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
-        # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
-        DynamicGrids.ismasked(data, dest_index...) && continue
-        DynamicGrids.isinbounds(dest_index, gridsize(data), overflow(data)) || continue
-        # Disperse to the cell.
-        @inbounds data[W][dest_index...] += dispersers
+        maybedispersing = min(rand(1:max_dispersers), total_dispersers - dispersed)
+        dispersed += disperse2dest!(data, rule, shortlist, maybedispersing)
         # Track how many have allready dispersed
-        dispersed += dispersers
     end
-    if dispersed > zero(population)
-        @inbounds data[W][index...] -= dispersed
+    dispersed
+end
+
+#= Maybe write the group to a randomised location in the destination array
+unless it falls outside the grid or is masked, in which case we
+say the event just never happened.
+=#
+disperse2dest!(data::DynamicGrids.WritableGridData, rule, shortlist, maybedispersing) = begin
+    dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
+    # Randomise cell destination within upsampled destination cells
+    upsample = upsample_index(shortlist[dest_id].index, rule.scale)
+    dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
+    # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
+    if !DynamicGrids.ismasked(data, dest_index...) &&
+        DynamicGrids.isinbounds(dest_index, gridsize(data), overflow(data))
+        # Disperse to the cell.
+        data[dest_index...] += maybedispersing
+        maybedispersing
+    else
+        zero(maybedispersing)
     end
-    return
 end
 
 
