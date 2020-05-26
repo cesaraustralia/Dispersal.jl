@@ -18,28 +18,40 @@ $(FIELDDOCTABLE)
     cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
     distancemethod::D | CentroidToCentroid()   | false | _           | "Method for calculating distance between cells"
     buffer::B         | nothing                | false | _           | "Neighborhood buffer"
-
-    DispersalKernel{R,F,K,C,D,B}(formulation::F, kernel::K, cellsize::C, distancemethod::D, buffer::B) where {R,F,K,C,D,B} = begin
-        # Convert kenel the type of the init array
-        kernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
-        kernel = K <: Nothing ? kernel : K(kernel)
-        new{R,F,typeof(kernel),C,D,B}(formulation, kernel, cellsize, distancemethod, buffer)
-    end
+end
+DispersalKernel{R}(formulation, kernel, cellsize, distancemethod, buffer) where R = begin
+    # Convert kenel the type of the init array
+    newkernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
+    newkernel = kernel isa Nothing ? newkernel : typeof(kernel)(newkernel)
+    DispersalKernel{R,map(typeof, (formulation, newkernel, cellsize, distancemethod, buffer))...
+                         }(formulation, newkernel, cellsize, distancemethod, buffer)
 end
 DispersalKernel{R}(; kwargs...) where R = begin
     args = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
-    DispersalKernel{R,typeof.(args)...}(args...)
+    DispersalKernel{R}(args...)
 end
-DispersalKernel{R}(args...) where R =
-    DispersalKernel{R,map(typeof, args)...}(args...)
 
 ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
 
 DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
+
+DynamicGrids.spreadbuffers(rule::NeighborhoodRule, k::DispersalKernel{R,F,K,C,D,B}, 
+                           buffers::Tuple, grid) where {R,F,K,C,D,B} = begin
+    kernels = map(buffers) do b
+        DispersalKernel{R,F,K,C,D,typeof(b)}(
+            formulation(k), kernel(k), cellsize(k), distancemethod(k), b
+        )
+    end
+    map(k -> (@set rule.neighborhood = k), kernels)
+end
+
 kernel(hood::DispersalKernel) = hood.kernel
+cellsize(hood::DispersalKernel) = hood.cellsize
+distancemethod(hood::DispersalKernel) = hood.distancemethod
 neighbors(hood::DispersalKernel) = buffer(hood)
 formulation(hood::DispersalKernel) = hood.formulation
 buffer(hood::DispersalKernel) = hood.buffer
+
 
 @inline disperse(hood::DispersalKernel) =
     @inbounds return buffer(hood) ⋅ kernel(hood)
