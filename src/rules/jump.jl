@@ -30,7 +30,8 @@ end
     rand() < rule.prob_threshold || return state
 
     # Randomly select spotting distance
-    rnge = -rule.spotrange:rule.spotrange
+    intspot = round(Int, rule.spotrange)
+    rnge = -intspot:intspot
     jump = (rand(rnge), rand(rnge))
     jumpdest, is_inbounds = inbounds(jump .+ index, gridsize(data), RemoveOverflow())
 
