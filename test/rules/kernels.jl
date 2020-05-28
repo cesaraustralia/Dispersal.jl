@@ -115,9 +115,9 @@ test3 = [0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
 
 @testset "inwards" begin
     hood = DispersalKernel{1}(; formulation=TestFormulation())
-    ruleset = Ruleset(InwardsPopulationDispersal(;neighborhood=hood); init=init)
-    output = ArrayOutput(init, 3)
-    sim!(output, ruleset; tspan=(1, 3))
+    ruleset = Ruleset(InwardsPopulationDispersal(;neighborhood=hood))
+    output = ArrayOutput(init; tspan=1:3)
+    sim!(output, ruleset)
     @test output[1] == init
     @test output[2] == test2
     @test output[3] == test3
@@ -125,9 +125,9 @@ end
 
 @testset "outwards" begin
     hood = DispersalKernel{1}(; formulation=TestFormulation())
-    ruleset = Ruleset(OutwardsPopulationDispersal(;neighborhood=hood); init=init)
-    output = ArrayOutput(init, 3)
-    sim!(output, ruleset; tspan=(1, 3))
+    ruleset = Ruleset(OutwardsPopulationDispersal(;neighborhood=hood))
+    output = ArrayOutput(init; tspan=1:3)
+    sim!(output, ruleset)
     @test output[1] == init
     @test output[2] == test2
     @test output[3] == test3
@@ -186,10 +186,10 @@ end
     hood = DispersalKernel{1}(; formulation=TestFormulation())
     switched = SwitchedInwardsPopulationDispersal(; neighborhood=hood, 
                                                   threshold=threshold, layer=layer)
-    ruleset = Ruleset(switched; init=init)
+    ruleset = Ruleset(switched)
 
-    output = ArrayOutput(init, 4)
-    sim!(output, ruleset; tspan=(1, 4))
+    output = ArrayOutput(init; tspan=1:4)
+    sim!(output, ruleset)
 
     @test output[1] == init
     @test output[2] == test2

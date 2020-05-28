@@ -1,50 +1,50 @@
 using DynamicGrids: normalise, minval, maxval, ismasked, rgb
 
 """
-    RegionOutput(init; nframes, objective)
+    RegionOutput(init; tspan, objective)
 
 A minimal low-memory output that stores the inhabited regions for
 each timestep, as required by the [`RegionObjective`](@ref).
 """
 DynamicGrids.@Output mutable struct RegionOutput{O} <: Output{T}
-    objective::O | nothing
+    objective::O
 end
-RegionOutput(objective::Objective; kwargs...) where T = begin
+RegionOutput(init; mask=nothing, tspan, objective, kwargs...) = begin
     predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
-    RegionOutput(; frames=predictions, objective=objective, kwargs...)
+    running = false
+    RegionOutput(predictions, init, mask, running, tspan, objective)
 end
 
 objective(o::RegionOutput) = o.objective
 
 
 # RegionObjective and supporting types/methods
-#
 
-DynamicGrids.storegrid!(output::RegionOutput, data::DynamicGrids.SimData) = begin
-    f = DynamicGrids.gridindex(output, data)
-    obj = objective(output)
+DynamicGrids.storegrid!(o::RegionOutput, data::DynamicGrids.SimData) = begin
+    f = DynamicGrids.gridindex(o, data)
+    obj = objective(o)
     step = stepfromframe(obj, f)
-    pred = predictions(obj, output)
+    pred = predictions(obj, o)
     for I in CartesianIndices(first(DynamicGrids.init(data)))
-        storeprediction!(first(data), output, step, pred, I)
+        storeprediction!(first(data), o, step, pred, I)
     end
 end
 
-DynamicGrids.initgrids!(output::RegionOutput, init) = begin
-    obj = objective(output)
+DynamicGrids.initgrids!(o::RegionOutput, init) = begin
+    obj = objective(o)
     step = stepfromframe(obj, 1)
-    pred = predictions(obj, output)
+    pred = predictions(obj, o)
     pred .= false
     for I in CartesianIndices(init)
-        storeprediction!(init, output, step, pred, I)
+        storeprediction!(init, o, step, pred, I)
     end
 end
 
 """
 Set region presence status in non-zero blocks
 """
-@inline storeprediction!(grid, output::RegionOutput, step, predictions, I) = begin
-    obj = objective(output)
+@inline storeprediction!(grid, o::RegionOutput, step, predictions, I) = begin
+    obj = objective(o)
     grid[I] > obj.detectionthreshold || return
     region = obj.regionlookup[I]
     region > zero(region) || return
@@ -53,10 +53,10 @@ Set region presence status in non-zero blocks
 end
 
 """
-    ColorRegionFit(objective, truescheme, falsescheme, falsepositivecolor, 
+    ColorRegionFit(objective, truescheme, falsescheme, falsepositivecolor,
                    truenegativecolor, falsenegativecolor, maskcolor)
 
-An image procesor for visualising the match between predictions and observed 
+An image procesor for visualising the match between predictions and observed
 regional occupancy. A live version of the region fitting optimiser.
 
 ## Arguments:
@@ -77,29 +77,29 @@ struct ColorRegionFit{O,T,F,TZ,FZ,M} <: GridProcessor
     maskcolor::M
 end
 
-DynamicGrids.grid2image(p::ColorRegionFit, output::ImageOutput, ruleset::Ruleset, grids::NamedTuple, t) = begin
+DynamicGrids.grid2image(p::ColorRegionFit, o::ImageOutput, ruleset::Ruleset, grids::NamedTuple, t) = begin
     step = stepfromframe(p.objective, t)
     grid = first(grids)
     img = fill(RGB24(0), size(grid))
     obj = p.objective
-    min, max = minval(output), maxval(output)
+    min, max = minval(o), maxval(o)
     for i in CartesianIndices(img)
         region = p.objective.regionlookup[i]
-        img[i] = if !(p.maskcolor isa Nothing) && ismasked(mask(ruleset), i) 
+        img[i] = if !(p.maskcolor isa Nothing) && ismasked(mask(o), i)
             rgb(p.maskcolor)
         elseif region > zero(region)
             x = grid[i]
             normed = normalise(x, min, max)
             if p.objective.occurance[region, step]
-                if !(p.truezerocolor isa Nothing) && normed == zero(normed) 
+                if !(p.truezerocolor isa Nothing) && normed == zero(normed)
                     rgb(p.falsezerocolor)
                 else
                     rgb(p.truescheme, normed)
                 end
             else
-                if !(p.falsezerocolor isa Nothing) && normed == zero(normed) 
+                if !(p.falsezerocolor isa Nothing) && normed == zero(normed)
                     rgb(p.truezerocolor)
-                elseif x > obj.detectionthreshold 
+                elseif x > obj.detectionthreshold
                     rgb(p.falsescheme, normed)
                 else
                     rgb(p.truescheme, normed)
@@ -113,7 +113,7 @@ DynamicGrids.grid2image(p::ColorRegionFit, output::ImageOutput, ruleset::Ruleset
 end
 
 
-stepfromframe(objective::RegionObjective, t) = 
+stepfromframe(objective::RegionObjective, t) =
     stepfromframe(objective.framesperstep, objective.start, t)
-stepfromframe(framesperstep, start, t) = 
+stepfromframe(framesperstep, start, t) =
     (t - 2one(t) + start) ÷ framesperstep + one(t)

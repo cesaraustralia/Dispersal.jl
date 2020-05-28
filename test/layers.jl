@@ -89,7 +89,7 @@ end
     @test LayerCopy(l, 1) === LayerCopy(layer=l)
     @test LayerCopy{:a,:b}(layer=l, timeindex=2) === LayerCopy{:a,:b}(l, 2)
     ruleset = Ruleset(LayerCopy(layer=l))
-    output = ArrayOutput(init, 3)
-    sim!(output, ruleset; init=init, tspan=(1, 3))
+    output = ArrayOutput(init; tspan=1:3)
+    sim!(output, ruleset)
     @test output == [[0 0], [3 4], [1 2]]
 end

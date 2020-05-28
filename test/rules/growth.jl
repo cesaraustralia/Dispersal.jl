@@ -17,27 +17,26 @@ using Unitful: d
               8.0 20.0 32.0;
              12.0 24.0 36.0]
 
-    output = ArrayOutput(init, 3)
-    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)); init=init)
-    sim!(output, rule; tspan=(1, 3))
+    output = ArrayOutput(init; tspan=1:3)
+    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)))
+    sim!(output, rule)
 
     @test output[1] == test1
     @test output[2] == test2
     @test output[3] == test3
 
-    output = ArrayOutput(init, 3)
-    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0), timestep=1d); init=init, timestep=1d)
-    sim!(output, rule; tspan=(1d, 3d))
+    output = ArrayOutput(init; tspan=1d:1d:3d)
+    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0), timestep=1d); timestep=1d)
+    sim!(output, rule)
     typeof(rule.rules[1].timestep)
 
     @test output[1] == test1
     @test output[2] == test2
     @test output[3] == test3
 
-    output = ArrayOutput(init, 3)
-    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)/5, timestep=Day(1)); 
-                   init=init, timestep=Day(5))
-    sim!(output, rule; tspan=(DateTime(2001,1,1), DateTime(2001,1,15)))
+    output = ArrayOutput(init; tspan=DateTime(2001,1,1):Day(5):DateTime(2001,1,15))
+    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)/5, timestep=Day(1)); timestep=Day(5))
+    sim!(output, rule)
 
     @test output[1] == test1
     @test output[2] == test2
@@ -53,9 +52,9 @@ end
                   2.0 1.0 0.5;
                   1.0 1.0 0.5])
 
-    output = ArrayOutput(init, 3)
-    rule = Ruleset(ExactExponentialGrowthMap(layer=suit); init=init)
-    sim!(output, rule; tspan=(1, 3))
+    output = ArrayOutput(init; tspan=1:3)
+    rule = Ruleset(ExactExponentialGrowthMap(layer=suit))
+    sim!(output, rule)
 
     @test output[1] == [1.0 1.0 1.0;
                         1.0 1.0 1.0;
@@ -91,10 +90,10 @@ end
              5.0      8.0      9.41176;
              6.31579  8.57143  9.72973]
 
-    rule = Ruleset(ExactLogisticGrowth(intrinsicrate=log(2.0), carrycap=10); init=init)
-    output = ArrayOutput(init, 3)
+    rule = Ruleset(ExactLogisticGrowth(intrinsicrate=log(2.0), carrycap=10))
+    output = ArrayOutput(init; tspan=1:3)
 
-    sim!(output, rule; tspan=(1, 3))
+    sim!(output, rule)
 
     @test output[1] == test1
     @test output[2] ≈ test2 atol=1e-4
@@ -123,9 +122,9 @@ end
                   2.0 1.0 0.5;
                   1.0 1.0 0.5])
 
-    output = ArrayOutput(init, 3)
-    rule = Ruleset(ExactLogisticGrowthMap(layer=suit, carrycap=10); init=init)
-    sim!(output, rule; tspan=(1, 3))
+    output = ArrayOutput(init; tspan=1:3)
+    rule = Ruleset(ExactLogisticGrowthMap(layer=suit, carrycap=10))
+    sim!(output, rule)
 
     @test output[1] == test1
     @test output[2] ≈ test2 atol=1e-4
@@ -150,10 +149,10 @@ end
              1.0 1.0 0.0;
              0.0 0.0 0.0]
 
-    output = ArrayOutput(init, 3)
-    mask = MaskGrowthMap(layer=suit, threshold=1.1)
-    ruleset = Ruleset(mask; init=init)
-    data = SimData(init, ruleset, 1)
+    output = ArrayOutput(init; tspan=1:3)
+    maskrule = MaskGrowthMap(layer=suit, threshold=1.1)
+    ruleset = Ruleset(maskrule)
+    data = SimData(init, nothing, ruleset, 1)
 
     @test applyrule(mask, data, 5, (1, 1)) === 0
     @test applyrule(mask, data, 5, (2, 2)) === 5
@@ -161,7 +160,7 @@ end
     @test applyrule(mask, data, 5.0, (1, 1)) === 0.0
     @test applyrule(mask, data, 5.0, (2, 2)) === 5.0
 
-    sim!(output, Ruleset(mask; init=init); tspan=(1, 3))
+    sim!(output, Ruleset(mask))
 
     @test output[1] == test1
     @test output[2] == test2

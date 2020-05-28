@@ -25,16 +25,15 @@ end
 
     # Regular
     ruleset1 = Ruleset(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                       MaskGrowthMap(layer=suitseq, threshold=0.4); init=init, timestep=1d)
+                       MaskGrowthMap(layer=suitseq, threshold=0.4); timestep=1d)
     # Chained
     ruleset2 = Ruleset(Chain(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                       MaskGrowthMap(layer=suitseq, threshold=0.4))
-                       ; init=init, timestep=1d)
-    output1 = ArrayOutput(init, 25)
-    output2 = ArrayOutput(init, 25)
+                       MaskGrowthMap(layer=suitseq, threshold=0.4)) ; timestep=1d)
+    output1 = ArrayOutput(init; tspan=1d:1d:25d)
+    output2 = ArrayOutput(init; tspan=1d:1d:25d)
 
-    sim!(output1, ruleset1; tspan=(1d, 25d))
-    sim!(output2, ruleset2; tspan=(1d, 25d))
+    sim!(output1, ruleset1)
+    sim!(output2, ruleset2)
 
     results = [[0 0; 0 1],
                [0 0; 0 1],
@@ -110,25 +109,25 @@ end
 
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-        rules = Ruleset(inwards, maskgrowth; init=init)
-        output = ArrayOutput(init, 3)
-        sim!(output, rules; tspan=(1, 3))
+        rules = Ruleset(inwards, maskgrowth)
+        output = ArrayOutput(init; tspan=1:3)
+        sim!(output, rules)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
 
         # As subrules
-        rules = Ruleset(inwards, maskgrowth; init=init)
-        sim!(output, rules; tspan = (1, 3))
+        rules = Ruleset(inwards, maskgrowth)
+        sim!(output, rules; tspan=1:3)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
     end
     @testset "outwards binary dispersal fills the grid where reachable and suitable" begin
         outwards = OutwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
-        rules = Ruleset(outwards, maskgrowth; init=init)
-        output = ArrayOutput(init, 3)
-        sim!(output, rules; tspan=(1, 3))
+        rules = Ruleset(outwards, maskgrowth)
+        output = ArrayOutput(init; tspan=1:3)
+        sim!(output, rules)
         @test output[1] == test1
         @test output[2] == test2
         @test output[3] == test3
@@ -205,16 +204,16 @@ end
     @testset "inwards population dispersal fills the grid where reachable and suitable" begin
         hood = DispersalKernel{radius}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
         inwards = InwardsPopulationDispersal(neighborhood=hood)
-        rules = Ruleset(inwards, mask; init=init, timestep=1d)
-        in_output = ArrayOutput(init, 3)
-        sim!(in_output, rules; tspan=(4d, 6d))
+        rules = Ruleset(inwards, mask; timestep=1d)
+        in_output = ArrayOutput(init; tspan=4d:1d:6d)
+        sim!(in_output, rules)
         @test in_output[1] == test1
         @test in_output[2] == test2
         @test in_output[3] ≈ test3
 
         # As subrules
-        rules = Ruleset(Chain(inwards, mask); init=init, timestep=1d)
-        sim!(in_output, rules; tspan=(4d, 6d))
+        rules = Ruleset(Chain(inwards, mask); timestep=1d)
+        sim!(in_output, rules; tspan=4d:1d:6d)
         @test in_output[1] == test1
         @test in_output[2] == test2
         @test in_output[3] ≈ test3
@@ -223,9 +222,9 @@ end
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin
         hood = DispersalKernel{radius}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
         outwards = OutwardsPopulationDispersal(neighborhood=hood)
-        rules = Ruleset(outwards, mask; init=init, timestep=Month(1))
-        out_output = ArrayOutput(init, 3)
-        sim!(out_output, rules; tspan=Date(2001, 1):Month(1):Date(2001, 3))
+        rules = Ruleset(outwards, mask; timestep=Month(1))
+        out_output = ArrayOutput(init; tspan=Date(2001, 1):Month(1):Date(2001, 3))
+        sim!(out_output, rules)
         @test out_output[1] == test1
         @test out_output[2] == test2
         @test out_output[3] ≈ test3

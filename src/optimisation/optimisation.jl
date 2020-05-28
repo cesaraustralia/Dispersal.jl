@@ -19,7 +19,7 @@ struct SingleCoreReplicates <: Replicates end
 
 """
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, 
-                 starttime, stoptime, threading)
+                 tspan, threading)
 
 Parametrizer functor to use with Optim.jl or similar.
 
@@ -32,12 +32,11 @@ Parametrizer functor to use with Optim.jl or similar.
 - `loss`: LossFunctions.jl loss function
 - `ngroups::Int`: number of replicate simulation
 - `groupsize::Int`: number of simulations in a group. Larger groups may inprove distributed performance.
-- `starttime`: start time for a simulation
-- `stoptime`: end time for a simulation
+- `tspan`: timespan for the simulation
 - `threading::Replicates`: Type to define threading mode for simulation replicates: 
   `SingleCoreReplicates`, `ThreadedReplicates`, `DistributedReplicates`
 """
-struct Parametriser{RU,OP,OB,TR,L,NR,GS,TSta,TSto,TH,D,TB,PB,RE}
+struct Parametriser{RU,OP,OB,TR,L,NR,GS,TS,TH,D,TB,PB,RE}
     ruleset::RU
     output::OP
     objective::OB
@@ -45,8 +44,7 @@ struct Parametriser{RU,OP,OB,TR,L,NR,GS,TSta,TSto,TH,D,TB,PB,RE}
     loss::L
     ngroups::NR
     groupsize::GS
-    starttime::TSta
-    stoptime::TSto
+    tspan::TS
     threading::TH
     data::D
     targetbuffer::TB
@@ -66,33 +64,31 @@ groupsize(p::Parametriser) = p.groupsize
 threading(p::Parametriser) = p.threading
 targetbuffer(p::Parametriser) = p.targetbuffer
 predictionbuffer(p::Parametriser) = p.predictionbuffer
-DynamicGrids.starttime(p::Parametriser) = p.starttime
-DynamicGrids.stoptime(p::Parametriser) = p.stoptime
-DynamicGrids.tspan(p::Parametriser) = (starttime(p), stoptime(p))
+DynamicGrids.tspan(p::Parametriser) = p.tspan
 
 
-Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, 
-             stoptime, threading::ThreadedReplicates) = begin
+Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tspan, 
+             threading::ThreadedReplicates) = begin
     targetbuffer = transform.(targets(objective))
     # Make copies of anything threads will write to
     predictionbuffer = [transform.(targets(objective)) for i in 1:Threads.nthreads()]
-    output = [deepcopy(output) for i in 1:Threads.nthreads()]
-    data = [DynamicGrids.SimData(deepcopy(init(ruleset)), deepcopy(ruleset), starttime) for i in 1:Threads.nthreads()]
+    outputs = [deepcopy(output) for i in 1:Threads.nthreads()]
+    data = [DynamicGrids.SimData(deepcopy(init(output)), mask(output), deepcopy(ruleset), first(tspan)) for i in 1:Threads.nthreads()]
     results = [zeros(groupsize) for g in 1:ngroups]
 
-    Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
-                 starttime, stoptime, threading, data, targetbuffer, predictionbuffer, results)
+    Parametriser(ruleset, outputs, objective, transform, loss, ngroups, groupsize,
+                 tspan, threading, data, targetbuffer, predictionbuffer, results)
 end
 
 Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, 
-             starttime, stoptime, threading=SingleCoreReplicates()) = begin
+             tspan, threading=SingleCoreReplicates()) = begin
     targetbuffer = transform.(targets(objective))
     predictionbuffer = transform.(targets(objective))
-    data = DynamicGrids.SimData(init(ruleset), ruleset, starttime)
+    data = DynamicGrids.SimData(init(output), mask(output), ruleset, first(tspan))
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
-                 starttime, stoptime, threading, data, targetbuffer, predictionbuffer, results)
+                 tspan, threading, data, targetbuffer, predictionbuffer, results)
 end
 
 """
@@ -150,10 +146,13 @@ replicate!(::SingleCoreReplicates, p::Parametriser, params) = begin
     for g in 1:p.ngroups
         grouploss = 0.0
         for n in 1:p.groupsize
+            println(n)
             sim!(p.output, p.ruleset; tspan=tspan(p), simdata=data(p))
             p.predictionbuffer .= p.transform.(predictions(p.objective, p.output))
-            p.results[g][n] = value(p.loss, p.targetbuffer, p.predictionbuffer, AggMode.Sum())
+            loss = value(p.loss, p.targetbuffer, p.predictionbuffer, AggMode.Sum())
+            grouploss += loss
+            p.results[g][n] = loss
         end
-        Core.println("group: ", g, " - reps ($(p.groupsize)) mean loss: ", grouploss/p.groupsize)
+        println("group: ", g, " - reps ($(p.groupsize)) mean loss: ", grouploss / p.groupsize)
     end
 end

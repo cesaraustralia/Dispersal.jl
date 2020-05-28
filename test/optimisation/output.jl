@@ -1,9 +1,6 @@
 using DynamicGrids, Dispersal, Test, Colors, FieldDefaults
 import DynamicGrids: grid2image, @Image, @Graphic, @Output
 
-@Image @Graphic @Output mutable struct TestImageOutput{} <: ImageOutput{T} end
-
-
 init =  [1.0  1.0  0.5
          0.0  0.0  0.0
          0.0  0.0  0.0]
@@ -22,9 +19,9 @@ framesperstep = 2
 objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep, start)
 
 @testset "region output works" begin
-    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
-    output = RegionOutput(objective)
-    sim!(output, ruleset; tspan=(1, 5))
+    rule = ExactExponentialGrowth(intrinsicrate = log(2.0))
+    output = RegionOutput(init; objective=objective, tspan=1:5)
+    sim!(output, rule)
 end
 
 @testset "image processor colors regions by fit" begin
@@ -40,7 +37,7 @@ end
 
     processor = ColorRegionFit(objective, truescheme, falsescheme,
                                truezerocolor, falsezerocolor, maskcolor)
-    output = TestImageOutput(init)
+    output = DynamicGrids.NoDisplayImageOutput(init; tspan=1:5)
 
     # This output needs an update anyway
     @test image == grid2image(processor, output, Ruleset(), (_default_=init,), 1)
