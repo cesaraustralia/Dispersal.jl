@@ -18,7 +18,6 @@ in the surrounding cells.
 InwardsDispersal
 InwardsBinaryDispersal
 InwardsPopulationDispersal
-PoissonInwardsPopulationDispersal
 ```
 
 ## Partial Neighborhood Rules
@@ -51,7 +50,6 @@ and the dispersal distance.
 
 ```@docs
 DistanceMethod
-CentroidToArea
 CentroidToCentroid
 AreaToCentroid
 AreaToArea
@@ -98,8 +96,16 @@ JumpDispersal
 HumanDispersal
 populate!
 populate
+downsample
+downsample!
 ```
 
+# Layer
+
+```@docs
+layer
+LayerCopy
+```
 
 ## Optimisation
 

@@ -1,5 +1,5 @@
 using Dispersal, Test, DimensionalData, Setfield, OffsetArrays, DynamicGrids, Random
-using DynamicGrids: WritableGridData, setneighbor!, SimData, grids, neighborhood,
+using DynamicGrids: WritableGridData, setneighbor!, SimData, Extent, grids, neighborhood,
       mapsetneighbor!
 using Dispersal: dispersalprob
 
@@ -60,7 +60,7 @@ end
 
     state = true
     init = zeros(Bool, 5, 5)
-    simdata = SimData(init, ruleset, 1)
+    simdata = SimData(Extent(init=(_default_=init,), tspan=1:1), ruleset)
     griddata = WritableGridData(first(grids(simdata)))
     @test setneighbor!(griddata, neighborhood(rule), rule, state, hood_index, dest_index) == 1
     @test DynamicGrids.dest(griddata) == OffsetArray(
@@ -115,9 +115,9 @@ test3 = [0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0;
 
 @testset "inwards" begin
     hood = DispersalKernel{1}(; formulation=TestFormulation())
-    ruleset = Ruleset(InwardsPopulationDispersal(;neighborhood=hood); init=init)
-    output = ArrayOutput(init, 3)
-    sim!(output, ruleset; tspan=(1, 3))
+    ruleset = Ruleset(InwardsPopulationDispersal(;neighborhood=hood))
+    output = ArrayOutput(init; tspan=1:3)
+    sim!(output, ruleset)
     @test output[1] == init
     @test output[2] == test2
     @test output[3] == test3
@@ -125,9 +125,9 @@ end
 
 @testset "outwards" begin
     hood = DispersalKernel{1}(; formulation=TestFormulation())
-    ruleset = Ruleset(OutwardsPopulationDispersal(;neighborhood=hood); init=init)
-    output = ArrayOutput(init, 3)
-    sim!(output, ruleset; tspan=(1, 3))
+    ruleset = Ruleset(OutwardsPopulationDispersal(;neighborhood=hood))
+    output = ArrayOutput(init; tspan=1:3)
+    sim!(output, ruleset)
     @test output[1] == init
     @test output[2] == test2
     @test output[3] == test3
@@ -184,12 +184,11 @@ end
 
     threshold = 0.5
     hood = DispersalKernel{1}(; formulation=TestFormulation())
-    switched = SwitchedInwardsPopulationDispersal(; neighborhood=hood, 
-                                                  threshold=threshold, layer=layer)
-    ruleset = Ruleset(switched; init=init)
+    switched = SwitchedInwardsPopulationDispersal(; neighborhood=hood, threshold=threshold, layerkey=:layerdata)
+    ruleset = Ruleset(switched)
 
-    output = ArrayOutput(init, 4)
-    sim!(output, ruleset; tspan=(1, 4))
+    output = ArrayOutput(init; tspan=1:4)
+    sim!(output, ruleset; aux=(layerdata=layerdata,))
 
     @test output[1] == init
     @test output[2] == test2

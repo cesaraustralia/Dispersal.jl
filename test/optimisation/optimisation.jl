@@ -17,32 +17,31 @@ end
 
 @testset "SimpleObjective" begin
 
-    init =  [1.0 0.0 1.0
-             0.0 0.0 0.0
-             1.0 1.0 0.0]
+    init = [1.0 0.0 1.0
+            0.0 0.0 0.0
+            1.0 1.0 0.0]
 
     target = [8.0 0.0 8.0
               0.0 0.0 0.0
               8.0 8.0 0.0]
 
     # Test the last simulation frame matches the target when the correct rate is used
-    starttime = 1
-    stoptime = 4
+    tspan = 1:4
     ngroups = 1
     groupsize = 1
     rate = log(2.0)
-    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = rate); init=init)
-    output = ArrayOutput(init, stoptime)
-    sim!(output, ruleset; tspan=(starttime, stoptime))
+    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate=rate))
+    output = ArrayOutput(init; tspan=tspan)
+    sim!(output, ruleset)
 
     @test output[end] == target
 
     # Test optim finds the correct intrinsic growth rate
-    output = ArrayOutput(init, stoptime)
+    output = ArrayOutput(init; tspan=tspan)
     objective = SimpleObjective(target)
     loss = LogitDistLoss()
 
-    p = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, starttime, stoptime);
+    p = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize);
     @test DynamicGrids.ruleset(p::Parametriser) === ruleset
     @test Dispersal.output(p::Parametriser) === output
     @test Dispersal.transform(p::Parametriser) == p.transform
@@ -51,8 +50,7 @@ end
     @test Dispersal.ngroups(p::Parametriser) == 1
     @test Dispersal.groupsize(p::Parametriser) == 1
     @test Dispersal.threading(p::Parametriser) == SingleCoreReplicates()
-    @test DynamicGrids.starttime(p::Parametriser) == 1
-    @test DynamicGrids.stoptime(p::Parametriser) == 4
+    @test DynamicGrids.tspan(p::Parametriser) == 1:4
     @test Dispersal.data(p::Parametriser) == p.data
     @test Dispersal.targetbuffer(p::Parametriser) == target
     @test Dispersal.targetbuffer(p::Parametriser) !== target
@@ -81,26 +79,25 @@ end
     groupsize = 1
     framesperstep = 2
     steps = 3
-    starttime = 1
-    stoptime = framesperstep * steps
+    tspan = 1:framesperstep * steps
     detectionthreshold = 0.1
     transform = x -> 2x - 1
 
     objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep, 1)
-    output = RegionOutput(init, starttime=starttime, stoptime=stoptime, objective=objective)
-    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)); init=init)
+    output = RegionOutput(init; tspan=tspan, objective=objective)
+    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)))
     loss = ZeroOneLoss()
 
     @testset "SingleCoreReplicates" begin
         threading = SingleCoreReplicates()
-        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, stoptime, threading)
+        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, threading)
         parametriser(flatten(ruleset))
         res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
     end
 
     @testset "ThreadedReplicates" begin
         threading = ThreadedReplicates()
-        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, starttime, stoptime, threading)
+        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, threading)
         parametriser(flatten(ruleset))
         res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
     end

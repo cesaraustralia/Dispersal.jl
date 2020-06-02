@@ -243,10 +243,10 @@ end
 
 @inline applyrule!(rule::HumanDispersal{R,W}, data, population, index) where {R,W} = begin
     population == zero(population) && return
-    @inbounds dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
+    dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
     ismissing(dispersalprob) && return
-    @inbounds shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
-    ismissing(shortlist) && return
+    shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
+    #ismissing(shortlist) && return
 
     #= This formulation introduces a bias where total_dispersers is
     close to max_disersers, for example, for chunks much less than max chunk

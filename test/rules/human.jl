@@ -220,11 +220,11 @@ end
        aggregator=aggregator, human_exponent=human_exponent, max_dispersers=max_dispersers,
        dist_exponent=dist_exponent, nshortlisted=nshortlisted);
 
-    ruleset = Ruleset(humandisp; init=init)
-    output = ArrayOutput(init, 10)
+    ruleset = Ruleset(humandisp)
+    output = ArrayOutput(init; tspan=1:10)
 
     for i = 1:100
-        sim!(output, ruleset; init=init, tspan=(1, 10))
+        sim!(output, ruleset)
         @test init == output[1]
         @test init != output[10]
         # Population is allways maintained
