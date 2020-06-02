@@ -1,5 +1,5 @@
 using DynamicGrids, Dispersal, Test, Unitful, Dates
-using DynamicGrids: applyrule, SimData
+using DynamicGrids: applyrule, SimData, extent
 using Unitful: d
 
 @testset "exponential growth" begin
@@ -52,8 +52,9 @@ end
                   2.0 1.0 0.5;
                   1.0 1.0 0.5])
 
-    output = ArrayOutput(init; tspan=1:3)
-    rule = Ruleset(ExactExponentialGrowthMap(layer=suit))
+    output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
+    output.extent
+    rule = Ruleset(ExactExponentialGrowthMap(layerkey=Val(:suit)))
     sim!(output, rule)
 
     @test output[1] == [1.0 1.0 1.0;
@@ -122,8 +123,8 @@ end
                   2.0 1.0 0.5;
                   1.0 1.0 0.5])
 
-    output = ArrayOutput(init; tspan=1:3)
-    rule = Ruleset(ExactLogisticGrowthMap(layer=suit, carrycap=10))
+    output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
+    rule = Ruleset(ExactLogisticGrowthMap(layerkey=Val(:suit), carrycap=10))
     sim!(output, rule)
 
     @test output[1] == test1
@@ -149,18 +150,18 @@ end
              1.0 1.0 0.0;
              0.0 0.0 0.0]
 
-    output = ArrayOutput(init; tspan=1:3)
-    maskrule = MaskGrowthMap(layer=suit, threshold=1.1)
+    output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
+    maskrule = MaskGrowthMap(layerkey=Val(:suit), threshold=1.1)
     ruleset = Ruleset(maskrule)
-    data = SimData(init, nothing, ruleset, 1)
+    data = SimData(extent(output), ruleset)
 
-    @test applyrule(mask, data, 5, (1, 1)) === 0
-    @test applyrule(mask, data, 5, (2, 2)) === 5
+    @test applyrule(maskrule, data, 5, (1, 1)) === 0
+    @test applyrule(maskrule, data, 5, (2, 2)) === 5
 
-    @test applyrule(mask, data, 5.0, (1, 1)) === 0.0
-    @test applyrule(mask, data, 5.0, (2, 2)) === 5.0
+    @test applyrule(maskrule, data, 5.0, (1, 1)) === 0.0
+    @test applyrule(maskrule, data, 5.0, (2, 2)) === 5.0
 
-    sim!(output, Ruleset(mask))
+    sim!(output, Ruleset(maskrule))
 
     @test output[1] == test1
     @test output[2] == test2

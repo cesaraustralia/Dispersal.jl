@@ -1,5 +1,5 @@
 """
-Abstract supertype that extends [`ManualRule`](@ref) for jump dispersal rules
+Jump dispersal rules.
 """
 abstract type AbstractJumpDispersal{R,W} <: ManualRule{R,W} end
 

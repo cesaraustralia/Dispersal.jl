@@ -44,8 +44,6 @@ Disperses to the current cells from the populations of the
 surrounding cells, using a dispersal kernel deterministically.
 
 This will only make sense where cell populations are large.
-If they are small, use [`PoissonInwardsPopulationDispersal`](@ref) to
-randomise dispersal jumps.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 
@@ -70,4 +68,4 @@ end
     end
 
 DynamicGrids.precalcrules(rule::SwitchedInwardsPopulationDispersal, data) =
-    precalclayer(layer(rule), rule, data)
+    precalclayer(layer(rule, data), rule, data)

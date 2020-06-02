@@ -1,5 +1,5 @@
 using Dispersal, Test, DimensionalData, Setfield, OffsetArrays, DynamicGrids, Random
-using DynamicGrids: WritableGridData, setneighbor!, SimData, grids, neighborhood,
+using DynamicGrids: WritableGridData, setneighbor!, SimData, Extent, grids, neighborhood,
       mapsetneighbor!
 using Dispersal: dispersalprob
 
@@ -60,7 +60,7 @@ end
 
     state = true
     init = zeros(Bool, 5, 5)
-    simdata = SimData(init, ruleset, 1)
+    simdata = SimData(Extent(init=(_default_=init,), tspan=1:1), ruleset)
     griddata = WritableGridData(first(grids(simdata)))
     @test setneighbor!(griddata, neighborhood(rule), rule, state, hood_index, dest_index) == 1
     @test DynamicGrids.dest(griddata) == OffsetArray(
@@ -184,12 +184,11 @@ end
 
     threshold = 0.5
     hood = DispersalKernel{1}(; formulation=TestFormulation())
-    switched = SwitchedInwardsPopulationDispersal(; neighborhood=hood, 
-                                                  threshold=threshold, layer=layer)
+    switched = SwitchedInwardsPopulationDispersal(; neighborhood=hood, threshold=threshold, layerkey=:layerdata)
     ruleset = Ruleset(switched)
 
     output = ArrayOutput(init; tspan=1:4)
-    sim!(output, ruleset)
+    sim!(output, ruleset; aux=(layerdata=layerdata,))
 
     @test output[1] == init
     @test output[2] == test2

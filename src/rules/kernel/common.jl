@@ -35,14 +35,15 @@ ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = Dispersal
 
 DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 
+# The default method will rebuild the kernel every timestep, which can be costly.
 DynamicGrids.spreadbuffers(rule::NeighborhoodRule, k::DispersalKernel{R,F,K,C,D,B}, 
-                           buffers::Tuple, grid) where {R,F,K,C,D,B} = begin
+                           buffers::Tuple, grid::AbstractArray) where {R,F,K,C,D,B} = begin
     kernels = map(buffers) do b
         DispersalKernel{R,F,K,C,D,typeof(b)}(
             formulation(k), kernel(k), cellsize(k), distancemethod(k), b
         )
     end
-    map(k -> (@set rule.neighborhood = k), kernels)
+    buffers, map(k -> (@set rule.neighborhood = k), kernels)
 end
 
 kernel(hood::DispersalKernel) = hood.kernel
@@ -50,7 +51,6 @@ cellsize(hood::DispersalKernel) = hood.cellsize
 distancemethod(hood::DispersalKernel) = hood.distancemethod
 neighbors(hood::DispersalKernel) = buffer(hood)
 formulation(hood::DispersalKernel) = hood.formulation
-buffer(hood::DispersalKernel) = hood.buffer
 
 
 @inline disperse(hood::DispersalKernel) =

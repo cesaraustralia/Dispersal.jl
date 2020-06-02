@@ -27,13 +27,14 @@ can produce these growth maps from environmental data.
 """
 abstract type GrowthMapRule{R,W} <: GrowthRule{R,W} end
 
-layer(rule::GrowthMapRule) = rule.layer
+# Base.key(rule::GrowthMapRule{R,W,K}) where {R,W,K} = K
+# layer(rule::GrowthMapRule, data) = axkey(rule)
 
 DynamicGrids.precalcrules(rule::GrowthMapRule, data) = begin
     if :timestep in fieldnames(typeof(rule))
         rule = precalctimestep(rule, data)
     end
-    precalclayer(layer(rule), rule, data)
+    precalclayer(layer(rule, data), rule, data)
 end
 
 DynamicGrids.precalcrules(rule::GrowthRule, data) =

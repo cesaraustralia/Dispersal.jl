@@ -32,11 +32,10 @@ Parametrizer functor to use with Optim.jl or similar.
 - `loss`: LossFunctions.jl loss function
 - `ngroups::Int`: number of replicate simulation
 - `groupsize::Int`: number of simulations in a group. Larger groups may inprove distributed performance.
-- `tspan`: timespan for the simulation
 - `threading::Replicates`: Type to define threading mode for simulation replicates: 
   `SingleCoreReplicates`, `ThreadedReplicates`, `DistributedReplicates`
 """
-struct Parametriser{RU,OP,OB,TR,L,NR,GS,TS,TH,D,TB,PB,RE}
+struct Parametriser{RU,OP,OB,TR,L,NR,GS,TH,D,TB,PB,RE}
     ruleset::RU
     output::OP
     objective::OB
@@ -44,7 +43,6 @@ struct Parametriser{RU,OP,OB,TR,L,NR,GS,TS,TH,D,TB,PB,RE}
     loss::L
     ngroups::NR
     groupsize::GS
-    tspan::TS
     threading::TH
     data::D
     targetbuffer::TB
@@ -64,31 +62,32 @@ groupsize(p::Parametriser) = p.groupsize
 threading(p::Parametriser) = p.threading
 targetbuffer(p::Parametriser) = p.targetbuffer
 predictionbuffer(p::Parametriser) = p.predictionbuffer
-DynamicGrids.tspan(p::Parametriser) = p.tspan
+results(p::Parametriser) = p.results
+DynamicGrids.tspan(p::Parametriser) = tspan(output(p))
 
 
-Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tspan, 
+Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, 
              threading::ThreadedReplicates) = begin
     targetbuffer = transform.(targets(objective))
     # Make copies of anything threads will write to
     predictionbuffer = [transform.(targets(objective)) for i in 1:Threads.nthreads()]
     outputs = [deepcopy(output) for i in 1:Threads.nthreads()]
-    data = [DynamicGrids.SimData(deepcopy(init(output)), mask(output), deepcopy(ruleset), first(tspan)) for i in 1:Threads.nthreads()]
+    data = [DynamicGrids.SimData(deepcopy(extent(output)), deepcopy(ruleset)) for i in 1:Threads.nthreads()]
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, outputs, objective, transform, loss, ngroups, groupsize,
-                 tspan, threading, data, targetbuffer, predictionbuffer, results)
+                 threading, data, targetbuffer, predictionbuffer, results)
 end
 
 Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, 
-             tspan, threading=SingleCoreReplicates()) = begin
+             threading=SingleCoreReplicates()) = begin
     targetbuffer = transform.(targets(objective))
     predictionbuffer = transform.(targets(objective))
-    data = DynamicGrids.SimData(init(output), mask(output), ruleset, first(tspan))
+    data = DynamicGrids.SimData(deepcopy(extent(output)), ruleset)
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
-                 tspan, threading, data, targetbuffer, predictionbuffer, results)
+                 threading, data, targetbuffer, predictionbuffer, results)
 end
 
 """
@@ -99,16 +98,16 @@ Provides an objective function for an optimiser like Optim.jl
 (p::Parametriser)(params) = begin
     # Rebuild the rules with the current parameters
     p.ruleset.rules = Flatten.reconstruct(p.ruleset.rules, params, Real)
-    obj = p.objective
+    obj = objective(p)
 
-    names = fieldnameflatten(p.ruleset.rules, Real)
-    println("\nParameters: \n", typeof(p.ruleset.rules))
+    names = fieldnameflatten(rules(ruleset(p)), Real)
+    println("\nParameters: \n", typeof(rules(ruleset(p))))
     display(collect(zip(names, params)))
     println()
 
-    replicate!(p.threading, p, params)
+    replicate!(threading(p), p, params)
 
-    meanloss = sum(sum.(p.results)) / (p.ngroups * p.groupsize)
+    meanloss = sum(sum.(results(p))) / (ngroups(p) * groupsize(p))
     println("mean loss from $(p.ngroups * p.groupsize): ", meanloss, "\n")
     return meanloss
 end
@@ -117,13 +116,12 @@ replicate!(::ThreadedReplicates, p::Parametriser, params) = begin
     obj = p.objective
     Threads.@threads for g in 1:p.ngroups
         id = Threads.threadid()
-        output = p.output[id]
-        data = p.data[id]
-        predictionbuffer = p.predictionbuffer[id]
+        o = output(p)[id]
+        predbuffer = predictionbuffer(p)[id]
         for n in 1:p.groupsize
-            sim!(output, p.ruleset; tspan=tspan(p), simdata=data)
-            predictionbuffer .= p.transform.(predictions(obj, output))
-            p.results[g][n] = value(p.loss, p.targetbuffer, predictionbuffer, AggMode.Sum())
+            sim!(o, ruleset(p); simdata=data(p)[id])
+            predbuffer .= transform(p).(predictions(obj, o))
+            results(p)[g][n] = value(loss(p), targetbuffer(p), predbuffer, AggMode.Sum())
         end
     end
 end
@@ -147,7 +145,7 @@ replicate!(::SingleCoreReplicates, p::Parametriser, params) = begin
         grouploss = 0.0
         for n in 1:p.groupsize
             println(n)
-            sim!(p.output, p.ruleset; tspan=tspan(p), simdata=data(p))
+            sim!(output(p), ruleset(p); simdata=data(p))
             p.predictionbuffer .= p.transform.(predictions(p.objective, p.output))
             loss = value(p.loss, p.targetbuffer, p.predictionbuffer, AggMode.Sum())
             grouploss += loss

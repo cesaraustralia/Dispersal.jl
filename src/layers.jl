@@ -1,28 +1,32 @@
 
 @mix @columns struct Layers{L,TI}
-    layer::L           | nothing | false | _ | "`Matrix` or 3d `Array` with a time dimension. A `DimensionalArray` with a `TimeDim` as the third dim is required if the simulation uses real dates or times"
-    timeindex::TI      | 1       | false | _ | "Precalculated interpolation indices. Not set by users"
+    layerkey::L   | nothing | false | _ | "key for aux layer"
+    timeindex::TI | 1       | false | _ | "Precalculated interpolation indices. Not set by users"
 end
 
 """
-    layer(rule)
+layer(rule::Rule, data::SimData, [I...])
 
 Returns the value of a single layer or interplated value from a sequence of layers.
 
-If multiple layers are available the product will be returned.
+If multiple layers are available the product will be returned. Corresponding
+layers must be include in the `aux` `NamedTuple` in the out put or passed to `sim!`
 """
 function layer end
-layer(rule::Rule) = rule.layer
-Base.@propagate_inbounds layer(rule::Rule, data, index) =
-    layer(layer(rule), data, index, rule.timeindex)
-Base.@propagate_inbounds layer(l::Matrix, data, index, timeindex) = l[index...]
-Base.@propagate_inbounds layer(l::AbstractArray{T,3}, data, index, timeindex) where T =
-    l[index..., timeindex]
+layer(rule::Rule, data) = aux(data)[unwrap(layerkey(rule))]
+layer(rule::Rule, data, I) =
+    layer(layer(rule, data), I, timeindex(rule))
+layer(l::Matrix, I, timeindex) = l[I...]
+layer(l::AbstractArray{T,3}, I, timeindex) where T =
+    l[I..., timeindex]
+
+timeindex(rule::Rule) = rule.timeindex
+layerkey(rule::Rule) = rule.layerkey
 
 # Layer precalcs
 precalclayer(::AbstractMatrix, rule::Rule, data) = rule
 precalclayer(::AbstractArray{<:Any,3}, rule::Rule, data) =
-    @set rule.timeindex = precalc_timeindex(layer(rule), rule, data)
+    @set rule.timeindex = precalc_timeindex(layer(rule, data), rule, data)
 
 """
     precalc_timeindex(layer, index, t)
@@ -45,8 +49,7 @@ end
 #     # Time position is centered in the current frame, not at the start.
 #     # this allows interpolating between two positions.
 #     # Needs multiple oneunit() to avoid promotion to Float64
-#     t_float = t * (sim_timestep / layer_timestep) + 0.5
-#     t_int = unsafe_trunc(Int64, t_float)
+#     t_float = t * (sim_timestep / layer_timestep) + 0.5 #     t_int = unsafe_trunc(Int64, t_float)
 #     frac = t_float - t_int
 #     len = size(layers, Time)
 #     t1 = cyclic(t_int, len)
@@ -78,10 +81,10 @@ DynamicGrids.stoptime(A::AbstractArray) = lastindex(A, 3)
 
 
 """
-    LayerCopy(layer, timeindex)
+    LayerCopy(layerkey, timeindex)
 
-Simple rule that copies a layer to a grid over time. This can be used for
-comparing simulation dynamics to layer dynamics.
+A simple rule that copies a layer to a grid over time. 
+This can be used for comparing simulation dynamics to layer dynamics.
 
 $(FIELDDOCTABLE)
 """
@@ -92,4 +95,4 @@ DynamicGrids.applyrule(rule::LayerCopy, data, state, index, args...) =
     layer(rule, data, index)
 
 DynamicGrids.precalcrules(rule::LayerCopy, data) =
-    precalclayer(layer(rule), rule, data)
+    precalclayer(layer(rule, data), rule, data)

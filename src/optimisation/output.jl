@@ -1,18 +1,21 @@
 using DynamicGrids: normalise, minval, maxval, ismasked, rgb
 
 """
-    RegionOutput(init; tspan, objective)
+    RegionOutput(init; tspan, objective, [mask], [extent])
 
 A minimal low-memory output that stores the inhabited regions for
 each timestep, as required by the [`RegionObjective`](@ref).
 """
-DynamicGrids.@Output mutable struct RegionOutput{O} <: Output{T}
+mutable struct RegionOutput{T,F<:AbstractVector{T},E,O} <: Output{T}
+    frames::F
+    running::Bool
+    extent::E
     objective::O
 end
-RegionOutput(init; mask=nothing, tspan, objective, kwargs...) = begin
+RegionOutput(; frames, running, extent, objective, kwargs...) = begin
     predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
     running = false
-    RegionOutput(predictions, init, mask, running, tspan, objective)
+    RegionOutput(predictions, running, extent, objective)
 end
 
 objective(o::RegionOutput) = o.objective

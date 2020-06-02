@@ -31,9 +31,9 @@ import Base: getindex, setindex!, lastindex, size, length, push!
 
 import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
-       radius, gridsize, mask, overflow, cellsize, ruleset, inbounds,
+       radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
        currenttime, currenttimestep, starttime, stoptime, timestep, tspan,
-       buffer, WritableGridData
+       buffer, WritableGridData, aux, unwrap
 
 import ConstructionBase: constructorof
 
@@ -48,7 +48,7 @@ export KernelFormulation, ExponentialKernel
 export DistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
 
 export AbstractInwardsDispersal, InwardsBinaryDispersal, InwardsPopulationDispersal,
-       PoissonInwardsPopulationDispersal, SwitchedInwardsPopulationDispersal
+       SwitchedInwardsPopulationDispersal
 
 export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDispersal
 

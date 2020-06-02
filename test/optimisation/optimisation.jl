@@ -17,9 +17,9 @@ end
 
 @testset "SimpleObjective" begin
 
-    init =  [1.0 0.0 1.0
-             0.0 0.0 0.0
-             1.0 1.0 0.0]
+    init = [1.0 0.0 1.0
+            0.0 0.0 0.0
+            1.0 1.0 0.0]
 
     target = [8.0 0.0 8.0
               0.0 0.0 0.0
@@ -30,7 +30,7 @@ end
     ngroups = 1
     groupsize = 1
     rate = log(2.0)
-    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = rate))
+    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate=rate))
     output = ArrayOutput(init; tspan=tspan)
     sim!(output, ruleset)
 
@@ -41,7 +41,7 @@ end
     objective = SimpleObjective(target)
     loss = LogitDistLoss()
 
-    p = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize, tspan);
+    p = Parametriser(ruleset, output, objective, identity, loss, ngroups, groupsize);
     @test DynamicGrids.ruleset(p::Parametriser) === ruleset
     @test Dispersal.output(p::Parametriser) === output
     @test Dispersal.transform(p::Parametriser) == p.transform
@@ -90,14 +90,14 @@ end
 
     @testset "SingleCoreReplicates" begin
         threading = SingleCoreReplicates()
-        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tspan, threading)
+        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, threading)
         parametriser(flatten(ruleset))
         res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
     end
 
     @testset "ThreadedReplicates" begin
         threading = ThreadedReplicates()
-        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, tspan, threading)
+        parametriser = Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize, threading)
         parametriser(flatten(ruleset))
         res = Optim.optimize(parametriser, [log(1.8)], [log(2.2)], [log(1.85)], SAMIN(), Optim.Options(iterations=1000))
     end
