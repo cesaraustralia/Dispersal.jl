@@ -71,7 +71,7 @@ export ThreadedReplicates, DistributedReplicates, SingleCoreReplicates
 export targets, predictions
 
 
-const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Limits),
+const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Bounds),
                                     (description, default, bounds);
                                     truncation=(100,40,100))
 

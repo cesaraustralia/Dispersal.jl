@@ -33,7 +33,7 @@ DynamicGrids.storegrid!(o::RegionOutput, data::DynamicGrids.SimData) = begin
     end
 end
 
-DynamicGrids.initgrids!(o::RegionOutput, init) = begin
+DynamicGrids.initgrids!(o::RegionOutput, init::AbstractArray) = begin
     obj = objective(o)
     step = stepfromframe(obj, 1)
     pred = predictions(obj, o)
@@ -42,6 +42,8 @@ DynamicGrids.initgrids!(o::RegionOutput, init) = begin
         storeprediction!(init, o, step, pred, I)
     end
 end
+DynamicGrids.initgrids!(o::RegionOutput, init::NamedTuple) =
+    DynamicGrids.initgrids!(o, first(init))
 
 """
 Set region presence status in non-zero blocks
