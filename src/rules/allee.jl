@@ -15,5 +15,5 @@ $(FIELDDOCTABLE)
     minfounders::MF | 5.0     | true    | (1.0, 200.0) | "Minimum founding individuals required to to start an ongoing population"
 end
 
-@inline applyrule(model::AlleeExtinction, data, state, args...) =
+@inline applyrule(data, model::AlleeExtinction, state, args...) =
     (state >= model.minfounders ? state : zero(state))

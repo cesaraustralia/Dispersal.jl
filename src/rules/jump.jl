@@ -21,7 +21,7 @@ $(FIELDDOCTABLE)
 end
 
 # TODO update this and test
-@inline applyrule!(rule::AbstractJumpDispersal{R,W}, data, state, index
+@inline applyrule!(data, rule::AbstractJumpDispersal{R,W}, state, index
                   ) where {R,W} = begin
     # Ignore empty cells
     state > zero(state) || return state

@@ -49,7 +49,7 @@ $(FIELDDOCTABLE)
 """
 @InstrinsicGrowthRate struct ExactExponentialGrowth{R,W} <: GrowthRule{R,W} end
 
-@inline applyrule(rule::ExactExponentialGrowth, data, population, args...) = begin
+@inline applyrule(data, rule::ExactExponentialGrowth, population, args...) = begin
     population > zero(population) || return zero(population)
     population * exp(rule.intrinsicrate * rule.nsteps)
 end
@@ -60,7 +60,7 @@ $(FIELDDOCTABLE)
 """
 @InstrinsicGrowthRate @CarryCap struct ExactLogisticGrowth{R,W} <: GrowthRule{R,W} end
 
-@inline applyrule(rule::ExactLogisticGrowth, data, population, index, args...) = begin
+@inline applyrule(data, rule::ExactLogisticGrowth, population, index, args...) = begin
     population > zero(population) || return zero(population)
     @fastmath (population * rule.carrycap) / (population + (rule.carrycap - population) *
                                          exp(-rule.intrinsicrate * rule.nsteps))
@@ -72,7 +72,7 @@ $(FIELDDOCTABLE)
 """
 @Timestep @Layers struct ExactExponentialGrowthMap{R,W} <: GrowthMapRule{R,W} end
 
-@inline applyrule(rule::ExactExponentialGrowthMap, data, population, index, args...) = begin
+@inline applyrule(data, rule::ExactExponentialGrowthMap, population, index, args...) = begin
     population > zero(population) || return zero(population)
     intrinsicrate = layer(rule, data, index)
     @fastmath population * exp(intrinsicrate * rule.nsteps)
@@ -86,7 +86,7 @@ $(FIELDDOCTABLE)
 """
 @Layers @Timestep @CarryCap struct ExactLogisticGrowthMap{R,W} <: GrowthMapRule{R,W} end
 
-@inline applyrule(rule::ExactLogisticGrowthMap, data, population, index, args...) = begin
+@inline applyrule(data, rule::ExactLogisticGrowthMap, population, index, args...) = begin
     population > zero(population) || return zero(population)
     @inbounds intrinsicrate = layer(rule, data, index)
     if intrinsicrate > zero(intrinsicrate)
@@ -105,5 +105,5 @@ $(FIELDDOCTABLE)
     threshold::ST | 0.5 | true  | (0.0, 1.0) | "Minimum viability index."
 end
 
-@inline applyrule(rule::MaskGrowthMap, data, population, index, args...) =
+@inline applyrule(data, rule::MaskGrowthMap, population, index, args...) =
     layer(rule, data, index) >= rule.threshold ? population : zero(population)

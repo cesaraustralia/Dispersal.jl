@@ -27,7 +27,7 @@ $(FIELDDOCTABLE)
 @Probabilistic @Kernel struct InwardsBinaryDispersal{R,W} <: InwardsDispersal{R,W} end
 
 
-@inline applyrule(rule::InwardsBinaryDispersal, data, state::Integer, index) = begin
+@inline applyrule(data, rule::InwardsBinaryDispersal, state::Integer, index) = begin
     # Combine neighborhood cells into a single scalar
     s = sum(neighborhood(rule))
 
@@ -51,7 +51,7 @@ $(FIELDDOCTABLE)
 """
 @Kernel struct InwardsPopulationDispersal{R,W} <: InwardsDispersal{R,W} end
 
-@inline applyrule(rule::InwardsPopulationDispersal, data, state::AbstractFloat, index) =
+@inline applyrule(data, rule::InwardsPopulationDispersal, state::AbstractFloat, index) =
     disperse(neighborhood(rule))
 
 
@@ -59,7 +59,7 @@ $(FIELDDOCTABLE)
     threshold::Th
 end
 
-@inline applyrule(rule::SwitchedInwardsPopulationDispersal, data, state::AbstractFloat,
+@inline applyrule(data, rule::SwitchedInwardsPopulationDispersal, state::AbstractFloat,
                   index) =
     if layer(rule, data, index) > rule.threshold
         disperse(neighborhood(rule))

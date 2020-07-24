@@ -241,7 +241,7 @@ end
 
 # DynamicGrids Interface ###################################################
 
-@inline applyrule!(rule::HumanDispersal{R,W}, data, population, index) where {R,W} = begin
+@inline applyrule!(data, rule::HumanDispersal{R,W}, population, index) where {R,W} = begin
     population == zero(population) && return
     dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
     ismissing(dispersalprob) && return
@@ -308,7 +308,7 @@ disperse2dest!(data::DynamicGrids.WritableGridData, rule, shortlist, maybedisper
     dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
     # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
     if !DynamicGrids.ismasked(data, dest_index...) &&
-        DynamicGrids.isinbounds(dest_index, gridsize(data), overflow(data))
+        DynamicGrids.isinbounds(dest_index, data)
         # Disperse to the cell.
         data[dest_index...] += maybedispersing
         maybedispersing

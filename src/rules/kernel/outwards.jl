@@ -10,7 +10,7 @@ when a large proportion of the grid is occupied.
 """
 abstract type OutwardsDispersal{R,W} <: ManualNeighborhoodRule{R,W} end
 
-@inline applyrule!(rule::OutwardsDispersal{R,W}, data, state, index) where {R,W} = begin
+@inline applyrule!(data, rule::OutwardsDispersal{R,W}, state, index) where {R,W} = begin
     state == zero(state) && return
     hood = neighborhood(rule)
     sum = mapsetneighbor!(data[W], hood, rule, state, index)

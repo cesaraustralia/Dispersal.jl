@@ -91,7 +91,7 @@ $(FIELDDOCTABLE)
 @Layers struct LayerCopy{R,W} <: Rule{R,W} end
 LayerCopy(args...) = LayerCopy{Tuple{},:_default_,map(typeof,args)...}(args...)
 
-DynamicGrids.applyrule(rule::LayerCopy, data, state, index, args...) =
+DynamicGrids.applyrule(data, rule::LayerCopy, state, index, args...) =
     layer(rule, data, index)
 
 DynamicGrids.precalcrules(rule::LayerCopy, data) =

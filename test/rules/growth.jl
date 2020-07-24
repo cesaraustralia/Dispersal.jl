@@ -155,11 +155,11 @@ end
     ruleset = Ruleset(maskrule)
     data = SimData(extent(output), ruleset)
 
-    @test applyrule(maskrule, data, 5, (1, 1)) === 0
-    @test applyrule(maskrule, data, 5, (2, 2)) === 5
+    @test applyrule(data, maskrule, 5, (1, 1)) === 0
+    @test applyrule(data, maskrule, 5, (2, 2)) === 5
 
-    @test applyrule(maskrule, data, 5.0, (1, 1)) === 0.0
-    @test applyrule(maskrule, data, 5.0, (2, 2)) === 5.0
+    @test applyrule(data, maskrule, 5.0, (1, 1)) === 0.0
+    @test applyrule(data, maskrule, 5.0, (2, 2)) === 5.0
 
     sim!(output, Ruleset(maskrule))
 

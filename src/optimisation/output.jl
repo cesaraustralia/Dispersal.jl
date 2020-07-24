@@ -23,8 +23,8 @@ objective(o::RegionOutput) = o.objective
 
 # RegionObjective and supporting types/methods
 
-DynamicGrids.storegrid!(o::RegionOutput, data::DynamicGrids.SimData) = begin
-    f = DynamicGrids.gridindex(o, data)
+DynamicGrids.storeframe!(o::RegionOutput, data::DynamicGrids.SimData) = begin
+    f = DynamicGrids.frameindex(o, data)
     obj = objective(o)
     step = stepfromframe(obj, f)
     pred = predictions(obj, o)
