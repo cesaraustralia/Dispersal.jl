@@ -73,11 +73,11 @@ cyclic_index(i::Integer, len::Integer) =
 DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, TimeDim))
 DynamicGrids.timestep(A::AbstractArray) = 1
 
-DynamicGrids.starttime(A::AbstractDimensionalArray) = first(dims(A, TimeDim))
-DynamicGrids.starttime(A::AbstractArray) = firstindex(A, 3)
+starttime(A::AbstractDimensionalArray) = first(dims(A, TimeDim))
+starttime(A::AbstractArray) = firstindex(A, 3)
 
-DynamicGrids.stoptime(A::AbstractDimensionalArray) = last(dims(A, TimeDim))
-DynamicGrids.stoptime(A::AbstractArray) = lastindex(A, 3)
+stoptime(A::AbstractDimensionalArray) = last(dims(A, TimeDim))
+stoptime(A::AbstractArray) = lastindex(A, 3)
 
 
 """

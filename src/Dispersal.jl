@@ -32,7 +32,7 @@ import Base: getindex, setindex!, lastindex, size, length, push!
 import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
-       currenttime, currenttimestep, starttime, stoptime, timestep, tspan,
+       currenttime, currenttimestep, timestep, tspan,
        buffer, WritableGridData, aux, unwrap
 
 import ConstructionBase: constructorof
