@@ -254,6 +254,7 @@ end
     =#
     dispersed = disperse!(data[W], mode(rule), rule, shortlist, dispersalprob, population, index)
     data[W][index...] -= dispersed
+    return
 end
 
 abstract type TransportMode end
