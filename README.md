@@ -20,7 +20,7 @@ provided set. See the documentation for examples and the lists of included
 rules.
 
 [DynamicGridsInteract](https://github.com/cesaraustralia/DynamicGridsInteract.jl)
-provides an interactive interface for atom and jupyter notbooks (InteractOuput),
+provides an interactive interface for atom and jupyter notbooks (InteractOutput),
 desktop (ElectronOutput) and online web applications (ServerOuput), 
 where complete models, including your custom rules, can be manipulated during live
 simulations.
