@@ -28,7 +28,6 @@ using DimensionalData: Time
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
-
 import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
@@ -61,6 +60,10 @@ export ExactExponentialGrowth, ExactLogisticGrowth
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
+export SurvLogLogistic, SurvLogLogisticMap
+
+export MaskSurvMap
+
 export LayerCopy
 
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
@@ -92,6 +95,7 @@ include("rules/growth.jl")
 include("rules/human.jl")
 include("rules/jump.jl")
 include("rules/allee.jl")
+include("rules/survival.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
 include("optimisation/output.jl")
