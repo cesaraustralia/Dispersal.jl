@@ -59,7 +59,9 @@ end
     rule = Ruleset(SurvLogLogisticMap(layerkey=Val(:suit), LC50=10))
     sim!(output, rule)
 
-    @test output[1] == test1
+    @test output[1] == [10.0 40.0 70.0;
+                        20.0 50.0 80.0;
+                        30.0 60.0 90.0]
     @test output[2] ≈ [4.42688  17.7075  30.9882;
                        9.19701  22.9925  36.7881;
                       14.4803   28.9607  43.441] atol=1e-4
@@ -82,8 +84,8 @@ end
         1.0 1.0 1.0]
 
     test2 = [0.0 0.0 1.0;
-        1.0 1.0 0.0;
-        0.0 0.0 0.0]
+            1.0 1.0 0.0;
+            0.0 0.0 0.0]
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
     maskrule = MaskSurvMap(layerkey=Val(:suit), threshold=1.1)
