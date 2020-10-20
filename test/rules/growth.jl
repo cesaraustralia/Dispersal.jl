@@ -2,20 +2,57 @@ using DynamicGrids, Dispersal, Test, Unitful, Dates
 using DynamicGrids: applyrule, SimData, extent
 using Unitful: d
 
+
+@testset "discrete growth" begin
+    init =  [1.0 4.0 7.0;
+             2.0 5.0 8.0;
+             3.0 6.0 9.0]
+    test1 = init
+    test2 = init.*2.0 
+    test3 = init.*2.0.^2
+
+    output = ArrayOutput(init; tspan=1:3)
+    rule = Ruleset(DiscreteGrowth(intrinsicrate=2.0))
+    sim!(output, rule)
+
+    @test output[1] == test1
+    @test output[2] == test2
+    @test output[3] == test3
+end
+
+@testset "discrete growth map" begin
+    init =  [1.0 4.0 7.0;
+             2.0 5.0 8.0;
+             3.0 6.0 9.0]
+    suit =  [1.0 1.0 2.0;
+             2.0 1.0 0.5;
+             1.0 1.0 0.5]
+
+    output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
+    rule = Ruleset(DiscreteGrowthMap(layerkey=Val(:suit)))
+    sim!(output, rule)
+
+    @test output[1] == init
+    @test output[2] == init.*suit
+    @test output[3] == init.*suit.^2
+end
+
 @testset "exponential growth" begin
     init =  [1.0 4.0 7.0;
              2.0 5.0 8.0;
              3.0 6.0 9.0]
-
-    test1 = [ 1.0  4.0  7.0;
-              2.0  5.0  8.0;
-              3.0  6.0  9.0]
-    test2 = [ 2.0  8.0 14.0;
-              4.0 10.0 16.0;
-              6.0 12.0 18.0]
-    test3 = [ 4.0 16.0 28.0;
-              8.0 20.0 32.0;
-             12.0 24.0 36.0]
+    test1 = init.*exp(log(2.0)*0)
+    # test1 = [ 1.0  4.0  7.0;
+    #           2.0  5.0  8.0;
+    #           3.0  6.0  9.0]
+    test2 = init.*exp(log(2.0)*1)   
+    # test2 = [ 2.0  8.0 14.0;
+    #           4.0 10.0 16.0;
+    #           6.0 12.0 18.0]
+    test3 = init.*exp(log(2.0)*2)          
+    # test3 = [ 4.0 16.0 28.0;
+    #           8.0 20.0 32.0;
+    #          12.0 24.0 36.0]
 
     output = ArrayOutput(init; tspan=1:3)
     rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)))
