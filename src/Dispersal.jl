@@ -28,6 +28,7 @@ using DimensionalData: Time
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
+
 import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
@@ -51,7 +52,6 @@ export AbstractInwardsDispersal, InwardsBinaryDispersal, InwardsPopulationDisper
 
 export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDispersal
 
-
 export AlleeExtinction, JumpDispersal, HumanDispersal
 
 export BatchGroups, HeirarchicalGroups
@@ -59,11 +59,14 @@ export BatchGroups, HeirarchicalGroups
 export ExactExponentialGrowth, ExactLogisticGrowth
 
 export DiscreteGrowth, DiscreteGrowthMap
+
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
 export SurvLogLogistic, SurvLogLogisticMap
 
 export MaskSurvMap
+
+export SelectionGradientSurv, SelectionGradientSurvMap
 
 export LayerCopy
 
@@ -97,6 +100,7 @@ include("rules/human.jl")
 include("rules/jump.jl")
 include("rules/allee.jl")
 include("rules/survival.jl")
+include("rules/selectionGradient.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
 include("optimisation/output.jl")
