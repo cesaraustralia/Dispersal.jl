@@ -55,6 +55,18 @@ $(FIELDDOCTABLE)
 end
 
 """
+Simple discrete growth rate.
+$(FIELDDOCTABLE)
+"""
+@InstrinsicGrowthRate struct DiscreteGrowth{R,W} <: GrowthRule{R,W} end
+
+@inline applyrule(data, rule::DiscreteGrowth, population, args...) = begin
+    population > zero(population) || return zero(population)
+    rule.intrinsicrate * population
+end
+
+
+"""
 Simple fixed logistic growth rate using exact solution
 $(FIELDDOCTABLE)
 """
@@ -65,6 +77,20 @@ $(FIELDDOCTABLE)
     @fastmath (population * rule.carrycap) / (population + (rule.carrycap - population) *
                                          exp(-rule.intrinsicrate * rule.nsteps))
 end
+
+
+"""
+Simple discrete growth rate.
+$(FIELDDOCTABLE)
+"""
+@Layers struct DiscreteGrowthMap{R,W} <: GrowthMapRule{R,W} end
+
+@inline applyrule(data, rule::DiscreteGrowthMap, population, index, args...) = begin
+    population > zero(population) || return zero(population)
+    intrinsicrate = layer(rule, data, index)
+    @fastmath intrinsicrate * population
+end
+
 
 """
 Exponential growth based on a growth rate layer using exact solution.
