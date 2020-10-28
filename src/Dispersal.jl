@@ -68,6 +68,7 @@ export MaskSurvMap
 
 export SelectionGradientSurv, SelectionGradientSurvMap
 
+export DeltaAlleleFrequencySurv, DeltaAlleleFrequencySurvMap, DeltaAlleleFrequencySurvMap_noFastmath
 export LayerCopy
 
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
