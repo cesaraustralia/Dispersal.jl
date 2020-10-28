@@ -96,3 +96,89 @@ end
     sim!(output, ruleset)
     @test output == [[0 0], [3 4], [1 2]]
 end
+
+
+@testset "Layer on intrinsic growth rate" begin
+    
+    popSizeInit = [ 1.0 4.0 7.0;
+                    2.0 5.0 8.0;
+                    3.0 6.0 9.0]
+
+    intrinsicRate = cat([ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0],
+                        [ 2.0 2.0 2.0;
+                        2.0 2.0 2.0;
+                        2.0 2.0 2.0],
+                        [ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0]; dims=3)
+
+    popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(intrinsicRate=intrinsicRate,));
+    growthRule = Ruleset(DiscreteGrowthMap(layerkey=:intrinsicRate));
+    sim!(popSizeGrids, growthRule);
+    @test popSizeGrids[1] == intrinsicRate[:,:,1] .* popSizeInit
+    @test popSizeGrids[2] == intrinsicRate[:,:,2] .* popSizeGrids[1]
+    @test popSizeGrids[3] == intrinsicRate[:,:,3] .* popSizeGrids[2]
+    @test popSizeGrids[4] == intrinsicRate[:,:,1] .* popSizeGrids[3]
+    @test popSizeGrids[5] == intrinsicRate[:,:,2] .* popSizeGrids[4]
+    @test popSizeGrids[6] == intrinsicRate[:,:,3] .* popSizeGrids[5]
+
+
+    popSizeInit = [ 1.0 4.0 7.0;
+                    2.0 5.0 8.0;
+                    3.0 6.0 9.0]
+
+    intrinsicRate = cat([ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0],
+                        [ 2.0 2.0 2.0;
+                        2.0 2.0 2.0;
+                        2.0 2.0 2.0],
+                        [ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0]; dims=3)
+
+    popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(intrinsicRate=intrinsicRate,));
+    growthRule = Ruleset(ExactExponentialGrowthMap(layerkey=:intrinsicRate));
+    sim!(popSizeGrids, growthRule);
+    @test popSizeGrids[1] == popSizeInit
+    @test popSizeGrids[2] == popSizeGrids[1].*exp.(intrinsicRate[:,:,2])
+    @test popSizeGrids[3] == popSizeGrids[2].*exp.(intrinsicRate[:,:,3])
+    @test popSizeGrids[4] == popSizeGrids[3].*exp.(intrinsicRate[:,:,1])
+    @test popSizeGrids[5] == popSizeGrids[4].*exp.(intrinsicRate[:,:,2])
+    @test popSizeGrids[6] == popSizeGrids[5].*exp.(intrinsicRate[:,:,3])
+
+end
+
+@testset "Test double layer on intrinsic growth rate and carying capacity" begin
+    popSizeInit = [ 1.0 4.0 7.0;
+                    2.0 5.0 8.0;
+                    3.0 6.0 9.0]
+
+    intrinsicRate = cat([ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0],
+                        [ 2.0 2.0 2.0;
+                        2.0 2.0 2.0;
+                        2.0 2.0 2.0],
+                        [ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0]; dims=3)
+
+    carryingCapacity = cat([ 10.0 10.0 10.0;
+                            10.0 10.0 10.0;
+                            10.0 10.0 10.0],
+                            [ 10.0 10.0 10.0;
+                            10.0 10.0 10.0;
+                            10.0 10.0 10.0],
+                            [ 10.0 10.0 10.0;
+                            10.0 10.0 10.0;
+                            10.0 10.0 10.0]; dims=3)
+
+    popParameter = cat(intrinsicRate, carryingCapacity; dims = 4)
+
+    popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(popParameter=popParameter,));
+    growthRule = Ruleset(ExactLogisticGrowthMap2(layerkey=:popParameter));
+    sim!(popSizeGrids, growthRule);
+end
