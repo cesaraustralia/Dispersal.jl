@@ -105,7 +105,6 @@ end
 end
 
 
-
 @testset "Test double layers ExactLogisticGrowthMap2" begin
     popSizeInit = [ 1.0 4.0 7.0;
                     2.0 5.0 8.0;
@@ -128,7 +127,7 @@ end
 
     survParameter = cat(Exposure, LC50; dims = 4)
 
-    popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(popParameter=popParameter,));
-    growthRule = Ruleset(SurvLogLogisticMap2(layerkey=:popParameter));
-    sim!(popSizeGrids, growthRule);
+    popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(survParameter=survParameter,));
+    survRule = Ruleset(SurvLogLogisticMap2(layerkey=:survParameter));
+    sim!(popSizeGrids, survRule);
 end
