@@ -68,6 +68,7 @@ export MaskSurvMap
 
 export SelectionGradientSurv, SelectionGradientSurvMap
 
+export SelectionGradient1locusSurv, SelectionGradient1locusSurvMap, LandeVariable
 export DeltaAlleleFrequencySurv, DeltaAlleleFrequencySurvMap, DeltaAlleleFrequencySurvMap_noFastmath
 export MatingPopulation
 export LayerCopy
@@ -102,7 +103,9 @@ include("rules/human.jl")
 include("rules/jump.jl")
 include("rules/allee.jl")
 include("rules/survival.jl")
+include("rules/alleleFrequency.jl")
 include("rules/selectionGradient.jl")
+include("rules/matingPopulation.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
 include("optimisation/output.jl")
