@@ -60,9 +60,9 @@ export ExactExponentialGrowth, ExactLogisticGrowth
 
 export DiscreteGrowth, DiscreteGrowthMap
 
-export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
+export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap, ExactLogisticGrowthMap2
 
-export SurvLogLogistic, SurvLogLogisticMap
+export SurvLogLogistic, SurvLogLogisticMap, SurvLogLogisticMap2
 
 export MaskSurvMap
 
