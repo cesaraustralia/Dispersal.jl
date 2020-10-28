@@ -133,3 +133,24 @@ end
 
 @inline applyrule(data, rule::MaskGrowthMap, population, index, args...) =
     layer(rule, data, index) >= rule.threshold ? population : zero(population)
+
+
+"""
+Logistic growth based on a growth rate layer, using exact solution.
+
+$(FIELDDOCTABLE)
+"""
+
+@Layers @Timestep struct ExactLogisticGrowthMap2{R,W} <: GrowthMapRule{R,W} end
+
+@inline applyrule(data, rule::ExactLogisticGrowthMap2, population, timeindex, args...) = begin
+    population > zero(population) || return zero(population)
+    intrinsicrate = layer(rule, data, timeindex, 1)
+    carrycap = layer(rule, data, timeindex, 2)
+    if intrinsicrate > zero(intrinsicrate)
+        @fastmath (population * carrycap) / (population + (carrycap - population) *
+                                             exp(-intrinsicrate * rule.nsteps))
+    else
+        @fastmath population * exp(intrinsicrate * rule.nsteps)
+    end
+end

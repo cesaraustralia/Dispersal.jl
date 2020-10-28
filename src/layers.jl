@@ -16,9 +16,14 @@ function layer end
 layer(rule::Rule, data) = aux(data)[unwrap(layerkey(rule))]
 layer(rule::Rule, data, I) =
     layer(layer(rule, data), I, timeindex(rule))
+layer(rule::Rule, data, I, L) =
+    layer(layer(rule, data), I, timeindex(rule), L)
+
 layer(l::Matrix, I, timeindex) = l[I...]
 layer(l::AbstractArray{T,3}, I, timeindex) where T =
     l[I..., timeindex]
+layer(l::AbstractArray{T,4}, I, timeindex, layerindex) where T =
+    l[I..., timeindex, layerindex]
 
 timeindex(rule::Rule) = rule.timeindex
 layerkey(rule::Rule) = rule.layerkey
@@ -27,7 +32,8 @@ layerkey(rule::Rule) = rule.layerkey
 precalclayer(::AbstractMatrix, rule::Rule, data) = rule
 precalclayer(::AbstractArray{<:Any,3}, rule::Rule, data) =
     @set rule.timeindex = precalc_timeindex(layer(rule, data), rule, data)
-
+precalclayer(::AbstractArray{<:Any,4}, rule::Rule, data) =
+    @set rule.timeindex = precalc_timeindex(layer(rule, data), rule, data)
 """
     precalc_timeindex(layer, index, t)
 
@@ -67,7 +73,6 @@ cyclic_index(i::Integer, len::Integer) =
         i
     end
 
-
 # Get time step/start/stop from AbstractDimensionalArray
 # Integer fallbacks are for other array types is the indices of dim 3
 DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, TimeDim))
@@ -79,7 +84,6 @@ starttime(A::AbstractArray) = firstindex(A, 3)
 stoptime(A::AbstractDimensionalArray) = last(dims(A, TimeDim))
 stoptime(A::AbstractArray) = lastindex(A, 3)
 
-
 """
     LayerCopy(layerkey, timeindex)
 
@@ -90,6 +94,9 @@ $(FIELDDOCTABLE)
 """
 @Layers struct LayerCopy{R,W} <: Rule{R,W} end
 LayerCopy(args...) = LayerCopy{Tuple{},:_default_,map(typeof,args)...}(args...)
+
+DynamicGrids.applyrule(data, rule::LayerCopy, state, index, layerindex, args...) =
+    layer(rule, data, index, layerindex)
 
 DynamicGrids.applyrule(data, rule::LayerCopy, state, index, args...) =
     layer(rule, data, index)

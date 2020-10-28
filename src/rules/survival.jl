@@ -74,6 +74,21 @@ $(FIELDDOCTABLE)
     @fastmath population * ( 1/ (1 + (exposure / rule.LC50)^rule.hillcoefficient) )
 end
 
+
+"""
+LogLogistic survival based on an exposure layer
+$(FIELDDOCTABLE)
+"""
+@Layers @HillCoefficient struct SurvLogLogisticMap2{R,W} <: SurvMapRule{R,W} end
+
+@inline applyrule(data, rule::SurvLogLogisticMap2, population, index, args...) = begin
+    population > zero(population) || return zero(population)
+    exposure = layer(rule, data, index,1)
+    LC50 = layer(rule, data, index,2)
+    @fastmath population * ( 1/ (1 + (exposure / LC50)^rule.hillcoefficient) )
+end
+
+
 """
 Simple layer mask. Values below a certain threshold are replaced with zero.
 $(FIELDDOCTABLE)
