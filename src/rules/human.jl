@@ -241,19 +241,19 @@ end
 
 # DynamicGrids Interface ###################################################
 
-@inline applyrule!(data, rule::HumanDispersal{R,W}, population, index) where {R,W} = begin
+@inline applyrule!(data, rule::HumanDispersal{R,W}, population, cellindex) where {R,W} = begin
     population == zero(population) && return
-    dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
+    dispersalprob = rule.human_pop[cellindex...] * rule.dispersalperpop
     ismissing(dispersalprob) && return
-    shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
+    shortlist = rule.dest_shortlists[downsample_index(cellindex, rule.scale)...]
     #ismissing(shortlist) && return
 
     #= This formulation introduces a bias where total_dispersers is
     close to max_disersers, for example, for chunks much less than max chunk
     chunks size will allways equal the max chunk size, so the amount wont be random.
     =#
-    dispersed = disperse!(data[W], mode(rule), rule, shortlist, dispersalprob, population, index)
-    data[W][index...] -= dispersed
+    dispersed = disperse!(data[W], mode(rule), rule, shortlist, dispersalprob, population, cellindex)
+    data[W][cellindex...] -= dispersed
     return
 end
 
@@ -264,7 +264,7 @@ abstract type TransportMode end
 end
 
 @inline disperse!(data::WritableGridData, mode::HeirarchicalGroups, rule::HumanDispersal,
-                  shortlist, dispersalprob, population, index) = begin
+                  shortlist, dispersalprob, population, cellindex) = begin
     dispersed = zero(population)
     nevents = rand(Binomial(human_pop, dispersalperpop))
     for i in 1:nevents
@@ -279,7 +279,7 @@ end
 struct BatchGroups <: TransportMode end
 
 @inline disperse!(data::WritableGridData, mode::BatchGroups, rule::HumanDispersal,
-                  shortlist, dispersalprob, population, index) = begin
+                  shortlist, dispersalprob, population, cellindex) = begin
     # Find the expected number of dispersers given population and dispersal prob
     total_dispersers = trunc(Int, min(population * dispersalprob, population))
 

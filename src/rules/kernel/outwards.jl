@@ -10,11 +10,11 @@ when a large proportion of the grid is occupied.
 """
 abstract type OutwardsDispersal{R,W} <: ManualNeighborhoodRule{R,W} end
 
-@inline applyrule!(data, rule::OutwardsDispersal{R,W}, state, index) where {R,W} = begin
+@inline applyrule!(data, rule::OutwardsDispersal{R,W}, state, cellindex) where {R,W} = begin
     state == zero(state) && return
     hood = neighborhood(rule)
-    sum = mapsetneighbor!(data[W], hood, rule, state, index)
-    update_state!(data[W], hood, state, index, sum)
+    sum = mapsetneighbor!(data[W], hood, rule, state, cellindex)
+    update_state!(data[W], hood, state, cellindex, sum)
     return
 end
 
@@ -46,9 +46,9 @@ $(FIELDDOCTABLE)
 """
 @Kernel struct OutwardsPopulationDispersal{R,W} <: OutwardsDispersal{R,W} end
 
-@inline update_state!(grid, hood, state, index, sum) = 
-    @inbounds return grid[index...] -= sum
-@inline update_state!(grid, hood, state::Bool, index, sum) = state
+@inline update_state!(grid, hood, state, cellindex, sum) = 
+    @inbounds return grid[cellindex...] -= sum
+@inline update_state!(grid, hood, state::Bool, cellindex, sum) = state
 
 @inline setneighbor!(data::WritableGridData, hood::Neighborhood, rule::OutwardsPopulationDispersal, 
                      state::AbstractFloat, hood_index, dest_index) = begin

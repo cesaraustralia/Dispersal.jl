@@ -21,7 +21,7 @@ $(FIELDDOCTABLE)
 end
 
 # TODO update this and test
-@inline applyrule!(data, rule::AbstractJumpDispersal{R,W}, state, index
+@inline applyrule!(data, rule::AbstractJumpDispersal{R,W}, state, cellindex
                   ) where {R,W} = begin
     # Ignore empty cells
     state > zero(state) || return state
@@ -33,7 +33,7 @@ end
     intspot = round(Int, rule.spotrange)
     rnge = -intspot:intspot
     jump = (rand(rnge), rand(rnge))
-    jumpdest, is_inbounds = inbounds(jump .+ index, gridsize(data), RemoveOverflow())
+    jumpdest, is_inbounds = inbounds(jump .+ cellindex, gridsize(data), RemoveOverflow())
 
     # Update spotted cell if it's on the grid
     if is_inbounds
