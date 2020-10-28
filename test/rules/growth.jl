@@ -203,3 +203,37 @@ end
     @test output[1] == test1
     @test output[2] == test2
 end
+
+
+
+@testset "Test double layers ExactLogisticGrowthMap2" begin
+    popSizeInit = [ 1.0 4.0 7.0;
+                    2.0 5.0 8.0;
+                    3.0 6.0 9.0]
+
+    intrinsicRate = cat([ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0],
+                        [ 2.0 2.0 2.0;
+                        2.0 2.0 2.0;
+                        2.0 2.0 2.0],
+                        [ 1.0 1.0 1.0;
+                        1.0 1.0 1.0;
+                        1.0 1.0 1.0]; dims=3)
+
+    carryingCapacity = cat([ 10.0 10.0 10.0;
+                            10.0 10.0 10.0;
+                            10.0 10.0 10.0],
+                            [ 10.0 10.0 10.0;
+                            10.0 10.0 10.0;
+                            10.0 10.0 10.0],
+                            [ 10.0 10.0 10.0;
+                            10.0 10.0 10.0;
+                            10.0 10.0 10.0]; dims=3)
+
+    popParameter = cat(intrinsicRate, carryingCapacity; dims = 4)
+
+    popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(popParameter=popParameter,));
+    growthRule = Ruleset(ExactLogisticGrowthMap2(layerkey=:popParameter));
+    sim!(popSizeGrids, growthRule);
+end

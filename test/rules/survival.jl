@@ -103,3 +103,32 @@ end
     @test output[1] == test1
     @test output[2] == test2
 end
+
+
+
+@testset "Test double layers ExactLogisticGrowthMap2" begin
+    popSizeInit = [ 1.0 4.0 7.0;
+                    2.0 5.0 8.0;
+                    3.0 6.0 9.0]
+
+    Exposure = repeat([0.0  0.0  0.0;
+                        20.0 20.0 20.0;
+                        50.0 50.0 50.0],
+                    inner=(1, 1,3))
+
+    LC50 = cat( [0.0 0.0 0.0;
+                0.0 0.0 0.0;
+                0.0 0.0 0.0],
+                [ 20.0 20.0 20.0;
+                20.0 20.0 20.0;
+                20.0 20.0 20.0],
+                [ 10.0 10.0 10.0;
+                10.0 10.0 10.0;
+                10.0 10.0 10.0]; dims=3)
+
+    survParameter = cat(Exposure, LC50; dims = 4)
+
+    popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(popParameter=popParameter,));
+    growthRule = Ruleset(SurvLogLogisticMap2(layerkey=:popParameter));
+    sim!(popSizeGrids, growthRule);
+end
