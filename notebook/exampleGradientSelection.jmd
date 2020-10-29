@@ -1,0 +1,1010 @@
+---
+title : Dispersal.jl example on resistance
+author : Virgile Baudrot
+date: `j import Dates; Dates.Date(Dates.now())`
+weave_options:
+  doctype: github
+  term: true
+  wrap: false
+---
+
+<!---
+> Find a way to handle bibliography on .jmd
+@(Huang et al. 2017)
+@(Haridas et Tenhumberg 2018)
+@(Crowder et Carrière 2009)
+-->
+
+
+# Population model
+
+We start with the simplest population model, with $t$ a generation (not a day).
+Therefore, from generation $t-1$, and its density $N_{t-1}$ the density at generation $N_t$ is given by the exponential model:
+$$
+N_t = w_t N_{t-1},
+$$
+where:
+
+* $N_t$ is the population density at generation $t$,
+* $w_t$ is the population growth rate.
+
+The population growth rate is made of (1) the fecundity rate, denoted $f_t$, and (2) the survival rate during generation $t$ for each 
+individuals stages, denoted $S_{stage}$.
+
+To define the fecundity $f$, we would need for instance:
+
+1. the per capita fecundity, which is the number of egg a female can produce (50 to 200 eggs layed in cluster)
+2. the sex ratio (usually 0.5)
+3. the overwintering mortality rate
+
+For the survival rate, ignoring ecological process:
+
+1. we may use the dose-response experiment,
+2. the ration $1/timespan$
+
+$$
+N_t = f \times  S_{eggs} \times S_{larvae} \times S_{pupae} \times S_{adults} \times N_{t-1}
+$$
+
+Let assume that pesticide target only larval stage, so $S_{larvae}$ is the survival rate that is targetted by pesticide.
+
+The simplest model of $S_{larvae}$ is given by a dose-response model (which is relevant considering a whole generation). 
+If we call $C_{ext}$ the exposure concentration, then:
+
+$$
+S_{larvae} = S^0_{larvae} \times \frac{1}{1+(C_{ext} / LC_{50})^H}
+$$
+
+And therefore the general model is simply:
+
+$$
+N_t = f \times  S_{eggs} \times S^0_{larvae} \times \frac{1}{1+(C_{ext} / LC_{50})^H} \times S_{pupae} \times S_{adults} \times N_{t-1}
+$$
+
+* $f$ fecondity rate,
+* $S_{stage}$ survival rate for each phenology stages
+* $S_{larvae}$ include dose-response to pesticide with the control survival rate $S^0_{larvae}$ and the dose-response survival rate
+
+The following graph show dynamic of population (over 50 generations) with a discrete growth rate of $f=2.2$ between generation
+and the same "sensitivity" to the "contaminant" $LC_{50} = 10.0$.
+The exposure profile is given by:
+
+```julia
+using Dispersal
+gridSize = 100;
+populationSize = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+output = ArrayOutput(populationSize; tspan=1:50,aux=(exposure=exposure,));
+
+growthRule = DiscreteGrowth(intrinsicrate=2.2);
+survivalRule = SurvLogLogisticMap(layerkey=Val(:exposure), LC50=10.0, hillcoefficient=0.1);
+ruleset = Ruleset(Chain(growthRule, survivalRule));
+sim!(output, ruleset);
+```
+
+
+```julia
+using Plots
+
+plot(
+    heatmap(populationSize,
+            title = "Population size",
+            c = cgrad(:roma, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (1,2)
+    )
+```
+The resulting populations sequence is given in these graphics:
+
+```julia; fig_height =10
+plt = [ heatmap(
+            output[i],
+            title = "step $i",
+            c = cgrad(:roma),
+            clims=(0.0, 100.0)) for i in 1:length(output)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+The Hill coefficient has a real importance since we can smoother response to selection:
+
+
+```julia
+gridSize = 100;
+populationSize = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+output = ArrayOutput(populationSize; tspan=1:50,aux=(exposure=exposure,));
+
+growthRule = DiscreteGrowth(intrinsicrate=2.2);
+survivalRule = SurvLogLogisticMap(layerkey=Val(:exposure), LC50=50.0, hillcoefficient=2.0);
+ruleset = Ruleset(Chain(growthRule, survivalRule));
+sim!(output, ruleset);
+```
+
+
+```julia; fig_height =10
+plt = [ heatmap(
+            output[i],
+            title = "step $i",
+            c = cgrad(:roma),
+            clims=(0.0, 100.0)) for i in 1:length(output)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+# Quantitative genetics model
+
+We start with the breeder's equation:
+$$
+R = h^2 S
+$$
+
+- $R$ is the selection response of trait = *the change in mean within a population across a generation*,
+- $h^2$ is the heritability of the trait = *a measure of how the character value is passed across generations* ,
+- $S$ is the selection differential = *the product of wihin-generation change*
+
+There is some assumption in the breeder's equations:
+* a necessary (but not sufficient) condition is a linear parent-offspring regression, 
+    with the phenotype value $z_o$ of an offspring whose parents have mean phenotypic value,
+    $z_{mp}$: $$z_o = b_{o \vert mp} (z_{mp} - \mu) + e$$
+* it is assumed that the residuals of the linear parent-offspring and fitness-phenotype regressions are uncorrelated with each-other.
+* it is assumed that the mean does not change in the absence of selection. 
+
+The heritability is given by 
+
+$$h^2 = V_A /V_P$$
+
+with $V_A$ the additive genetic variance and $V_P$ the phenotypic variance
+ such as $V_P = V_A + V_E$ with $V_E$ the environmental variance.
+
+In all what follow, we assume the population trait we follow, the $LC_{50}$ is normally distributed.
+
+## Selection differential
+
+The Robertson-Price identity is given by $S = \sigma(w, z)$ which is the covariance between:
+
+* relative fitness $w$, and
+* the trait value $z$.
+
+The selection differential is simply the mean after selection, $\mu_s$, minus the mean before $\mu$.
+If we name $z_i$, $p_i$ and $w_i$ the trait value, the frequency before selection, and the relative fitness respecivelly than: 
+ $$S = \mu_s - \mu = \sum z_i w_i p_i - \sum z_i p_i = E[zw ] - E[z]$$
+
+Note that $w_i p_i$ is the frequency of $z_i$ after selection because of the fitness weigth $w_i$.
+Since $E[w] = 1$ by definition, we can write:
+
+$$
+S = E[zw] - E[z] E[w] = \sigma(w,z)
+$$
+
+If we consider the least squares linear regression of relative fitness $w$ on a phenotypic trait $z$:
+
+$$
+w = \alpha + \beta z + \varepsilon 
+$$
+then the slope $\beta$ means that a change in $z$ results in a change in relative fitness $\beta$:
+
+$$
+\beta = \frac{\sigma(z,w)}{\sigma^2_z} = \frac{S}{\sigma^2_z}
+$$
+
+So $S = \beta \sigma^2_z$, and so from the breeder's equation:
+
+$$
+R = h^2 S = h^2 \sigma^2_z \beta
+$$
+
+With the notation we used, $h^2 = \sigma_A^2 / \sigma_z^2$, and therefore:
+
+$$
+R = \sigma_A^2 \beta = V_A \beta
+$$
+
+The parameter $\beta$ is the $gradient function$.
+
+This is the univariate version of the multivariate Lande equation:
+
+$$
+R = G \beta
+$$
+
+## Selection gradient
+
+The *landscape directional selection gradient*:
+
+$$
+\frac{\partial \ln \bar{W}}{ \partial \mu_z} = \frac{1}{ \bar{W}} \frac{\partial \bar{W}}{ \partial \mu_z}
+$$
+
+and the *average directional selection gradient*:
+
+$$
+\int \frac{\partial w}{ \partial z} p(z) dz = E_z \left[ \frac{\partial w}{ \partial z} \right]
+$$
+
+If $z$ is normally distributed (Lande and Arnold 1983):
+$$
+\int \frac{\partial w}{ \partial z} p(z) dz = \beta \quad \text{if} \, z \sim Normal(\mu_z, \sigma_z)
+$$
+
+Note: there is an other gradient function $\gamma$, but $\beta$ and $\gamma are equivalent when traits are normally distributed (Lande and Arnold 1983).
+$$
+\int \frac{\partial^2 w}{ \partial z^2} p(z) dz = \gamma \quad \text{if} \, z \sim Normal(\mu_z, \sigma_z)
+$$
+
+## Time dependent response to selection
+
+As a consequence of all previous equations, the response of selection at generation $t$ is given by:
+
+$$
+R_t = V_A \beta = V_A \times  \frac{1}{ \bar{W}} \frac{\partial \bar{W}}{ \partial \bar{z}}
+$$
+
+
+Or in other words, since $R_t = \bar{z}_{t+1} - \bar{z}_{t}$, then the new mean phenotype is given by:
+
+$$
+\bar{z}_{t+1} = \bar{z}_{t} + R_t
+$$
+
+
+## Phenotypic trait and fitness
+
+So we need to define:
+
+1. the phenotypic trait, $z$,
+2. the fitness, $W$.
+
+The phenotypic trait for response to a pesticide is classically the $LC_{50}$ (can also be $EC_{50}$ if the effect is on reproduction).
+
+For the fitness, from our simple population dynamic model:
+
+$$
+N_t = w_t N_{t-1},
+$$
+
+the fitness can be either (1) $w_t$ the population growth rate or (2) $N_t$ the size of the population.
+ 
+It seems like growth rate is commonly used for density-independent situation and population size is use with density-dependent population dyanmics.
+
+
+From the general model we provided, we have:
+
+$$
+w_t = f \times  S_{eggs} \times S^0_{larvae} \times \frac{1}{1+(C_{ext} / LC_{50})^H} \times S_{pupae} \times S_{adults}
+$$
+
+
+$$
+\begin{eqnarray}
+\beta &=& \frac{1}{ \bar{W}} \frac{\partial \bar{W}}{ \partial \bar{z}}\\
+&=& f  S_{eggs} S^0_{larvae} S_{pupae} S_{adults} \times \frac{1 + (C_{ext}/LC_{50})^H}{f  S_{eggs} S^0_{larvae} S_{pupae} S_{adults}}
+\times \frac{H (C_{ext} / LC_{50})^H }{LC_{50} ((C_{ext} / LC_{50})^H + 1 )^2 }\\
+&=&  \frac{(1 + (C_{ext}/LC_{50})^H) H (C_{ext} / LC_{50})^H}{LC_{50} ((C_{ext} / LC_{50})^H + 1 )^2 } \\
+&=&  \frac{H(C_{ext}/LC_{50})^H }{((C_{ext}/LC_{50})^H +1 ) LC_{50}}
+\end{eqnarray}
+$$
+
+
+The dose-resposne curve is as follow:
+```julia
+doseResponse(Cexp,LC50,slope) = 1 ./(1 .+ (Cexp./LC50).^slope)
+
+Cexp = 0:0.5:50;
+LC50=10 ; slope = 2.0;
+plot(Cexp, doseResponse(Cexp, LC50,slope), title = "Dose-response curve", label="1/(1+(x/$LC50)^$slope)");
+xlabel!("Concentration") ; ylabel!("Survival probability")
+```
+
+It's corresponding selection gradient curve is provided by:
+
+```julia
+selectiongradient(Cexp,LC50,slope) = (slope.*(Cexp./LC50).^slope) ./ (LC50 .* ((Cexp ./ LC50).^slope .+ 1))
+
+LC50=[10 20 30]
+plot(Cexp, selectiongradient(Cexp, 10,slope),title = "Selection Gradient", label = "LC50 = 10");
+xlabel!("Exposure") ; ylabel!("Selection gradient");
+plot!(Cexp, selectiongradient(Cexp, 20,slope),label = "LC50 = 20");
+plot!(Cexp, selectiongradient(Cexp, 30,slope),label = "LC50 = 30")
+```
+
+At a specific exposure concentration, The LC50 must shift to reach the maximal selection gradient:
+
+```julia
+LC50 = 1:0.5:50
+plot(LC50, selectiongradient(10, LC50,slope),title = "Selection Gradient", label = "Exposure = 10");
+xlabel!("LC50") ; ylabel!("Selection gradient");
+plot!(LC50, selectiongradient(20, LC50,slope),label = "Exposure = 20");
+plot!(LC50, selectiongradient(30, LC50,slope),label = "Exposure = 30")
+```
+
+## Response to selection
+
+We compute in this part the evolution fo the LC50, the trait of selection over a landscape:
+
+$$
+R_t = V_A β
+$$
+
+For simplification, we assume that $V_A$ is constant. Since $V_A = h^2 V_P$, a constant $V_A$ means a compensation between $V_P$ and $h^2$.
+
+In the following graphic, assuming $V_A=1$, we show the evolution of the $LC_{50}$ as:
+
+$$
+LC_{50}(t+1) = LC_{50}(t) + R_t = LC_{50}(t) + \frac{H(C_{ext}/LC_{50})^H }{((C_{ext}/LC_{50})^H +1 ) LC_{50}}
+$$
+
+
+
+```julia
+gridSize = 100
+LC50init = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+LC50grids = ArrayOutput(LC50init; tspan=1:50, aux=(exposure=exposure,));
+rule = Ruleset(SelectionGradientSurvMap(layerkey=Val(:exposure), hillcoefficient=2.0, additiveGeneticVariance = 80.0));
+sim!(LC50grids, rule);
+```
+
+The LC50 distribution in individuals is as follow:
+
+```julia
+plot(
+    heatmap(LC50init,
+            title = "LC50",
+            c = cgrad(:thermal, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (1,2)
+    )
+```
+
+```julia; fig_height=10
+plt = [ heatmap(
+            LC50grids[i],
+            title = "step $i",
+            c = cgrad(:thermal),
+            clims=(0.0, 100.0)) for i in 1:length(LC50grids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+# Allele Frequency model
+
+Let say we have a single locus with two allele *R* and *S*, with respective frequency $p$ and $q = 1-p$.
+
+| Genotype                  | RR                  | RS                   | SS                    |  
+|---------------------------|---------------------|----------------------|-----------------------|
+| Frequency in newborns     | $p^2$               | $2pq$                | $q^2$                 |
+| Viability                 | $w_{RR}$            | $w_{RS}$             | $w_{SS}$              |
+| Frequency after selection | $p^2w_{RR}/\bar{w}$ |  $2pqw_{RS}/\bar{w}$ | $q^2w_{SS}/\bar{w}$   |
+| Relative viability        | $1$                 |  $w_{RS}/w_{RR}$     | $w_{RS}/w_{RR}$       |
+| Relative fitness          | $1$                 |  $1-hs$              | $1-s$                 |
+| Average phenotype         | $\mu + \alpha$      |  $\mu + d$           | $\mu - \alpha$        |
+
+In the previous table we have
+
+1. the selection coefficient, $s$: measure fitness of SS relative to RR. (1) $s>0$ RR is more fit, (2) $s<0$ SS is more fit
+2. the heterozygous effect, $h$: measure of fitness of heterozygous vs homozygous: (1) $h=0$ R dominant, S recessive, (2) $h=1$ S dominant, R recessive, (3) $h<0$ overdominance, (4) $h1$ underdominance, (5) $0 < h < 1$ incomplete dominance.
+3. the phenotype response, with $\mu$ a positive constant, (1) $2 \alpha$ is the average phenotypic difference between the two homozygous, (2) $d$ is the degree of dominance between the two alleles ($d=0$ for codominance, $d=1$ when R is dominant, $d=-1$ when R is recessive).
+
+
+We have the following rules:
+
+- frequency after selection $∝$ newborn-frequency $\times$ viability
+- phenotype: $z = \mu + \alpha x_{RR} + d x_{RS} - \alpha x_{SS}$
+- mean phenotype: $\bar{z} = \mu + \alpha p^2 + d 2pq - \alpha q^2$
+
+
+## Single-generation change in the frequency of R
+
+The single-generation change in the frequency of R is given by:
+
+$$
+\Delta p = \frac{pqs (ph +q(1-h)}{\bar{w}}
+$$
+
+with $\bar{w} = 1-2pqhs-q^2s$
+
+The Wright's equation give the following result:
+
+$$
+\Delta p = \frac{pq}{2\bar{w}} \times \frac{\partial \bar{w}}{\partial p} = 
+\frac{pq}{2\bar{w}} \times \frac{\partial \bar{w}}{\partial \bar{z}} \times \frac{\partial \bar{z}}{\partial p}
+$$
+
+We wrote previously that:
+
+$$
+\bar{z} = \mu + \alpha p^2 + d 2pq - \alpha q^2 = \mu + \alpha p^2 + d 2p(1-p) - \alpha (1-p)^2 
+$$
+
+So then:
+
+$$
+\frac{\partial \bar{z}}{\partial p} = 2 \alpha p + 2 d(1-2p) + 2 \alpha(1-p) = 2(\alpha -2dp+d) = 2(\alpha + d(1-2p)) = 2(\alpha + d(q-p)) 
+$$
+
+
+$$
+\Delta p = \frac{pq}{2\bar{w}} \times 2(\alpha + d(q-p)) \times \frac{\partial \bar{w}}{\partial \bar{z}} =
+ 2(\alpha -2dp+d) \times \frac{pq}{2} \times \beta =   pq(\alpha + d(q-p))  \times \beta
+$$
+
+Note also the following equality:
+$$
+\Delta p = p_{t+1} - p_t = (1-q_{t+1}) - (1-q_t) = q_t - q_{t+1} = - \Delta q
+$$
+
+$$
+\Delta q =  - pq( \alpha + d(q-p))  \times \beta
+$$
+
+And therefore, using the survival log-logistic model:
+
+$$
+\Delta p =  pq(\alpha + d(q-p))  \times \beta = pq(\alpha + d(q-p)) \frac{H(C_{ext}/LC_{50})^H }{((C_{ext}/LC_{50})^H +1 ) LC_{50}}
+$$
+
+
+$$
+p(t+1) = p(t) + \Delta p(t) =  p(t) + p(t)(1-p(t))(\alpha + d(1-2p(t))) \frac{H(C_{ext}/LC_{50}(t))^H }{((C_{ext}/LC_{50}(t))^H +1 ) LC_{50}(t)}
+$$
+
+The frequency of the resistant allele, p(t), is supposed to change the $LC_{50}$. Here we assume a constant $LC_{50}$ for simulation
+
+```julia
+alleleGradFreqDelta(Cexp,LC50,slope, alpha,d,p) = p.*(1 .-p).*(alpha .+ d.*((1 .-p) .-p)).*(slope.*(Cexp./LC50).^slope) ./ (LC50 .* ((Cexp ./ LC50).^slope .+ 1))
+
+LC50=[10 20 30]
+alpha = 1.5
+d = 0.9
+p = 0.5
+plot(Cexp, alleleGradFreqDelta(Cexp,LC50[1],slope, alpha,d,p),title = "Allele gradient Frequency", label = "LC50 = 10");
+xlabel!("Exposure") ; ylabel!("Allele gradient frequency");
+plot!(Cexp, alleleGradFreqDelta(Cexp, LC50[2],slope, alpha,d,p),label = "LC50 = 20");
+plot!(Cexp, alleleGradFreqDelta(Cexp, LC50[3],slope, alpha,d,p),label = "LC50 = 30")
+```
+
+```julia
+LC50=10
+alpha = 1.5
+d = 0.9
+p = [0.1 0.5 0.9]
+plot(Cexp, alleleGradFreqDelta(Cexp,LC50,slope, alpha,d,p[1]),title = "Allele gradient Frequency", label = "p = 0.1");
+xlabel!("Exposure") ; ylabel!("Allele gradient frequency");
+plot!(Cexp, alleleGradFreqDelta(Cexp, LC50,slope, alpha,d,p[2]),label = "p = 0.5");
+plot!(Cexp, alleleGradFreqDelta(Cexp, LC50,slope, alpha,d,p[3]),label = "p = 0.9")
+```
+
+```julia
+LC50 = 10
+Cexp = 20
+alpha = 1.5
+d = [-1,0,1] 
+p = 0.1:0.01:0.9
+plot(p, alleleGradFreqDelta(Cexp,LC50,slope, alpha,d[1],p),title = "Allele gradient Frequency", label = "d = -1");
+xlabel!("Frequence of p") ; ylabel!("Allele gradient frequency");
+plot!(p, alleleGradFreqDelta(Cexp, LC50,slope, alpha,d[2],p),label = "d = 0");
+plot!(p, alleleGradFreqDelta(Cexp, LC50,slope, alpha,d[3],p),label = "d = 1")
+```
+
+How the strength of environmental exposure tends to promote the selection:
+
+```julia
+LC50 = 10
+Cexp = [LC50/10, LC50, LC50*2]
+alpha = 1.5
+d = -1
+p = 0.1:0.01:0.9
+plot(p, alleleGradFreqDelta(Cexp[1],LC50,slope, alpha,d,p),title = "Allele gradient Frequency", label = "Exposure = LC50/10");
+xlabel!("Frequence of p") ; ylabel!("Allele gradient frequency");
+plot!(p, alleleGradFreqDelta(Cexp[2], LC50,slope, alpha,d,p),label = "Exposure = LC50");
+plot!(p, alleleGradFreqDelta(Cexp[3], LC50,slope, alpha,d,p),label = "Exposure = LC50*2")
+```
+
+To compared with the dose response curve:
+
+```julia
+doseResponse(Cexp,LC50,slope) = 1 ./(1 .+ (Cexp./LC50).^slope)
+
+Cexp = 0:0.5:50;
+plot(Cexp, doseResponse(Cexp, LC50,slope), title = "Dose-response curve", label="1/(1+(x/$LC50)^$slope)");
+xlabel!("Concentration") ; ylabel!("Survival probability")
+```
+```julia
+gridSize = 100;
+pFreqinit = convert(Array{Float64,2},[i/100 for i in 1:gridSize] * fill(1,gridSize)');
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+pFreqGrids = ArrayOutput(pFreqinit; tspan=1:50, aux=(exposure=exposure,));
+rule = Ruleset(DeltaAlleleFrequencySurvMap(layerkey=Val(:exposure),
+                    LC50=50, hillcoefficient=2.0, deviationPhenotype = 2.0, dominanceDegree = -0.8));
+sim!(pFreqGrids, rule);
+```
+
+```julia
+plot(
+    heatmap(pFreqinit,
+            title = "Frequence p",
+            c = cgrad(:amp, scale = :exp),
+            clims=(0.0, 1.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (1,2)
+    )
+```
+
+
+```julia; fig_height=10
+plt = [ heatmap(
+            pFreqGrids[i],
+            title = "step $i",
+            c = cgrad(:amp),
+            clims=(0.0, 1.0)) for i in 1:length(pFreqGrids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+# Link between Allele Frequency and Phenotype
+
+We have the mean phenotype given by:
+
+$$
+\bar{z}_t = \mu + \alpha p^2 + 2 p q d - \alpha q^2
+$$
+
+So at the next generation, the mean phenotype is given by:
+
+$$
+\bar{z}_{t+1}  = \mu + \alpha (p+\Delta p)^2 + 2 (p+\Delta p) (1-p-\Delta p) d - \alpha (1-p-\Delta p)^2 
+$$
+
+$$
+\begin{eqnarray}
+\Delta \bar{z} &=& \bar{z}_{t+1} - \bar{z}_t \\
+&=& \mu + \alpha (p+\Delta p)^2 + 2 (p+\Delta p) (1-p-\Delta p) d - \alpha (1-p-\Delta p)^2  - \mu - \alpha p^2 - 2 p(1-p) d + \alpha (1-p)^2 \\
+&=& 2 \Delta p (\alpha + d(1-\Delta p - 2p )) \\
+&=& 2 \Delta p (\alpha + d(q - p - \Delta p)) \\
+&=& 2 \Delta p (\alpha + d(q - p )) - 2 d(\Delta p)^2
+\end{eqnarray}
+$$
+
+Since we have $\Delta p =  pq(\alpha + d(q-p)) \beta$, then:
+
+$$
+\begin{eqnarray}
+\Delta \bar{z} &=& 2 pq (\alpha + d(q - p ))^2 \beta - 2 d (pq(\alpha + d(q-p)) \beta)^2 \\
+&=& 2 pq (\alpha + d(q - p ))^2 \beta (1-d \beta)
+\end{eqnarray}
+$$
+
+## Selection gradient with frequencies
+
+So using allele frequency, we can have the phenotype using the LC50 model $R_t = \Delta \bar{z}$ :
+
+$$
+R_t = 2 pq (\alpha + d(q - p ))^2 \beta (1-d \beta)
+$$
+
+which is
+
+$$
+R_t = 2 pq (\alpha + d(q - p ))^2 \frac{H(C_{ext}/LC_{50})^H }{((C_{ext}/LC_{50})^H +1 ) LC_{50}} (1-d \frac{H(C_{ext}/LC_{50})^H }{((C_{ext}/LC_{50})^H +1 ) LC_{50}})
+$$
+
+
+So at each step, we have to update 2 variables, the frequency of allele $p$ and the phenotype $LC_{50}$. 
+
+$$
+\begin{equation}
+\begin{cases}
+LC_{50}(t+1)  =& LC_{50}(t) + 2 p(t)(1-p(t)) (\alpha + d(1- 2p(t) ))^2 \frac{H(C_{ext}/LC_{50}(t))^H }{((C_{ext}/LC_{50}(t))^H +1 ) LC_{50}(t)} 
+(1-d \frac{H(C_{ext}/LC_{50}(t))^H }{((C_{ext}/LC_{50}(t))^H +1 ) LC_{50}(t)}) \\ 
+p(t+1) & p(t) + p(t)(1-p(t))(\alpha + d(1-2p(t))) \frac{H(C_{ext}/LC_{50}(t))^H }{((C_{ext}/LC_{50}(t))^H +1 ) LC_{50}(t)}
+ \end{cases}
+\end{equation}
+$$
+
+**Important**
+
+The $LC_50$ results of the combination of Genotype.
+If $z_{RR}$ is the mean phenotype of homozygous $RR$, and same for $z_[RS}, z$_{SS}$, then we can write:
+
+$$
+\begin{eqnarray}
+z_{RR} = \mu + \alpha + \varepsilon_{RR}
+z_{RS} = \mu + d + \varepsilon_{RS}
+z_{SS} = \mu - \alpha + \varepsilon_{SS}
+\end{eqnarray}
+$$
+
+We may resonably assume that $\varepsilon_{RR}=\varepsilon_{RS}=\varepsilon_{SS}$.
+
+Giving: 
+$$
+\bar{z} = \mu + p^2 \alpha + 2 p q d - q^2\alpha 
+$$
+
+```julia; label = "testName"
+gridSize = 100;
+
+pFreqinit = convert(Array{Float64,2},[i/100 for i in 1:gridSize] * fill(1,gridSize)');
+
+meanPhenotype = 50.0 # mu
+deviationPhenotype = 30.0 # \alpha
+dominanceDegree = -0.5 # d
+
+LC50init = meanPhenotype .+ pFreqinit.^2 .* deviationPhenotype + 2 .* pFreqinit .*(1 .-pFreqinit) - (1 .-pFreqinit).^2 .* deviationPhenotype
+# LC50init = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+
+LandeInit = [LandeVariable(pFreqinit[i,j], LC50init[i,j]) for i in 1:gridSize, j in 1:gridSize]
+
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+LandeGrids = ArrayOutput(LandeInit; tspan=1:50, aux=(exposure=exposure,));
+rule = Ruleset(SelectionGradient1locusSurvMap(
+            layerkey=Val(:exposure), hillcoefficient=2.0,  deviationPhenotype = deviationPhenotype, dominanceDegree = dominanceDegree)
+        );
+sim!(LandeGrids, rule);
+```
+
+
+```julia; fig_width = 9
+plot(
+    heatmap(pFreqinit,
+            title = "Frequence p",
+            c = cgrad(:amp, scale = :exp),
+            clims=(0.0, 1.0)),
+    heatmap(LC50init,
+            title = "LC50",
+            c = cgrad(:thermal, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (1,3)
+    )
+```
+
+
+```julia; fig_height=10
+
+FreqGrids = [[LandeGrids[k][i,j].alleleFrequency for i in 1:gridSize, j in 1:gridSize] for k in 1:length(LandeGrids)];
+
+plt = [ heatmap(
+            FreqGrids[i],
+            title = "step $i",
+            c = cgrad(:amp),
+            clims=(0.0, 1.0)) for i in 1:length(FreqGrids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+
+```julia; fig_height=10
+
+LC50Grids = [[LandeGrids[k][i,j].phenotype for i in 1:gridSize, j in 1:gridSize] for k in 1:length(LandeGrids)];
+
+plt = [ heatmap(
+            LC50Grids[i],
+            title = "step $i",
+            c = cgrad(:thermal),
+            clims=(0.0, 100.0)) for i in 1:length(LC50Grids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+Do we obtain the good LC50 grids at step 50?
+
+
+```julia; fig_height=10
+pFreq_atT50 = FreqGrids[50]
+LC50_atT50 = meanPhenotype .+ pFreq_atT50.^2 .* deviationPhenotype + 2 .* pFreq_atT50 .*(1 .-pFreq_atT50) - (1 .-pFreq_atT50).^2 .* deviationPhenotype
+
+heatmap(LC50_atT50,
+        title = "Check step 50",
+        c = cgrad(:thermal),
+        clims=(0.0, 100.0))
+```
+
+
+
+# Combining population dynamics with evolutionnary dynamics of allele and phenotype 
+
+```julia
+timeLength = 50
+# LC50 selection response at landscape level
+gridSize = 100;
+LC50init = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+pFreqinit = convert(Array{Float64,2},[i/100 for i in 1:gridSize] * fill(1,gridSize)');
+LandeInit = [LandeVariable(pFreqinit[i,j], LC50init[i,j]) for i in 1:gridSize, j in 1:gridSize];
+
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+LandeGrids = ArrayOutput(LandeInit; tspan=1:timeLength, aux=(exposure=exposure,));
+rule = Ruleset(SelectionGradient1locusSurvMap(
+            layerkey=Val(:exposure), hillcoefficient=2.0,  deviationPhenotype = 2.0, dominanceDegree = -0.8)
+        );
+sim!(LandeGrids, rule);
+
+# Population response at landscape level
+# 1. get the phenotype LC50 grid:
+LC50Grids = [LandeGrids[k][i,j].phenotype for i in 1:gridSize, j in 1:gridSize, k in 1:length(LandeGrids)];
+# 2. build the 2 layers stack: 
+exposureGrids = repeat(exposure, inner=(1, 1, lastindex(LC50Grids,3)));
+survivalParameter = cat(exposureGrids,LC50Grids; dims = 4);
+
+# 3. build pop size grid
+popSizeInit = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+
+popSizeGrids = ArrayOutput(popSizeInit; tspan=1:timeLength,aux=(survivalParameter=survivalParameter,));
+
+growthRule = DiscreteGrowth(intrinsicrate=2.2);
+survivalRule = SurvLogLogisticMap2(layerkey=:survivalParameter);
+ruleset = Ruleset(Chain(growthRule, survivalRule));
+sim!(popSizeGrids, ruleset);
+```
+
+Initial conditions:
+
+```julia
+plot(
+    heatmap(LC50init,
+            title = "LC50 init",
+            c = cgrad(:thermal, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(pFreqinit,
+            title = "Frequency of p",
+            c = cgrad(:amp, scale = :exp),
+            clims=(0.0, 1.0)),
+    heatmap(popSizeInit,
+            title = "Population size",
+            c = cgrad(:roma, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (2,2)
+    )
+```
+
+
+
+The resulting populations sequence is given in these graphics:
+
+```julia; fig_height =10
+plt = [ heatmap(
+            popSizeGrids[i],
+            title = "step $i",
+            c = cgrad(:roma),
+            clims=(0.0, 100.0)) for i in 1:length(popSizeGrids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+The resulting LC50 selection gradient:
+
+```julia; fig_height =10
+LC50Grids = [LandeGrids[k][i,j].phenotype for i in 1:gridSize, j in 1:gridSize, k in 1:length(LandeGrids)];
+plt = [ heatmap(
+            LC50Grids[:,:,i],
+            title = "step $i",
+            c = cgrad(:thermal),
+            clims=(0.0, 100.0)) for i in 1:lastindex(LC50Grids,3)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+The resulting frequency of the p allele:
+
+```julia; fig_height =10
+pFreqGrids = [LandeGrids[k][i,j].alleleFrequency for i in 1:gridSize, j in 1:gridSize, k in 1:length(LandeGrids)];
+plt = [ heatmap(
+            pFreqGrids[:,:,i],
+            title = "step $i",
+            c = cgrad(:amp),
+            clims=(0.0, 1.0)) for i in 1:lastindex(pFreqGrids,3)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+```julia
+# Population response at landscape level
+# 1. get the phenotype LC50 grid:
+LC50Grids = [LandeGrids[k][i,j].phenotype for i in 1:gridSize, j in 1:gridSize, k in 1:length(LandeGrids)];
+# 2. build the 2 layers stack: 
+exposureGrids = repeat(exposure, inner=(1, 1, lastindex(LC50Grids,3)));
+survivalParameter = cat(exposureGrids,LC50Grids; dims = 4);
+
+# 3. build pop size grid
+popSizeInit = convert(Array{Float64,2},fill(1,gridSize)*[i for i in 1:gridSize]');
+
+popSizeGrids = ArrayOutput(popSizeInit; tspan=1:timeLength,aux=(survivalParameter=survivalParameter,));
+
+growthRule = DiscreteGrowth(intrinsicrate=2.2);
+survivalRule = SurvLogLogisticMap2(layerkey=:survivalParameter);
+ruleset = Ruleset(Chain(growthRule, survivalRule));
+sim!(popSizeGrids, ruleset);
+```
+
+The resulting populations sequence is given in these graphics:
+
+
+```julia
+plot(
+    heatmap(LC50init,
+            title = "LC50 init",
+            c = cgrad(:thermal, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(pFreqinit,
+            title = "Frequency of p",
+            c = cgrad(:amp, scale = :exp),
+            clims=(0.0, 1.0)),
+    heatmap(popSizeInit,
+            title = "Population size",
+            c = cgrad(:roma, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (2,2)
+    )
+```
+
+```julia; fig_height =10
+plt = [ heatmap(
+            popSizeGrids[i],
+            title = "step $i",
+            c = cgrad(:roma),
+            clims=(0.0, 100.0)) for i in 1:length(popSizeGrids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+# Mating population
+
+## Phenotype mating model
+
+Let consider 2 populations with mean phenotype $\bar{z}_1$ for population one, and mean phenotype $\bar{z}_2$ for population two.
+
+Considering population contribute with weight $v_i$ to the mixed generation (i.e. size of the population) **before reproduction**,
+ the model is simply a sum of law (i.e., there convolution).
+Assuming $z \sim Law(...)$, the additivity of mean and variance of $z$ follow the property of the law.
+
+$$
+\bar{z}_{mix} = \frac{v_1 \bar{z}_1 + v_2 \bar{z}_2}{v_1 + v_2}
+$$
+
+Of course, here we just mix both population phenotype  the assumption is that we know nothing about underlying genotype.
+
+But it may be that experiment on phenotype allow to provide a continuous scale of "dominance" for mating according to the trait?
+
+Once the population are homogeneously mixed, the previous rule applies.
+
+Let consider a rule that mix 50% of individuals within the cell and 50% of the mean of neighbors (something more detailled could be applied)
+
+```julia
+gridSize = 100;
+LC50init = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+LC50grids = ArrayOutput(LC50init; tspan=1:50, aux=(exposure=exposure,));
+selectionGradientRule = SelectionGradientSurvMap(layerkey=Val(:exposure), hillcoefficient=2.0, additiveGeneticVariance = 80.0);
+matingRule = MatingPopulation(Moore(1), 0.5, 0.5);
+ruleset = Ruleset(selectionGradientRule,matingRule);
+sim!(LC50grids, ruleset);
+```
+
+The LC50 and exposure profile is given by:
+
+```julia
+plot(
+    heatmap(LC50init,
+            title = "LC50",
+            c = cgrad(:thermal, scale = :exp),
+            clims=(0.0, 100.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (1,2)
+    )
+```
+
+```julia; fig_height=10
+plt = [ heatmap(
+            LC50grids[i],
+            title = "step $i",
+            c = cgrad(:thermal),
+            clims=(0.0, 100.0)) for i in 1:length(LC50grids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+## Genotype mating model
+
+Let consider 2 populations with genotype:
+
+| Genotype                   | RR                                | RS                                   | SS                              |  
+|----------------------------|-----------------------------------|--------------------------------------|---------------------------------|
+| Frequency in population 1  | $p_1^2$                           | $2p_1q_1$                            | $q_1^2$                         |
+| Frequency in population 2  | $p_2^2$                           | $2p_2q_2$                            | $q_2^2$                         |
+| Frequency in mix population| $(v_1p_1^2 + v_2p_2^2)/(v_1+v_2)$ | $(v_12p_1q_1 + v_22p_2q_2)/(v_1+v_2)$| $(v_1q_1^2+v_2q_2^2)/(v_1+v_2)$ |
+| Average phenotype in pop   | $\mu + \alpha$                    | $\mu + d$                            | $\mu - \alpha$                  |
+
+$$
+\frac{v_1p_1^2 + v_2p_2^2 + v_12p_1q_1 + v_22p_2q_2 + v_1q_1^2+v_2q_2^2}{v_1+v_2} = \frac{v_1(p_1^2 +2p_1q_1 + q_1^2) + v_2 (p_2^2 + 2p_2q_2q_2^2)}{v_1+v_2} = 1
+$$
+
+Then having this new "mixed" population we can run the allele frequency model.  
+
+In a cell where the population has $p(t) as the frequency of allele $R$ at time $t$, and we add a new population with $p_2$ frequency,
+then the frequency of $R$ at time $t+1$ is given by:
+
+$$
+p(t+1) = \sqrt{\frac{v_1p(t)^2 + v_2p_2^2}{v_1+v_2}}
+$$
+
+
+```julia
+gridSize = 100;
+pFreqinit = convert(Array{Float64,2},[i/100 for i in 1:gridSize] * fill(1,gridSize)');
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+pFreqGrids = ArrayOutput(pFreqinit; tspan=1:50, aux=(exposure=exposure,));
+alleleFrequencyRule = DeltaAlleleFrequencySurvMap(layerkey=Val(:exposure),
+            LC50=50, hillcoefficient=2.0, deviationPhenotype = 2.0, dominanceDegree = -0.8);
+matingRule = MatingPopulation(Moore(1), 0.5, 0.5);
+ruleset = Ruleset(alleleFrequencyRule,matingRule);
+sim!(pFreqGrids, ruleset);
+```
+
+The frequency of p when mating with neighbors and exposure profile is given by:
+
+```julia
+plot(
+    heatmap(pFreqinit,
+            title = "Frequency of p",
+            c = cgrad(:amp, scale = :exp),
+            clims=(0.0, 1.0)),
+    heatmap(exposure, title = "Exposure profile"),
+    layout = (1,2)
+    )
+```
+
+```julia; fig_height=10
+plt = [ heatmap(
+            pFreqGrids[i],
+            title = "step $i",
+            c = cgrad(:amp),
+            clims=(0.0, 1.0)) for i in 1:length(pFreqGrids)];
+plot(plt[1],plt[5],plt[10],plt[15],plt[20],plt[25],plt[30],plt[50], layout = (4,2))
+```
+
+
+# Population Dynamics with Mating and Phenotype/genotype selection under Exposure
+
+## Low mating with local population
+
+
+```julia
+# LC50 selection response at landscape level
+gridSize = 100;
+LC50init = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+pFreqinit = convert(Array{Float64,2},[i/100 for i in 1:gridSize] * fill(1,gridSize)');
+LandeInit = [LandeVariable(pFreqinit[i,j], LC50init[i,j]) for i in 1:gridSize, j in 1:gridSize];
+
+exposure = convert(Array{Float64,2},fill(1,gridSize) * [i for i in 1:gridSize]');
+
+LandeGrids = ArrayOutput(LandeInit; tspan=1:50, aux=(exposure=exposure,));
+rule = Ruleset(SelectionGradient1locusSurvMap(
+            layerkey=Val(:exposure), hillcoefficient=2.0,  deviationPhenotype = 2.0, dominanceDegree = -0.8)
+        );
+sim!(LandeGrids, rule);
+
+# MATING RULES
+# 1. get the phenotype LC50 grid:
+LC50Grids = [LandeGrids[k][i,j].phenotype for i in 1:gridSize, j in 1:gridSize, k in 1:length(LandeGrids)];
+matingRule = MatingPopulation(Moore(1), 0.5, 0.5);
+ruleset = Ruleset(alleleFrequencyRule,matingRule);
+
+# Population response at landscape level
+
+# 2. build the 2 layers stack: 
+exposureGrids = repeat(exposure, inner=(1, 1, lastindex(LC50Grids,3)));
+survivalParameter = cat(exposureGrids,LC50Grids; dims = 4);
+
+
+# 3. build pop size grid
+popSizeInit = convert(Array{Float64,2},[i for i in 1:gridSize] * fill(1,gridSize)');
+
+popSizeGrids = ArrayOutput(popSizeInit; tspan=1:50,aux=(survivalParameter=survivalParameter,));
+
+growthRule = DiscreteGrowth(intrinsicrate=2.0);
+survivalRule = SurvLogLogisticMap2(layerkey=:survivalParameter);
+ruleset = Ruleset(Chain(growthRule, survivalRule));
+sim!(popSizeGrids, ruleset);
+```
+
+## High mating with long distance population
