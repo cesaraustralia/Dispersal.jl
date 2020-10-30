@@ -44,33 +44,50 @@ using Unitful: d
 end
 
 @testset "exponential growth with rate from growth map" begin
-    init = [1.0 1.0 1.0;
-            1.0 1.0 1.0;
-            1.0 1.0 1.0]
+    init = [1.0 1.0; 1.0 1.0]
 
-    suit =  log.([1.0 1.0 2.0;
-                  2.0 1.0 0.5;
-                  1.0 1.0 0.5])
+    # Define 12 months of suitability data.
+    # The log transform means the answers should match
+    suitA = cat(map(A -> log.(A), (
+        [1.0 0.0; 1.0 0.5],
+        [1.1 0.1; 1.0 0.5],
+        [1.2 0.2; 1.0 0.5],
+        [1.3 0.3; 1.0 0.5],
+        [1.4 0.4; 1.0 0.5],
+        [1.5 0.5; 1.0 0.5],
+        [1.6 0.6; 1.0 0.5],
+        [1.7 0.7; 1.0 0.5],
+        [1.8 0.8; 1.0 0.5],
+        [1.9 0.9; 1.0 0.5],
+        [2.0 1.0; 1.0 0.5],
+        [2.1 1.1; 1.0 0.5],
+    ))..., dims=3)
 
-    output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
-    output.extent
+    # Use a DimArray with timesteps over 2001, monthly
+    suit = DimArray(suitA, (Y(), X(), Ti(Date(2001, 1):Month(1):Date(2001, 12))))
     rule = Ruleset(ExactExponentialGrowthMap(layerkey=Val(:suit)))
+
+    # Run sim startin in the 3rd month
+    output = ArrayOutput(init; tspan=Date(2001, 3):Month(1):Date(2001, 7), aux=(suit=suit,))
     sim!(output, rule)
+    @test output[1] == [1.0 1.0; 1.0 1.0]
+    @test output[2] ≈  [1.3 0.3; 1.0 0.5]
+    @test output[3] ≈  [1.82 0.12; 1.0 0.25]
 
-    @test output[1] == [1.0 1.0 1.0;
-                        1.0 1.0 1.0;
-                        1.0 1.0 1.0]
-    @test output[2] ≈  [1.0 1.0 2.0;
-                        2.0 1.0 0.5;
-                        1.0 1.0 0.5]
-    @test output[3] ≈  [1.0 1.0 4.0;
-                        4.0 1.0 0.25;
-                        1.0 1.0 0.25]
+    # Staring in previous year
+    output = ArrayOutput(init; tspan=Date(2000, 9):Month(1):Date(2000, 12), aux=(suit=suit,))
+    sim!(output, rule)
+    @test output[1] == [1.0 1.0; 1.0 1.0]
+    @test output[2] ≈  [1.9 0.9; 1.0 0.5]
+    @test output[3] ≈  [3.8 0.9; 1.0 0.25]
 
-    @test DynamicGrids.normalise.(output[3], 0.25, 4) == [0.2  0.2  1.0;
-                                                          1.0  0.2  0.0;
-                                                          0.2  0.2  0.0]
-
+    # Wrapping into the following year
+    output = ArrayOutput(init; tspan=Date(2001, 11):Month(1):Date(2002, 2), aux=(suit=suit,))
+    sim!(output, rule)
+    @test output[1] == [1.0 1.0; 1.0 1.0]
+    @test output[2] ≈  [2.1 1.1; 1.0 0.5]
+    @test output[3] ≈  [2.1 0.0; 1.0 0.25]
+    @test output[4] ≈  [2.31 0.0; 1.0 0.125]
 end
 
 @testset "logistic growth" begin
@@ -123,7 +140,7 @@ end
                   2.0 1.0 0.5;
                   1.0 1.0 0.5])
 
-    output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
+    output = ArrayOutput(init; tspan=Date(2001, 1):Month(1):Date(2001, 3), aux=(suit=suit,))
     rule = Ruleset(ExactLogisticGrowthMap(layerkey=Val(:suit), carrycap=10))
     sim!(output, rule)
 

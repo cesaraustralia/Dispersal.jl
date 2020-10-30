@@ -1,9 +1,6 @@
----
-title : Dispersal.jl example
-author : Rafael Schouten
----
+# Dispersal.jl example
 
-# Dispersal simulations
+_Rafael Schouten_
 
 In this example we will run a simulation of the spread of the Spotted Winged
 Drosophila _D. suzukii_ accross the continental USA.
@@ -15,9 +12,7 @@ give us date/time handling, GeoData simplifies the loading of geospatial
 raster files. It requires also loading NCDatasets.jl and ArchGDAL.jl to load
 NetCDF and GeoTiff files, respectively.
 
-```{julia; results=hidden}
-# using Pkg
-# Pkg.add(PackageSpec(url="https://github.com/rafaqz/GeoData.jl", rev="master"))
+```julia; results="markdown"
 using GeoData, DimensionalData, Dispersal, Dates, NCDatasets, ArchGDAL, Plots
 using DimensionalData: rebuild, Forward, Reverse
 basedir = joinpath(dirname(Base.pathof(Dispersal)), "../docs")
@@ -27,14 +22,13 @@ basedir = joinpath(dirname(Base.pathof(Dispersal)), "../docs")
 
 We use `DateTime` of for the time dimension:
 
-```{julia; results=hidden}
+```julia; results="markdown"
 timestep = Month(1);
 tspan = DateTime(2016, 1):Month(1):DateTime(2018, 12)
 aust = Lon(Between(113.338953078, 153.569469029)),
-       Lat(Between(-43.6345972634, -10.6681857235));
+       Lat(Between(-43.6345972634, -10.6681857235))
 ```
 
----
 
 ### Define a `RuleSet`: climate driven population growth
 
@@ -46,42 +40,43 @@ Follow the [examples tutorial](https://rafaqz.github.io/GrowthRates.jl/dev/examp
 at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl). To skip this step
 just download the output saved in the example:
 
-```{julia; results=hidden}
-dataurl = "https://media.githubusercontent.com/media/cesaraustralia/Dispersal.jl/data"
-growthratesfilename = "growthrates.ncd"
-growthratesfilepath = joinpath(basedir, growthratesfilename)
-isfile(growthratesfilepath) ||
-  download(joinpath(dataurl, growthratesfilename), joinpath(basedir, growthratesfilename));
+```julia; results="markdown"
+url = "https://github.com/cesaraustralia/GrowthMaps.jl/raw/gh-pages/dev/growthrates.ncd"
+growthratesfilepath = joinpath(basedir, "growthrates.ncd")
+isfile(growthratesfilepath) || download(growthratesurl, growthratesfilepath)
 ```
 
 And select just the bounding box for Australia, and set the dimension order to Lat/Lon:
 
-```{julia; results=hidden}
-growthrates = NCDarray(growthratesfilepath)
+```julia; results="markdown"
+growthrates = NCDarray(growthratesfilepath)[aust...] |>
+    A -> permutedims(A, (Lat, Lon, Ti)) |> reorderarray
+plot(growthrates[Ti(1)])
+
 # Set the length of the timestep. TODO: get this automatically from NetCDF units in GeoData.jl
 ti = dims(growthrates, Ti)
 mode_ = Sampled(DimensionalData.order(ti), Regular(timestep), Intervals(Start()))
-growthrates = setdims(growthrates, rebuild(ti; mode=mode_));
+growthrates = setdims(growthrates, rebuild(ti; mode=mode_))
 ```
 
 Plot the growth layer:
 
-```{julia; results=hidden}
+```julia; results="markdown"
 growthrates[Ti(1)] |> plot
-savefig(joinpath(basedir, "build/assets/growthrates.png"));
+savefig(joinpath(basedir, "build/assets/growthrates.png"))
 ```
 
 Create a `ExactLogisticGrowthMap` rule from the layer, here we use
 unitful units for the layers' time dimension:
 
-```{julia; results=hidden}
+```julia; results="markdown"
 carrycap = 1e9
 growth = ExactLogisticGrowthMap(layerkey=:growthrates, carrycap=carrycap);
 ```
 
 ### Local dispersal
 
-```{julia; results=hidden}
+```julia; results="markdown"
 λ = 0.0125
 radius = 1
 sze = 2radius + 1
@@ -96,8 +91,8 @@ localdisp = InwardsPopulationDispersal(hood);
 
 ### Allee effects
 
-```{julia; results=hidden}
-allee = AlleeExtinction(minfounders=10.0);
+```julia; results="markdown"
+allee = AlleeExtinction(minfounders=10.0)
 ```
 
 ### Human dispersal
@@ -105,7 +100,7 @@ allee = AlleeExtinction(minfounders=10.0);
 The human dispersal component is generated from an array or population data.
 First we'll open an input tiff, and move it to a memory backed `GeoArray`.
 
-```{julia; results=hidden}
+```julia; results="markdown"
 humanpop_filename = "population_density.tif"
 humanpop_filepath = joinpath(basedir, humanpop_filename)
 isfile(humanpop_filepath) || download(joinpath(dataurl, humanpop_filename), humanpop_filepath);
@@ -114,16 +109,16 @@ isfile(humanpop_filepath) || download(joinpath(dataurl, humanpop_filename), huma
 Again select the Australian bounds. This time we also select the first Band.
 Tiff data always has bands, even when there is only one:
 
-```{julia; results=hidden
+```julia; results="markdown"
 humanpop = GDALarray(humanpop_filepath; usercrs=EPSG(4326))[Band(1), aust...] |>
-    A -> permutedims(A, (Lat, Lon)) |> reorderarray
+    A -> permutedims(A, (Lat, Lon)) |> reorderarray |> replace_missing
 savefig(joinpath(basedir, "build/assets/humanpop.png"));
 ```
 
 ![popgrowth](assets/humanpop.png)
 
 
-```{julia; results=hidden}
+```julia; results="markdown"
 @time humandisp = HumanDispersal(
     human_pop=parent(humanpop),
     human_exponent=2.0,
@@ -140,26 +135,33 @@ savefig(joinpath(basedir, "build/assets/humanpop.png"));
 Make a zeros array and populate the starting cells. We need to replace the `missing`
 values with something else Dispersal.jl init can't contain `missing` or it will spread everywhere:
 
-```{julia; results=hidden}
+```julia; results="markdown"
 init = replace_missing(growthrates[Ti(1)], NaN) |> zero
-incursion = [(36.9677, -122.0294),
-             (37.3226, -121.8921),
-             (37.6008, -120.9545),
-             (35.3453, -119.0586),
-             (38.7318, -121.9014),
-             (38.5249, -121.9708),
-             (37.2502, -119.751)]
+incursionpoints = (
+    Melbourne=(-37.805896, 144.959527),
+    Mildura=(-34.219504, 142.130864),
+    Coffs_Harbour=(-30.287245, 153.092991),
+    Sydney=(-33.839943, 151.006101),
+    Adelaide=(-34.901608, 138.601547),
+    Port_Augusta=(-32.466201, 137.813850),
+    Devonport=(-41.180545, 146.314887),
+    Hobart=(-42.881742, 147.323879),
+    Brisbane=(-27.436190, 152.990588),
+    Cairns=(-16.937281, 145.747709),
+    Perth=(-31.9505, 115.8605),
+    Geraldton=(-28.778138, 114.615632)
+)
+# Chose Melbourne as the incursion point
+(lat, lon) = incursionpoints[:Melbourne]
 # Using `Contains` finds the interval that contains the coordinates
-for (lat, lon) in incursion
-    init[Lat(Contains(lat)), Lon(Contains(lon))] = 1e7
-end
+init[Lat(Contains(lat)), Lon(Contains(lon))] = 1e7
 ```
 
 ### Define a masking layer
 
 This layer lets the simulation know which cells should be ignored.
 
-```{julia; results=hidden}
+```julia; results="markdown"
 masklayer = boolmask(growthrates[Ti(1)])
 plot(masklayer)
 savefig(joinpath(basedir, "build/assets/mask.png"));
@@ -169,7 +171,7 @@ savefig(joinpath(basedir, "build/assets/mask.png"));
 
 ### Define a combined ruleset
 
-```{julia; results=hidden}
+```julia; results="markdown"
 ruleset = Ruleset(
     humandisp, Chain(localdisp, allee, growth);
     timestep=timestep,
@@ -184,13 +186,11 @@ The simplest and oftern the most performant output for a simulation is an
 ArrayOutput, which simply writes the simulation to a preallocated array
 without visualising it.
 
-```{julia; results=hidden}
+```julia; results="markdown"
 output = ArrayOutput(init;
     tspan=tspan,
     mask=masklayer,
     aux=(growthrates=growthrates,),
-    minval=0.0,
-    maxval=carrycap,
 );
 ```
 
@@ -198,8 +198,55 @@ output = ArrayOutput(init;
 
 To run a simulation, we pass in the output and rulset.
 
-```{julia; results=hidden}
+```julia; results="markdown"}
 sim!(output, ruleset);
+```
+
+## Define a processor to view the simulation
+
+We first need to define a colorscheme and some text config
+to show our simulation visually.
+
+You can use the built-in `Greyscale` scheme, or any scheme from
+[ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl).
+
+```julia; results="markdown"
+using ColorSchemes, Colors
+scheme = ColorSchemes.Oranges_3
+#scheme = ColorSchemes.autumn1
+
+# This defines what color zero values get
+zerocolor = RGB24(0.7)
+# And what color is given to masked areas
+maskcolor = RGB24(0.0)
+# And define text font (and placement if you need to)
+textconfig = if Sys.islinux()
+    TextConfig(font="cantarel")
+else
+    TextConfig(font="arial")
+end
+processor = ColorProcessor(scheme, zerocolor, maskcolor, textconfig);
+```
+
+
+### Run in a GTK window
+
+The `GTKOutput` in
+[DynamicGridsGtk.jl](http://gihub.com/rafaqz/DynamicGridsGtk.jl) is a
+simple desktop output that just shows the simulation without controls. It can be
+useful for faster load-time than `ElectronOutput`, and also dedicates all
+screenspace to viewing the simulation.
+
+```julia; eval=false
+using DynamicGridsGtk
+output = GtkOutput(init .* 0;
+    mask=masklayer,
+    tspan=tspan,
+    fps=10,
+    store=true,
+    processor=processor
+)
+sim!(output, ruleset)
 ```
 
 ### Save a gif of your simulation
@@ -209,26 +256,9 @@ we need to define a color processor to turn the simulation into images for the
 frames of the the gif. This processor can also be used later in web or gtk
 outputs.
 
-You can use the built-in `Greyscale` scheme, or any scheme from
-[ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl).
-
-```julia; results=hidden
-using ColorSchemes, Colors
-scheme = ColorSchemes.Oranges_3
-#scheme = ColorSchemes.autumn1
-
-## Frame Processing Colors
-zerocolor = RGB24(0.7)
-maskcolor = RGB24(0.0)
-textconfig = TextConfig(font="arial")
-processor = ColorProcessor(scheme, zerocolor, maskcolor, textconfig);
-```
-
-With a non-image output like ArrayOuput we need to pass in the image processor
-manually.
-
-```julia; results=hidden
-savegif(joinpath(basedir, "build/assets/sim.gif"), output; minval=0.0, maxval=1e7, processor=processor, fps=10);
+```julia; results="markdown"
+gifpath = joinpath(basedir, "build/assets/sim.gif")
+savegif(gifpath, output; processor=processor, fps=10);
 ```
 
 ![Drosphila suzukii spread](assets/sim.gif)
@@ -248,7 +278,7 @@ included `REPLOutput`. It doesn't work so well in Atom/Juno, so we only recommen
 using it in a real terminal. It also works better in a terminal where you can
 easily reduce the font size.
 
-```julia; results=hidden
+```julia; results="markdown"
 using Crayons
 output = REPLOutput(init; tspan=tspan, style=Block(), fps=5, color=:white, store=false)
 sim!(output, ruleset);
@@ -257,7 +287,7 @@ sim!(output, ruleset);
 The `Braile()` style is half the dimensions of the `Block()` style, but doen't
 look as clear.
 
-```julia; results=hidden
+```julia; results="markdown"
 output = REPLOutput(init; tspan=tspan, style=Braile(), fps=5, color=:white, store=false)
 sim!(output, ruleset);
 ```
@@ -275,7 +305,7 @@ or a Jupyter notebook. It can also be served to a browser locally or over the
 web using `ServerOutput()`, or run in a standalone desktop app using
 `ElectronOutput()`.
 
-### Juno or jupyter notebooks
+### Atom/Juno or Jupyter notebooks
 
 Building a `InteractOutput()` and running `display()` will open an output in a plot
 pane in Juno. See the example above to define an image processor. Setting
@@ -333,23 +363,3 @@ output = ServerOutput(init;
 ```
 
 If run locally, the interface should be served at the address "localhost:8080" in your web browser.
-
-### Run in a GTK window
-
-The `GTKOutput` in
-[DynamicGridsGtk.jl](http://gihub.com/rafaqz/DynamicGridsGtk.jl) is a
-simple desktop output that just shows the simulation without controls. It can be
-useful for faster load-time than `ElectronOutput`, and also dedicates all
-screenspace to viewing the simulation.
-
-```julia; eval=false
-using DynamicGridsGtk
-output = GtkOutput(init .* 0;
-    mask=masklayer,
-    tspan=tspan,
-    fps=10,
-    store=true,
-    processor=processor
-)
-sim!(output, ruleset)
-```
