@@ -48,6 +48,7 @@ suitseq3 = DimensionalArray(a3, dimz3)
 init = zero(suitseq3[Ti(1)])
 
 @testset "layers sequences are interpolated over timespans" begin
+    rule = ExactExponentialGrowth(; intrinsicrate=1.0)
     times = (0d, -20d), (16d, 14d), (19d, 11d), (5d, -45d)#, (15d, 55d)
     for (t1, t2) in times
         interp1 = precalc_timeindex(suitseq2, rule, data, t1)
@@ -67,33 +68,33 @@ end
 @testset "sequence of layers" begin
     rule = ExactExponentialGrowth(; intrinsicrate=1.0)
     ruleset = Ruleset(rule; timestep=1d)
-    data = DynamicGrids.SimData(Extent(init=init, aux=(suit=suitseq,), tspan=1:1), ruleset)
+    data = DynamicGrids.SimData(Extent(init=init, aux=(suit=suitseq3,), tspan=1:1), ruleset)
 
     @testset "layers returns first frame values at 0.5 through the timespan" begin
         t = 5d
-        interp = precalc_timeindex(suitseq, rule, data, t)
-        @test layer(suitseq, (1, 1), interp) == 0.1
-        @test layer(suitseq, (1, 2), interp) == 0.2
-        @test layer(suitseq, (2, 1), interp) == 0.3
-        @test layer(suitseq, (2, 2), interp) == 0.4
+        interp = precalc_timeindex(suitseq3, rule, data, t)
+        @test layer(suitseq3, (1, 1), interp) == 0.1
+        @test layer(suitseq3, (1, 2), interp) == 0.2
+        @test layer(suitseq3, (2, 1), interp) == 0.3
+        @test layer(suitseq3, (2, 2), interp) == 0.4
     end
 
     @testset "layers returns second frame values at 1.5 times through the timespan" begin
         t = 15d
-        interp = precalc_timeindex(suitseq, rule, data, t)
-        @test layer(suitseq, (1, 1), interp) == 1.5
-        @test layer(suitseq, (1, 2), interp) == 1.6
-        @test layer(suitseq, (2, 1), interp) == 1.7
-        @test layer(suitseq, (2, 2), interp) == 1.8
+        interp = precalc_timeindex(suitseq3, rule, data, t)
+        @test layer(suitseq3, (1, 1), interp) == 1.5
+        @test layer(suitseq3, (1, 2), interp) == 1.6
+        @test layer(suitseq3, (2, 1), interp) == 1.7
+        @test layer(suitseq3, (2, 2), interp) == 1.8
     end
 
     @testset "layers returns the second frame one timestep in" begin
         t = 10d
-        interp = precalc_timeindex(suitseq, rule, data, t)
-        @test layer(suitseq, (1, 1), interp) ≈ 1.5
-        @test layer(suitseq, (1, 2), interp) ≈ 1.6
-        @test layer(suitseq, (2, 1), interp) ≈ 1.7
-        @test layer(suitseq, (2, 2), interp) ≈ 1.8
+        interp = precalc_timeindex(suitseq3, rule, data, t)
+        @test layer(suitseq3, (1, 1), interp) ≈ 1.5
+        @test layer(suitseq3, (1, 2), interp) ≈ 1.6
+        @test layer(suitseq3, (2, 1), interp) ≈ 1.7
+        @test layer(suitseq3, (2, 2), interp) ≈ 1.8
     end
 
 end
