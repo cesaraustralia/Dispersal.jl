@@ -243,9 +243,9 @@ end
 
 @inline applyrule!(data, rule::HumanDispersal{R,W}, population, index) where {R,W} = begin
     population == zero(population) && return
-    @inbounds dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
+    dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
     ismissing(dispersalprob) && return
-    @inbounds shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
+    shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
     ismissing(shortlist) && return
 
     #= This formulation introduces a bias where total_dispersers is

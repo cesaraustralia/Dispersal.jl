@@ -18,7 +18,7 @@ Base.@propagate_inbounds layer(rule::Rule, data, I) =
     layer(layer(rule, data), I, timeindex(rule))
 Base.@propagate_inbounds layer(l::Matrix, I, timeindex) = l[I...]
 Base.@propagate_inbounds layer(l::AbstractArray{T,3}, I, timeindex) where T =
-    return @inbounds l[I..., timeindex]
+    return l[I..., timeindex]
 
 timeindex(rule::Rule) = rule.timeindex
 layerkey(rule::Rule) = rule.layerkey
