@@ -1,34 +1,40 @@
-@mix @columns struct Kernel{NH}
-    # Field          | Default              | Flat | Bounds | Description
-    neighborhood::NH | DispersalKernel{3}() | true | _      | "Normalised proportions of dispersal to surrounding cells"
-end
-
 """
     DispersalKernel{Radius}(formulation::F, kernel::K, cellsize::C, distancemethod::D)
     DispersalKernel{Radius}(; formulation=ExponentialKernel(1.0), cellsize=1.0, distancemethod=CentroidToCentroid())
 
-arguments, but preferably use the keyword constructor to build the array from
+Preferably use the keyword constructor to build the array from
 a dispersal kernel function.
+
 $(FIELDDOCTABLE)
 """
-@columns struct DispersalKernel{R,F,K,C,D,B} <: AbstractRadialNeighborhood{R,B}
-    # Field           | Default                | Flat  | Bounds      | Description
-    formulation::F    | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
-    kernel::K         | nothing                | false | _           | "Kernal matrix"
-    cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
-    distancemethod::D | CentroidToCentroid()   | false | _           | "Method for calculating distance between cells"
-    buffer::B         | nothing                | false | _           | "Neighborhood buffer"
+struct DispersalKernel{R,F,C,D,K,B} <: AbstractRadialNeighborhood{R,B}
+    "Kernel formulation object"
+    formulation::F
+    "Simulation cell size"
+    cellsize::C
+    "Method for calculating distance between cells"
+    distancemethod::D
+    "Kernal matrix"
+    kernel::K
+    "Neighborhood buffer"
+    buffer::B
 end
-DispersalKernel{R}(formulation, kernel, cellsize, distancemethod, buffer) where R = begin
-    # Convert kenel the type of the init array
+DispersalKernel{R}(formulation, cellsize, distancemethod, kernel, buffer) where R = begin
+    # Build the kernel matrix
     newkernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
+    # Convert the kernel matrix to the type of the init array
     newkernel = kernel isa Nothing ? newkernel : typeof(kernel)(newkernel)
-    DispersalKernel{R,map(typeof, (formulation, newkernel, cellsize, distancemethod, buffer))...
-                         }(formulation, newkernel, cellsize, distancemethod, buffer)
+    DispersalKernel{R,map(typeof, (formulation, cellsize, distancemethod, newkernel, buffer))...
+                         }(formulation, cellsize, distancemethod, newkernel, buffer)
 end
-DispersalKernel{R}(; kwargs...) where R = begin
-    args = FieldDefaults.insert_kwargs(kwargs, DispersalKernel)
-    DispersalKernel{R}(args...)
+DispersalKernel{R}(;
+    formulation=ExponentialKernel(),
+    cellsize=1.0,
+    distancemethod=CentroidToCentroid(),
+    kernel=nothing,
+    buffer=nothing,
+) where R = begin
+    DispersalKernel{R}(formulation, cellsize, distancemethod, kernel, buffer)
 end
 
 ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
@@ -36,11 +42,11 @@ ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = Dispersal
 DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
 
 # The default method will rebuild the kernel every timestep, which can be costly.
-DynamicGrids.spreadbuffers(rule::NeighborhoodRule, k::DispersalKernel{R,F,K,C,D,B}, 
-                           buffers::Tuple, grid::AbstractArray) where {R,F,K,C,D,B} = begin
+DynamicGrids.spreadbuffers(rule::NeighborhoodRule, k::DispersalKernel{R,F,C,D,K,B},
+                           buffers::Tuple, grid::AbstractArray) where {R,F,C,D,K,B} = begin
     kernels = map(buffers) do b
-        DispersalKernel{R,F,K,C,D,typeof(b)}(
-            formulation(k), kernel(k), cellsize(k), distancemethod(k), b
+        DispersalKernel{R,F,C,D,K,typeof(b)}(
+            formulation(k), cellsize(k), distancemethod(k), kernel(k), b
         )
     end
     buffers, map(k -> (@set rule.neighborhood = k), kernels)
@@ -51,7 +57,6 @@ cellsize(hood::DispersalKernel) = hood.cellsize
 distancemethod(hood::DispersalKernel) = hood.distancemethod
 neighbors(hood::DispersalKernel) = buffer(hood)
 formulation(hood::DispersalKernel) = hood.formulation
-
 
 @inline disperse(hood::DispersalKernel) =
     @inbounds return buffer(hood) ⋅ kernel(hood)
@@ -125,15 +130,15 @@ This is the obvious, naive method, but it will not handle low grid resolution we
 """
 struct CentroidToCentroid <: DistanceMethod end
 
-dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = 
+dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) =
     sqrt(x^2 + y^2) * cellsize |> f
 
 # """
 #     CentroidToCentroid(subsampling)
 #     CentroidToCentroid(; subsampling=10.0)
-# 
+#
 # Calculates probability of dispersal between source cell centroid and destination cell area.
-# 
+#
 # $(FIELDDOCTABLE)
 # """
 # @columns struct CentroidToArea <: DistanceMethod
@@ -151,17 +156,16 @@ Calculates probability of dispersal between source cell area and destination cen
 
 $(FIELDDOCTABLE)
 """
-@columns struct AreaToCentroid <: DistanceMethod
-    # Field        | Default | Flat | Bounds      | Description
-    subsampling::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
+Base.@kwdef struct AreaToCentroid{SS<:Number} <: DistanceMethod
+    "Subsampling for numerical integration"
+    subsampling::SS = Param(10.0; bounds=(2.0, 40.0))
 end
-AreaToCentroid(subsampling::AbstractFloat) = AreaToCentroid(round(Int, subsampling))
 
 @inline dispersalprob(f, dm::AreaToCentroid, x, y, cellsize) = begin
     prob = zero(cellsize)
     centerfirst = 1 / subsampling(dm) / 2 - 0.5
     centerlast = centerfirst * -1
-    range = LinRange(centerfirst, centerlast, subsampling(dm))
+    range = LinRange(centerfirst, centerlast, round(Int, subsampling(dm)))
     for j in range, i in range
         prob += sqrt((x + i)^2 + (y + j)^2) * cellsize |> f
     end
@@ -177,17 +181,16 @@ Calculates probability of dispersal between source and destination cell areas.
 
 $(FIELDDOCTABLE)
 """
-struct AreaToArea <: DistanceMethod
-    subsampling::Int
+Base.@kwdef struct AreaToArea{SS<:Number} <: DistanceMethod
+    subsampling::SS = Param(10.0; bounds=(2.0, 40.0))
 end
-AreaToArea(subsampling::AbstractFloat) = AreaToArea(round(Int, subsampling))
 
 @inline dispersalprob(f, dm::AreaToArea, x, y, cellsize) = begin
     prob = zero(cellsize)
     # Get the center point of the first cell (for both dimensions)
     centerfirst = 1 / subsampling(dm) / 2 - 0.5
     centerlast = centerfirst * -1
-    range = LinRange(centerfirst, centerlast, subsampling(dm))
+    range = LinRange(centerfirst, centerlast, round(Int, subsampling(dm)))
     for i in range, j in range
         for a in range, b in range
             prob += sqrt((x + i + a)^2 + (y + j + b)^2) * cellsize |> f
@@ -198,13 +201,17 @@ end
 
 
 """
-Abstract supertype for functors for calculating the probability of 
+Abstract supertype for functors that calculate the probability of
 dispersal between two points.
 
 Concrete implementations must define functor methods with the form:
+
 ```julia
-(k::SomeKernel)(x) = ? # do something with `x` and `k`"
+(k::SomeKernel)(distance) = # do something with `distance` and `k`"
 ```
+
+Using an anonymous funciton for this would not give you rebuildable
+model parameters.
 """
 abstract type KernelFormulation end
 
@@ -215,8 +222,8 @@ Probability of dispersal with a negatitve exponential relationship to distance.
 
 $(FIELDDOCTABLE)
 """
-@columns struct ExponentialKernel{P} <: KernelFormulation
-    # Field | Default | Flat | Bounds     | Description
-    λ::P    | 1.0     | true | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
+@Base.kwdef struct ExponentialKernel{P} <: KernelFormulation
+    "Parameter for adjusting spread of dispersal propability"
+    λ::P = Param(1.0, bounds=(0.0, 2.0))
 end
 (f::ExponentialKernel)(distance) = exp(-distance / f.λ)

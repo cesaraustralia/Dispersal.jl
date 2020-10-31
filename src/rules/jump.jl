@@ -15,14 +15,23 @@ Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 
 $(FIELDDOCTABLE)
 """
-@Probabilistic struct JumpDispersal{R,W,SR} <: AbstractJumpDispersal{R,W}
-    # Field       | Def  | Flatten | Limits       | Description
-    spotrange::SR | 30.0 | true    | (0.0, 100.0) | "A number or Unitful.jl distance with the same units as cellsize"
+struct JumpDispersal{R,W,PT,SR} <: AbstractJumpDispersal{R,W}
+    "A real number between one and zero"
+    prob_threshold::PT
+    "A number or Unitful.jl distance with the same units as cellsize"
+    spotrange::SR
 end
 
+JumpDispersal{R,W}(; 
+    prob_threshold=Param(0.1, bounds=(0.0, 1.0)),
+    spotrange=Param(30.0, bounds=(0.0, 100.0)),
+    ) where {R,W} = JumpDispersal{R,W}(prob_threshold, spotrange)
+
+# DynamicGrids.jl interface
+
 # TODO update this and test
-@inline applyrule!(data, rule::AbstractJumpDispersal{R,W}, state, cellindex
-                  ) where {R,W} = begin
+@inline function applyrule!(data, rule::AbstractJumpDispersal{R,W},
+                            state, cellindex) where {R,W}
     # Ignore empty cells
     state > zero(state) || return state
 
@@ -37,8 +46,8 @@ end
 
     # Update spotted cell if it's on the grid
     if is_inbounds
-        @inbounds data[W][jumpdest...] = state
+        @inbounds data[W][jumpdest...] += state
     end
 
-    state
+    return state
 end

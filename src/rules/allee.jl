@@ -10,10 +10,13 @@ Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 
 $(FIELDDOCTABLE)
 """
-@columns struct AlleeExtinction{R,W,MF} <: CellRule{R,W}
-    # Field         | Default | Flatten | Limits       | Description
-    minfounders::MF | 5.0     | true    | (1.0, 200.0) | "Minimum founding individuals required to to start an ongoing population"
+struct AlleeExtinction{R,W,MF} <: CellRule{R,W}
+    "Minimum founding individuals required to to start an ongoing population"
+    minfounders::MF 
 end
+AlleeExtinction{R,W}(; minfounders=Params(5.0, bounds=(1.0, 200.0))) where {R,W} = 
+    AlleeExtinction{R,W}(minfounders)
 
-@inline applyrule(data, model::AlleeExtinction, state, args...) =
-    (state >= model.minfounders ? state : zero(state))
+@inline function applyrule(data, model::AlleeExtinction, state, args...) where {R,W}
+    state >= model.minfounders ? state : zero(state)
+end

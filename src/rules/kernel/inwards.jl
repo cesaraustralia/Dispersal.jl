@@ -24,10 +24,19 @@ Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 
 $(FIELDDOCTABLE)
 """
-@Probabilistic @Kernel struct InwardsBinaryDispersal{R,W} <: InwardsDispersal{R,W} end
+struct InwardsBinaryDispersal{R,W,NH,PT} <: InwardsDispersal{R,W}
+    "Normalised proportions of dispersal to surrounding cells"
+    neighborhood::NH
+    "A real number between one and zero"
+    prob_threshold::PT
+end
+InwardsBinaryDispersal{R,W}(;
+    neighborhood=DispersalKernel{3}(),
+    prob_threshold=Param(0.1, bounds=(0.0, 1.0))
+) where {R,W} = InwardsBinaryDispersal{R,W}(neighborhood, prob_threshold)
 
 
-@inline applyrule(data, rule::InwardsBinaryDispersal, state::Integer, cellindex) = begin
+@inline function applyrule(data, rule::InwardsBinaryDispersal, state::Integer, cellindex)
     # Combine neighborhood cells into a single scalar
     s = sum(neighborhood(rule))
 
@@ -49,23 +58,44 @@ Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 
 $(FIELDDOCTABLE)
 """
-@Kernel struct InwardsPopulationDispersal{R,W} <: InwardsDispersal{R,W} end
+struct InwardsPopulationDispersal{R,W,NH} <: InwardsDispersal{R,W}
+    "Normalised proportions of dispersal to surrounding cells"
+    neighborhood::NH
+end
+InwardsPopulationDispersal{R,W}(;
+    neighborhood=DispersalKernel{3}()
+) where {R,W} = InwardsPopulationDispersal{R,W}(neighborhood)
 
-@inline applyrule(data, rule::InwardsPopulationDispersal, state::AbstractFloat, cellindex) =
+@inline function applyrule(data, rule::InwardsPopulationDispersal, state, cellindex)
     disperse(neighborhood(rule))
-
-
-@Layers @Kernel struct SwitchedInwardsPopulationDispersal{R,W,Th} <: InwardsDispersal{R,W}
-    threshold::Th
 end
 
-@inline applyrule(data, rule::SwitchedInwardsPopulationDispersal, state::AbstractFloat,
-                  cellindex) =
-    if layer(rule, data, cellindex) > rule.threshold
+
+struct SwitchedInwardsPopulationDispersal{R,W,NH,A,TI,Th} <: InwardsDispersal{R,W}
+    "Normalised proportions of dispersal to surrounding cells"
+    neighborhood::NH
+    "Key for aux layer"
+    auxkey::A
+    "Precalculated interpolation indices"
+    auxtimeindex::TI
+    threshold::Th
+end
+SwitchedInwardsPopulationDispersal{R,W}(;
+    neighborhood=DispersalKernel{3}(),
+    auxkey,
+    auxtimeindex=1,
+    threshold=Param(0.5; bounds=(0.0, 1.0)),
+) where {R,W} = SwitchedInwardsPopulationDispersal{R,W}(neighborhood, auxkey, auxtimeindex, threshold)
+
+@inline function applyrule(data, rule::SwitchedInwardsPopulationDispersal, state, cellindex)
+    if auxval(data, rule.auxkey, cellindex..., rule.auxtimeindex) > rule.threshold
         disperse(neighborhood(rule))
     else
         state
     end
+end
 
-DynamicGrids.precalcrules(rule::SwitchedInwardsPopulationDispersal, data) =
-    precalclayer(layer(rule, data), rule, data)
+function precalcrule(rule::SwitchedInwardsPopulationDispersal, data)
+    precalc_auxtimeindex(aux(data, rule.auxkey), rule, data)
+end
+

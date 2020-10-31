@@ -1,13 +1,7 @@
-# Mixins
 
-@mix @columns struct CarryCap{CC}
-    # Field           | Default  | Flat  | Bounds      | Description
-    carrycap::CC      | 100000.0 | true  | (0.0, 1e9)  | "Carrying capacity for each cell. Not currently scaled by area."
-end
-
-@mix @Timestep struct InstrinsicGrowthRate{GR}
-    intrinsicrate::GR | 0.1      | true  | (0.0, 10.0) | "Intrinsic rate of growth per timestep"
-end
+const CARRYCAP      = Param(100000.0; bounds=(0.0, 10.0))
+const INTRINSICRATE = Param(0.1,      bounds=(0.0, 10.0))
+const THRESHOLD     = Param(0.5;      bounds=(0.0, 1.0))
 
 """
 Extends CellRule for rules of growth dynamics
@@ -19,64 +13,115 @@ abstract type GrowthRule{R,W} <: CellRule{R,W} end
 
 
 """
-Extends GrowthRule for growth rules using a heterogenous
-growth rate layer.
-
+Extends GrowthRule for growth rules using heterogenous
+growth rate data.
+a
 [GrowthMaps.jl](http://github.com/cesaraustralia/GrowthMaps.jl)
 can produce these growth maps from environmental data.
+
+$(FIELDDOCTABLE)
 """
 abstract type GrowthMapRule{R,W} <: GrowthRule{R,W} end
 
-# Base.key(rule::GrowthMapRule{R,W,K}) where {R,W,K} = K
-# layer(rule::GrowthMapRule, data) = axkey(rule)
-
-DynamicGrids.precalcrules(rule::GrowthMapRule, data) = begin
-    if :timestep in fieldnames(typeof(rule))
-        rule = precalctimestep(rule, data)
-    end
-    precalclayer(layer(rule, data), rule, data)
-end
-
-DynamicGrids.precalcrules(rule::GrowthRule, data) =
-    :timestep in fieldnames(typeof(rule)) ? precalctimestep(rule, data) : rule
-
-
-# Exact growth solutions
 
 """
 Simple fixed exponential growth rate using exact solution.
+
 $(FIELDDOCTABLE)
 """
-@InstrinsicGrowthRate struct ExactExponentialGrowth{R,W} <: GrowthRule{R,W} end
+struct ExactExponentialGrowth{R,W,GR,TS,S} <: GrowthRule{R,W}
+    "Intrinsic rate of growth per timestep"
+    intrinsicrate::GR
+    "Timestep used in formulation"
+    timestep::TS
+    "The fractional number of rule timesteps in the current simulation timestep"
+    nsteps::S
+end
+ExactExponentialGrowth{R,W}(;
+    intrinsicrate=INTRINSICRATE,
+    timestep=nothing,
+    nsteps=1.0,
+) where {R,W} = ExactExponentialGrowth{R,W}(intrinsicrate, timestep, nsteps)
 
-@inline applyrule(data, rule::ExactExponentialGrowth, population, args...) = begin
+# DynamicGrids.jl interface
+
+precalcrule(rule::ExactExponentialGrowth, data) = precalc_timestep(rule, data)
+
+@inline function applyrule(data, rule::ExactExponentialGrowth, population, cellindex)
     population > zero(population) || return zero(population)
     population * exp(rule.intrinsicrate * rule.nsteps)
 end
 
+
 """
 Simple fixed logistic growth rate using exact solution
+
 $(FIELDDOCTABLE)
 """
-@InstrinsicGrowthRate @CarryCap struct ExactLogisticGrowth{R,W} <: GrowthRule{R,W} end
+struct ExactLogisticGrowth{R,W,CC,GR,TS,S} <: GrowthRule{R,W}
+    "Carrying capacity for each cell. Not currently scaled by area."
+    carrycap::CC
+    "Intrinsic rate of growth per timestep"
+    intrinsicrate::GR
+    "Timestep used in formulation"
+    timestep::TS
+    "The fractional number of rule timesteps in the current simulation timestep"
+    nsteps::S
+end
+ExactLogisticGrowth{R,W}(;
+    carrycap=CARRYCAP,
+    intrinsicrate=INTRINSICRATE,
+    timestep=nothing,
+    nsteps=1.0,
+    ) where {R,W} = ExactLogisticGrowth{R,W}(carrycap, intrinsicrate, timestep, nsteps)
 
-@inline applyrule(data, rule::ExactLogisticGrowth, population, cellindex, args...) = begin
+# DynamicGrids.jl interface
+
+precalcrule(rule::ExactLogisticGrowth, data) = precalc_timestep(rule, data)
+
+@inline function applyrule(data, rule::ExactLogisticGrowth, population, cellindex)
     population > zero(population) || return zero(population)
     @fastmath (population * rule.carrycap) / (population + (rule.carrycap - population) *
                                          exp(-rule.intrinsicrate * rule.nsteps))
 end
 
+
+
 """
-Exponential growth based on a growth rate layer using exact solution.
+Exponential growth based on a growth rate data, using exact solution.
+
 $(FIELDDOCTABLE)
 """
-@Timestep @Layers struct ExactExponentialGrowthMap{R,W} <: GrowthMapRule{R,W} end
+struct ExactExponentialGrowthMap{R,W,AK<:Val,AT,TS,S} <: GrowthMapRule{R,W}
+    "Key for aux data"
+    auxkey::AK
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+    "Timestep used in formulation"
+    timestep::TS
+    "The fractional number of rule timesteps in the current simulation timestep"
+    nsteps::S
+end
+ExactExponentialGrowthMap{R,W}(;
+    auxkey,
+    auxtimeindex=1,
+    timestep=nothing,
+    nsteps=1.0,
+) where {R,W} = ExactExponentialGrowthMap{R,W}(auxkey, auxtimeindex, timestep, nsteps)
 
-@inline applyrule(data, rule::ExactExponentialGrowthMap, population, cellindex, args...) = begin
+# DynamicGrids.jl interface
+
+function precalcrule(rule::ExactExponentialGrowthMap, data)
+    rule = precalc_timestep(rule, data)
+    precalc_auxtimeindex(aux(data, rule.auxkey), rule, data)
+end
+
+@inline function applyrule(data, rule::ExactExponentialGrowthMap, population, cellindex)
     population > zero(population) || return zero(population)
-    intrinsicrate = layer(rule, data, cellindex)
+    intrinsicrate = auxval(data, rule.auxkey, cellindex..., rule.auxtimeindex) 
     @fastmath population * exp(intrinsicrate * rule.nsteps)
 end
+
 
 """
 Logistic growth based on a growth rate layer, using exact solution.
@@ -84,11 +129,36 @@ Logistic growth based on a growth rate layer, using exact solution.
 Saturation only applies with positive growth
 $(FIELDDOCTABLE)
 """
-@Layers @Timestep @CarryCap struct ExactLogisticGrowthMap{R,W} <: GrowthMapRule{R,W} end
+struct ExactLogisticGrowthMap{R,W,AK<:Val,AT,CC,TS,S} <: GrowthMapRule{R,W}
+    "Key for aux layer"
+    auxkey::AK
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+    "Carrying capacity for each cell. Not currently scaled by area."
+    carrycap::CC
+    "Timestep used in formulation"
+    timestep::TS
+    "The fractional number of rule timesteps in the current simulation timestep"
+    nsteps::S
+end
+ExactLogisticGrowthMap{R,W}(;
+    auxkey,
+    auxtimeindex=:1,
+    carrycap=CARRYCAP,
+    timestep=nothing,
+    nsteps=1.0,
+) where {R,W} = ExactLogisticGrowthMap{R,W}(auxkey, auxtimeindex, carrycap, timestep, nsteps)
 
-@inline applyrule(data, rule::ExactLogisticGrowthMap, population, cellindex, args...) = begin
+# DynamicGrids.jl interface
+
+function precalcrule(rule::ExactLogisticGrowthMap, data)
+    rule = precalc_timestep(rule, data)
+    precalc_auxtimeindex(aux(data, rule.auxkey), rule, data)
+end
+
+@inline function applyrule(data, rule::ExactLogisticGrowthMap, population, cellindex)
     population > zero(population) || return zero(population)
-    @inbounds intrinsicrate = layer(rule, data, cellindex)
+    intrinsicrate = auxval(data, rule.auxkey, cellindex..., rule.auxtimeindex) 
     if intrinsicrate > zero(intrinsicrate)
         @fastmath (population * rule.carrycap) / (population + (rule.carrycap - population) *
                                              exp(-intrinsicrate * rule.nsteps))
@@ -97,13 +167,33 @@ $(FIELDDOCTABLE)
     end
 end
 
+
 """
 Simple layer mask. Values below a certain threshold are replaced with zero.
+
 $(FIELDDOCTABLE)
 """
-@Layers @Timestep struct MaskGrowthMap{R,W,ST} <: GrowthMapRule{R,W}
-    threshold::ST | 0.5 | true  | (0.0, 1.0) | "Minimum viability index."
+struct MaskGrowthMap{R,W,AK<:Val,AT,Th} <: GrowthMapRule{R,W}
+    "Key for aux data"
+    auxkey::AK
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+    "Minimum viability threshold."
+    threshold::Th
+end
+MaskGrowthMap{R,W}(;
+    auxkey,
+    auxtimeindex=1,
+    threshold=THRESHOLD,
+) where {R,W} = MaskGrowthMap{R,W}(auxkey, auxtimeindex, threshold)
+
+# DynamicGrids.jl interface
+
+function precalcrule(rule::MaskGrowthMap, data)
+    precalc_auxtimeindex(aux(data, rule.auxkey), rule, data)
 end
 
-@inline applyrule(data, rule::MaskGrowthMap, population, cellindex, args...) =
-    layer(rule, data, cellindex) >= rule.threshold ? population : zero(population)
+@inline function applyrule(data, rule::MaskGrowthMap, population, cellindex)
+    intrinsicrate = auxval(data, rule.auxkey, cellindex..., rule.auxtimeindex) 
+    intrinsicrate >= rule.threshold ? population : zero(population)
+end
