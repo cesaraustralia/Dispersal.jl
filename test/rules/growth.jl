@@ -1,4 +1,4 @@
-using DynamicGrids, Dispersal, Test, Unitful, Dates
+using DynamicGrids, Dispersal, Test, Unitful, Dates, DimensionalData
 using DynamicGrids: applyrule, SimData, extent
 using Unitful: d
 
