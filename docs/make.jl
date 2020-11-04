@@ -1,7 +1,6 @@
 using Documenter, Dispersal, Weave, IJulia
 
 basedir = dirname(@__FILE__)
-basedir = joinpath(@__DIR__, "docs")
 
 jmdpath = joinpath(basedir, "src/example.jmd")
 
