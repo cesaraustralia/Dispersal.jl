@@ -19,7 +19,6 @@ using ConstructionBase,
       Statistics
 
 @reexport using DynamicGrids
-@reexport using ModelParameters
 
 using LossFunctions: ZeroOneLoss
 using DimensionalData: Time
@@ -73,7 +72,6 @@ export targets, predictions
     """
 
 const FIELDDOCTABLE = FieldDocTable((;))
-
 
 include("downsampling.jl")
 include("utils.jl") 

@@ -284,7 +284,7 @@ end
     dispersed = disperse!(
         data[W], mode(rule), rule, shortlist, dispersalprob, population, cellindex
     )
-    data[W][cellindex...] -= dispersed
+    add!(data[W], -dispersed, cellindex...)
     return 
 end
 
@@ -346,7 +346,7 @@ function disperse2dest!(data::DynamicGrids.WritableGridData, rule, shortlist, ma
     return if !DynamicGrids.ismasked(data, dest_index...) &&
         DynamicGrids.isinbounds(dest_index, data)
         # Disperse to the cell.
-        data[dest_index...] += maybedispersing
+        add!(data, maybedispersing, dest_index...)
         maybedispersing
     else
         zero(maybedispersing)

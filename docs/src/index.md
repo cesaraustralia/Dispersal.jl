@@ -56,7 +56,6 @@ AreaToArea
 ```
 
 ## Cell rules
-
 Rules that simply transform the state of a single cell, ignoring the rest of the grid.
 
 
@@ -100,18 +99,18 @@ downsample
 downsample!
 ```
 
-# Layer
+# Aux data retrieval
 
 ```@docs
-layer
-LayerCopy
+auxval
+AuxCopy
 ```
 
 ## Optimisation
 
-Dispersal.jl provides optimisation tools for automatically optimising 
-the parameters of arbitrary rulesets, given target data. [`Objective`](@ref) 
-can be extended to add specific objection functions to transform simulation outputs.
+Dispersal.jl provides optimisation tools for optimising the parameters of
+arbitrary `Ruleset`s, given target data. [`Objective`](@ref) can be extended to
+add specific objection functions to transform simulation outputs.
 
 ```@docs
 Parametriser
@@ -120,10 +119,17 @@ SimpleObjective
 RegionObjective
 RegionOutput
 ColorRegionFit
+targets
+predictions
+```
+
+### Simulation replicates
+
+Methods for running replicate simulations can be specified.
+
+```julia
 Replicates
 DistributedReplicates
 SingleCoreReplicates
 ThreadedReplicates
-targets
-predictions
 ```

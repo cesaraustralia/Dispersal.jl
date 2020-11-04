@@ -45,9 +45,7 @@ JumpDispersal{R,W}(;
     jumpdest, is_inbounds = inbounds(jump .+ cellindex, gridsize(data), RemoveOverflow())
 
     # Update spotted cell if it's on the grid
-    if is_inbounds
-        @inbounds data[W][jumpdest...] += state
-    end
+    is_inbounds && @inbounds add!(data[W], state, jumpdest...)
 
     return state
 end
