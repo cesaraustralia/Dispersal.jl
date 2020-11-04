@@ -31,9 +31,9 @@ import Base: getindex, setindex!, lastindex, size, length, push!
 
 import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
-       radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
-       currenttime, currenttimestep, timestep, tspan,
-       buffer, WritableGridData, aux, unwrap
+       radius, gridsize, mask, overflow, cellsize, ruleset, isinbounds, inbounds, ismasked,
+       extent, currenttime, currenttimestep, timestep, tspan,
+       buffer, WritableGridData, SimData, aux, unwrap
 
 import ConstructionBase: constructorof
 
@@ -55,7 +55,7 @@ export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDis
 
 export AlleeExtinction, JumpDispersal, HumanDispersal
 
-export BatchGroups, HeirarchicalGroups
+export BatchGroups, HierarchicalGroups
 
 export ExactExponentialGrowth, ExactLogisticGrowth
 

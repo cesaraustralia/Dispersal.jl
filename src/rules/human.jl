@@ -246,24 +246,23 @@ end
     dispersalprob = rule.human_pop[index...] * rule.dispersalperpop
     ismissing(dispersalprob) && return
     shortlist = rule.dest_shortlists[downsample_index(index, rule.scale)...]
-    #ismissing(shortlist) && return
+    ismissing(shortlist) && return
 
     #= This formulation introduces a bias where total_dispersers is
     close to max_disersers, for example, for chunks much less than max chunk
-    chunks size will allways equal the max chunk size, so the amount wont be random.
-    =#
+    chunks size will allways equal the max chunk size, so the amount wont be random. =#
     dispersed = disperse!(data[W], mode(rule), rule, shortlist, dispersalprob, population, index)
-    data[W][index...] -= dispersed
+    @inbounds data[W][index...] -= dispersed
     return
 end
 
 abstract type TransportMode end
 
-@default_kw @bounds struct HeirarchicalGroups{S} <: TransportMode
+@default_kw @bounds struct HierarchicalGroups{S} <: TransportMode
     scalar::S | 1e-8 | (1e-6, 1e-9)
 end
 
-@inline disperse!(data::WritableGridData, mode::HeirarchicalGroups, rule::HumanDispersal,
+@inline disperse!(data::WritableGridData, mode::HierarchicalGroups, rule::HumanDispersal,
                   shortlist, dispersalprob, population, index) = begin
     dispersed = zero(population)
     nevents = rand(Binomial(human_pop, dispersalperpop))
@@ -292,8 +291,8 @@ struct BatchGroups <: TransportMode end
     while dispersed < total_dispersers
         # Select a subset of the remaining dispersers for a dispersal event
         maybedispersing = min(rand(1:max_dispersers), total_dispersers - dispersed)
+        # Dispers, and track how many have dispersed
         dispersed += disperse2dest!(data, rule, shortlist, maybedispersing)
-        # Track how many have allready dispersed
     end
     dispersed
 end
@@ -302,16 +301,15 @@ end
 unless it falls outside the grid or is masked, in which case we
 say the event just never happened.
 =#
-disperse2dest!(data::DynamicGrids.WritableGridData, rule, shortlist, maybedispersing) = begin
+disperse2dest!(data::WritableGridData, rule, shortlist, maybedispersing) = begin
     dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
     # Randomise cell destination within upsampled destination cells
-    upsample = upsample_index(shortlist[dest_id].index, rule.scale)
+    @inbounds upsample = upsample_index(shortlist[dest_id].index, rule.scale)
     dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
     # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
-    if !DynamicGrids.ismasked(data, dest_index...) &&
-        DynamicGrids.isinbounds(dest_index, data)
+    if isinbounds(dest_index, data) && !ismasked(data, dest_index...)
         # Disperse to the cell.
-        data[dest_index...] += maybedispersing
+        @inbounds data[dest_index...] += maybedispersing
         maybedispersing
     else
         zero(maybedispersing)

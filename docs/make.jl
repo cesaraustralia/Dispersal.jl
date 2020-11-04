@@ -1,20 +1,19 @@
 using Documenter, Dispersal, Weave, IJulia
 
-basedir = @__DIR__
+basedir = dirname(@__FILE__)
 
-example = joinpath(basedir, "src/example.jmd")
+jmdpath = joinpath(basedir, "src/example.jmd")
 
+# Generate examples latex and images
 mdpath = joinpath(basedir, "src/example.md")
+weave(jmdpath, out_path=mdpath, doctype="github")
+
+# Generate examples notebook
 notebookdir = joinpath(basedir, "build/notebook")
+convert_doc(jmdpath, joinpath(notebookdir, "example.ipynb"))
 
 mkpath(joinpath(basedir, "build/assets"))
 mkpath(notebookdir)
-
-# Generate examples latex and images
-weave(example, out_path=mdpath, doctype="github")
-
-# Generate examples notebook
-convert_doc(example, joinpath(notebookdir, "example.ipynb"))
 
 # Generate HTML docs
 makedocs(
@@ -22,7 +21,7 @@ makedocs(
     sitename = "Dispersal.jl",
     pages = [
         "Home" => "index.md",
-        "Examples" => "example.md"
+        "Examples" => "example.md",
     ],
     clean = false,
 )
