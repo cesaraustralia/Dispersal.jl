@@ -10,10 +10,9 @@ weave(jmdpath, out_path=mdpath, doctype="github")
 
 # Generate examples notebook
 notebookdir = joinpath(basedir, "build/notebook")
-convert_doc(jmdpath, joinpath(notebookdir, "example.ipynb"))
-
-mkpath(joinpath(basedir, "build/assets"))
+notebookpath = joinpath(notebookdir, "example.ipynb")
 mkpath(notebookdir)
+convert_doc(jmdpath, notebookpath)
 
 # Generate HTML docs
 makedocs(
