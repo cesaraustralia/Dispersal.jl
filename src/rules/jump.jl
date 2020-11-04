@@ -37,7 +37,7 @@ end
 
     # Update spotted cell if it's on the grid
     if is_inbounds
-        @inbounds data[W][jumpdest...] = state
+        @inbounds data[W][jumpdest...] += state
     end
 
     state

@@ -110,7 +110,7 @@ end
     @testset "inwards binary dispersal fills the grid where reachable and suitable" begin
         inwards = InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0)
         rules = Ruleset(inwards, maskgrowth)
-        output = ArrayOutput(init; tspan=1:3)
+        output = ArrayOutput(init; tspan=Date(2001,1):Month(1):Date(2003,3))
         sim!(output, rules; aux=(suit=suit,))
         @test output[1] == test1
         @test output[2] == test2

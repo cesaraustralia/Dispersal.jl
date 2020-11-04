@@ -72,7 +72,7 @@ Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
     # Make copies of anything threads will write to
     predictionbuffer = [transform.(targets(objective)) for i in 1:Threads.nthreads()]
     outputs = [deepcopy(output) for i in 1:Threads.nthreads()]
-    data = [DynamicGrids.SimData(deepcopy(extent(output)), deepcopy(ruleset)) for i in 1:Threads.nthreads()]
+    data = [DynamicGrids.SimData(extent(o), Ruleset(ruleset)) for o in outputs]
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, outputs, objective, transform, loss, ngroups, groupsize,
@@ -83,7 +83,7 @@ Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
              threading=SingleCoreReplicates()) = begin
     targetbuffer = transform.(targets(objective))
     predictionbuffer = transform.(targets(objective))
-    data = DynamicGrids.SimData(deepcopy(extent(output)), ruleset)
+    data = DynamicGrids.SimData(extent(output), ruleset)
     results = [zeros(groupsize) for g in 1:ngroups]
 
     Parametriser(ruleset, output, objective, transform, loss, ngroups, groupsize,
