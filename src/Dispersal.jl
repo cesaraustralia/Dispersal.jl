@@ -13,15 +13,16 @@ using ConstructionBase,
       Flatten,
       LinearAlgebra,
       LossFunctions,
+      ModelParameters,
       PoissonRandom,
       Reexport,
       Setfield,
       Statistics
 
 @reexport using DynamicGrids
+@reexport using ModelParameters
 
 using LossFunctions: ZeroOneLoss
-using DimensionalData: Time
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
@@ -29,7 +30,7 @@ import DynamicGrids: applyrule, applyrule!, precalcrule,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
        radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
        currenttime, currenttimestep, timestep, tspan,
-       buffer, SimData, WritableGridData, aux, unwrap
+       buffer, SimData, WritableGridData, aux, unwrap, kernel
 
 import ConstructionBase: constructorof
 
@@ -72,6 +73,7 @@ export targets, predictions
     """
 
 const FIELDDOCTABLE = FieldDocTable((;))
+
 
 include("downsampling.jl")
 include("utils.jl") 

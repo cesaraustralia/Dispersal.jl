@@ -62,9 +62,8 @@ struct InwardsPopulationDispersal{R,W,NH} <: InwardsDispersal{R,W}
     "Normalised proportions of dispersal to surrounding cells"
     neighborhood::NH
 end
-InwardsPopulationDispersal{R,W}(;
-    neighborhood=DispersalKernel{3}()
-) where {R,W} = InwardsPopulationDispersal{R,W}(neighborhood)
+InwardsPopulationDispersal{R,W}(; neighborhood=DispersalKernel{3}()) where {R,W} =
+    InwardsPopulationDispersal{R,W}(neighborhood)
 
 @inline function applyrule(data, rule::InwardsPopulationDispersal, state, cellindex)
     disperse(neighborhood(rule))
