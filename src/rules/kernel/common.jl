@@ -40,7 +40,7 @@ ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = Dispersal
 
 function DynamicGrids.setbuffer(k::DispersalKernel{R,K,<:Any,F,C,D}, buffer::B2) where {R,K,F,C,D,B2} 
     DispersalKernel{R,K,B2,F,C,D}(
-        k.formulation, k.cellsize, k.distancemethod, k.kernel, buffer
+        k.kernel, buffer, k.formulation, k.cellsize, k.distancemethod
     )
 end
 
