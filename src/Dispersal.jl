@@ -72,7 +72,7 @@ export targets, predictions
     $(DOCSTRING)
     """
 
-const FIELDDOCTABLE = FieldDocTable((;))
+const FIELDDOCTABLE = FieldDocTable(NamedTuple())
 
 
 include("downsampling.jl")
