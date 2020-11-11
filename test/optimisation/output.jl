@@ -19,7 +19,7 @@ framesperstep = 2
 objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep, start)
 
 @testset "region output works" begin
-    rule = ExactExponentialGrowth(intrinsicrate = log(2.0))
+    rule = ExponentialGrowth(intrinsicrate = log(2.0))
     output = RegionOutput(init; objective=objective, tspan=1:5)
     sim!(output, rule)
 end

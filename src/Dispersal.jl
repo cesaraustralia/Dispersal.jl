@@ -51,9 +51,9 @@ export AlleeExtinction, JumpDispersal, HumanDispersal
 
 export BatchGroups, HeirarchicalGroups
 
-export ExactExponentialGrowth, ExactLogisticGrowth
+export ExponentialGrowth, LogisticGrowth
 
-export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
+export MaskGrowthMap, ExponentialGrowthMap, LogisticGrowthMap
 
 export AuxCopy
 

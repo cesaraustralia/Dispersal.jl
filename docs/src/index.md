@@ -63,11 +63,11 @@ Rules that simply transform the state of a single cell, ignoring the rest of the
 
 ```@docs
 GrowthRule
-ExactExponentialGrowth
-ExactLogisticGrowth
+ExponentialGrowth
+LogisticGrowth
 GrowthMapRule
-ExactExponentialGrowthMap
-ExactLogisticGrowthMap
+ExponentialGrowthMap
+LogisticGrowthMap
 MaskGrowthMap
 ```
 
