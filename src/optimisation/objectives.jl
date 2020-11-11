@@ -1,5 +1,5 @@
 """
-Abstract supertype. `Objective`s map simulation outputs to predictions
+Abstract supertype. `Objective`s map simulation outputs to predictions 
 that can be compared to target data using a loss function.
 
 They must implement [`predictions`](@ref)and [`targets`](@ref) methods.
@@ -60,11 +60,11 @@ presence/absence and compares to a target of regional occurance data.
 struct RegionObjective{DT,RL,OC,FS,S} <: Objective
     detectionthreshold::DT
     regionlookup::RL
-    occurrence::OC
+    occurance::OC
     framesperstep::FS
     # TODO fix this offset hack with real DateTime handling
     start::S
 end
 
-targets(obj::RegionObjective) = obj.occurrence
+targets(obj::RegionObjective) = obj.occurance
 predictions(obj::RegionObjective, output) = output[end]

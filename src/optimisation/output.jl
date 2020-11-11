@@ -13,8 +13,7 @@ mutable struct RegionOutput{T,F<:AbstractVector{T},E,O} <: Output{T}
     objective::O
 end
 RegionOutput(; frames, running, extent, objective, kwargs...) = begin
-    predictions = [BitArray(zeros(Bool, size(objective.occurrence)))]
-    checkbounds(objective.regionlookup, DynamicGrids.gridsize(first(frames))...)
+    predictions = [BitArray(zeros(Bool, size(objective.occurance)))]
     running = false
     RegionOutput(predictions, running, extent, objective)
 end
@@ -23,14 +22,14 @@ objective(o::RegionOutput) = o.objective
 
 
 # RegionObjective and supporting types/methods
+
 DynamicGrids.storeframe!(o::RegionOutput, data::DynamicGrids.SimData) = begin
     f = DynamicGrids.frameindex(o, data)
     obj = objective(o)
     step = stepfromframe(obj, f)
     pred = predictions(obj, o)
-    sizei, sizej = gridsize(data)
-    for j in 1:sizej, i in 1:sizei
-        storeprediction!(first(data), o, step, pred, i, j)
+    for I in CartesianIndices(first(DynamicGrids.init(data)))
+        storeprediction!(first(data), o, step, pred, I)
     end
 end
 
@@ -39,8 +38,8 @@ DynamicGrids.initgrids!(o::RegionOutput, init::AbstractArray) = begin
     step = stepfromframe(obj, 1)
     pred = predictions(obj, o)
     pred .= false
-    for j in axes(init, 2), i in axes(init, 1)
-        storeprediction!(init, o, step, pred, i, j)
+    for I in CartesianIndices(init)
+        storeprediction!(init, o, step, pred, I)
     end
 end
 DynamicGrids.initgrids!(o::RegionOutput, init::NamedTuple) =
@@ -49,9 +48,10 @@ DynamicGrids.initgrids!(o::RegionOutput, init::NamedTuple) =
 """
 Set region presence status in non-zero blocks
 """
-@inline storeprediction!(grid, o::RegionOutput, step, predictions, I...) = begin
-    @inbounds grid[I...] > o.objective.detectionthreshold || return
-    @inbounds region = o.objective.regionlookup[I...]
+@inline storeprediction!(grid, o::RegionOutput, step, predictions, I) = begin
+    obj = objective(o)
+    grid[I] > obj.detectionthreshold || return
+    region = obj.regionlookup[I]
     region > zero(region) || return
     predictions[region, step] = true
     return
@@ -82,9 +82,8 @@ struct ColorRegionFit{O,T,F,TZ,FZ,M} <: GridProcessor
     maskcolor::M
 end
 
-DynamicGrids.grid2image(p::ColorRegionFit, o::ImageOutput, data::DynamicGrids.SimData, grids::NamedTuple, f, t) = begin
-    f = data isa Ruleset ? 1 : DynamicGrids.frameindex(o, data)
-    step = stepfromframe(p.objective, f)
+DynamicGrids.grid2image(p::ColorRegionFit, o::ImageOutput, ruleset::Ruleset, grids::NamedTuple, t) = begin
+    step = stepfromframe(p.objective, t)
     grid = first(grids)
     img = fill(RGB24(0), size(grid))
     obj = p.objective
@@ -93,36 +92,33 @@ DynamicGrids.grid2image(p::ColorRegionFit, o::ImageOutput, data::DynamicGrids.Si
         region = p.objective.regionlookup[i]
         img[i] = if !(p.maskcolor isa Nothing) && ismasked(mask(o), i)
             rgb(p.maskcolor)
-        elseif region <= zero(region)
-            rgb(p.maskcolor) # No region areas are treated as masked
-        else
+        elseif region > zero(region)
             x = grid[i]
             normed = normalise(x, min, max)
-            if p.objective.occurrence[region, step]
-                if !(p.falsezerocolor isa Nothing) && normed == zero(normed)
+            if p.objective.occurance[region, step]
+                if !(p.truezerocolor isa Nothing) && normed == zero(normed)
                     rgb(p.falsezerocolor)
-                elseif x < obj.detectionthreshold
-                    rgb(p.falsescheme, normed)
                 else
                     rgb(p.truescheme, normed)
                 end
             else
-                if !(p.truezerocolor isa Nothing) && normed == zero(normed)
+                if !(p.falsezerocolor isa Nothing) && normed == zero(normed)
                     rgb(p.truezerocolor)
-                elseif x >= obj.detectionthreshold
+                elseif x > obj.detectionthreshold
                     rgb(p.falsescheme, normed)
                 else
                     rgb(p.truescheme, normed)
                 end
             end
+        else
+            rgb(p.maskcolor)
         end
     end
     img
 end
 
 
-stepfromframe(objective::RegionObjective, f) =
-    stepfromframe(objective.framesperstep, objective.start, f)
-stepfromframe(framesperstep, start, f) = begin
-    (f - 2one(f) + start) ÷ framesperstep + one(f)
-end
+stepfromframe(objective::RegionObjective, t) =
+    stepfromframe(objective.framesperstep, objective.start, t)
+stepfromframe(framesperstep, start, t) =
+    (t - 2one(t) + start) ÷ framesperstep + one(t)

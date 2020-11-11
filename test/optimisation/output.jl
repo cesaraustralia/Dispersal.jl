@@ -1,5 +1,5 @@
-using DynamicGrids, Dispersal, Test, Colors, FieldDefaults
-import DynamicGrids: grid2image, SimData
+using DynamicGrids, Dispersal, Test, Colors
+import DynamicGrids: grid2image
 
 init =  [1.0  1.0  0.5
          0.0  0.0  0.0
@@ -40,6 +40,6 @@ end
     output = DynamicGrids.NoDisplayImageOutput(init; tspan=1:5)
 
     # This output needs an update anyway
-    @test image == grid2image(processor, output, SimData(output.extent, Ruleset()), (_default_=init,), 1, 1)
+    @test image == grid2image(processor, output, Ruleset(), (_default_=init,), 1)
 end
 

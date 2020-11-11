@@ -4,19 +4,20 @@
 
 Allocate a new output array and run [`downsample!`](@ref).
 """
-downsample(a::AbstractMatrix, aggregator, scale) =
+function downsample(a::AbstractMatrix, aggregator, scale) 
     downsample!(initdownsample(a, scale), a, aggregator, scale)
+end
 
 """
     downsample!(out::AbstractMatrix, a::AbstractMatrix, aggregator, scale)
 
 Downsample matrix `a` to another matrix `out` of the correct size.
 
-- `aggregator` is a function such as mean or sum that can combine the
+- `aggregator` is a function such as mean or sum that can combine the 
     value of multiple cells to generate the downsampled cell.
 - `scale` is the downsampling factor.
 """
-downsample!(out::AbstractMatrix, a::AbstractMatrix, aggregator, scale) = begin
+function downsample!(out::AbstractMatrix, a::AbstractMatrix, aggregator, scale)
     scale == 1 && return out .= a
 
     h, w = size(out)
@@ -26,7 +27,7 @@ downsample!(out::AbstractMatrix, a::AbstractMatrix, aggregator, scale) = begin
         cells = collect(skipmissing(a[i1:i2, j1:j2]))
         out[i, j] = length(cells) > 0 ? aggregator(cells) : missing
     end
-    out
+    return out
 end
 
 """
@@ -41,11 +42,10 @@ initdownsample(a, scale) = similar(a, downsample_index(size(a), scale))
 
 Convert indicies from the downsampled array to the larger original array.
 """
-upsample_index((i, j), scale) = (i - 1) * scale + 1, (j - 1) * scale + 1
+upsample_index(index, scale) = ((index .- 1) .* scale) .+ 1
 
 """
     downsample_index(index, scale)
-
-Convert indicies from the original array to the downsmpled array.
+Convert indicies from the original array to the downsampled array.
 """
-downsample_index((i, j), scale) = (i - 1) ÷ scale + 1, (j - 1) ÷ scale + 1
+downsample_index(index, scale) = ((index .- 1) .÷ scale) .+ 1

@@ -9,36 +9,30 @@ using ConstructionBase,
       Distributed,
       Distributions,
       DocStringExtensions,
-      FieldDefaults,
       FieldDocTables,
-      FieldMetadata,
       Flatten,
       LinearAlgebra,
       LossFunctions,
-      Mixers,
+      ModelParameters,
       PoissonRandom,
       Reexport,
       Setfield,
       Statistics
 
 @reexport using DynamicGrids
+@reexport using ModelParameters
 
 using LossFunctions: ZeroOneLoss
-using DimensionalData: Time
 
 import Base: getindex, setindex!, lastindex, size, length, push!
 
-
-import DynamicGrids: applyrule, applyrule!, applyrule, applyrule!,
+import DynamicGrids: applyrule, applyrule!, precalcrule,
        neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
-       radius, gridsize, mask, overflow, cellsize, ruleset, isinbounds, inbounds, ismasked,
-       extent, currenttime, currenttimestep, timestep, tspan,
-       buffer, WritableGridData, SimData, aux, unwrap
+       radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
+       currenttime, currenttimestep, timestep, tspan,
+       buffer, SimData, WritableGridData, aux, unwrap, kernel
 
 import ConstructionBase: constructorof
-
-import FieldMetadata: @default, @description, @bounds, @flattenable,
-                      default, description, bounds, flattenable
 
 
 export AbstractDispersalKernel, DispersalKernel
@@ -55,13 +49,13 @@ export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDis
 
 export AlleeExtinction, JumpDispersal, HumanDispersal
 
-export BatchGroups, HierarchicalGroups
+export BatchGroups, HeirarchicalGroups
 
 export ExactExponentialGrowth, ExactLogisticGrowth
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap
 
-export LayerCopy
+export AuxCopy
 
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
        ColorRegionFit, Accuracy
@@ -71,10 +65,6 @@ export ThreadedReplicates, DistributedReplicates, SingleCoreReplicates
 export targets, predictions
 
 
-const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Bounds),
-                                    (description, default, bounds);
-                                    truncation=(100,40,100))
-
 # Documentation templates
 @template TYPES =
     """
@@ -82,9 +72,11 @@ const FIELDDOCTABLE = FieldDocTable((:Description, :Default, :Bounds),
     $(DOCSTRING)
     """
 
-include("rules/mixins.jl")
+const FIELDDOCTABLE = FieldDocTable(NamedTuple())
+
+
 include("downsampling.jl")
-include("layers.jl")
+include("utils.jl") 
 include("rules/kernel/common.jl")
 include("rules/kernel/inwards.jl")
 include("rules/kernel/outwards.jl")
@@ -92,6 +84,7 @@ include("rules/growth.jl")
 include("rules/human.jl")
 include("rules/jump.jl")
 include("rules/allee.jl")
+include("rules/auxcopy.jl")
 include("optimisation/optimisation.jl")
 include("optimisation/objectives.jl")
 include("optimisation/output.jl")
