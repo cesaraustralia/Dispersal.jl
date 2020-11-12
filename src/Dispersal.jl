@@ -43,7 +43,7 @@ import FieldMetadata: @default, @description, @bounds, @flattenable,
 
 export AbstractDispersalKernel, DispersalKernel
 
-export KernelFormulation, ExponentialKernel
+export KernelFormulation, ExponentialKernel, GeometricKernel, GaussianKernel
 
 export DistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
 
@@ -58,19 +58,24 @@ export BatchGroups, HeirarchicalGroups
 
 export ExactExponentialGrowth, ExactLogisticGrowth
 
-export DiscreteGrowth, DiscreteGrowthMap
+export DiscreteGrowth, DiscreteGrowthMap, DiscreteGrowth2, DiscreteGrowth3
 
-export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap, ExactLogisticGrowthMap2
+export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap, ExactLogisticGrowthMap2, ExactLogisticGrowthMap3
 
 export SurvLogLogistic, SurvLogLogisticMap, SurvLogLogisticMap2
+
+export GrowthSurvLogLogisticMap3
 
 export MaskSurvMap
 
 export SelectionGradientSurv, SelectionGradientSurvMap
 
 export SelectionGradient1locusSurv, SelectionGradient1locusSurvMap, LandeVariable
+
 export DeltaAlleleFrequencySurv, DeltaAlleleFrequencySurvMap, DeltaAlleleFrequencySurvMap_noFastmath
-export MatingPopulation
+
+export MatingPopulation, MatingDispersal
+
 export LayerCopy
 
 export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,

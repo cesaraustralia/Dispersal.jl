@@ -14,7 +14,7 @@ $(FIELDDOCTABLE)
 @columns struct DispersalKernel{R,F,K,C,D,B} <: AbstractRadialNeighborhood{R,B}
     # Field           | Default                | Flat  | Bounds      | Description
     formulation::F    | ExponentialKernel(1.0) | true  | _           | "Kernel formulation object"
-    kernel::K         | nothing                | false | _           | "Kernal matrix"
+    kernel::K         | nothing                | false | _           | "Kernel matrix"
     cellsize::C       | 1.0                    | false | (0.0, 10.0) | "Simulation cell size"
     distancemethod::D | CentroidToCentroid()   | false | _           | "Method for calculating distance between cells"
     buffer::B         | nothing                | false | _           | "Neighborhood buffer"
@@ -152,7 +152,7 @@ Calculates probability of dispersal between source cell area and destination cen
 $(FIELDDOCTABLE)
 """
 @columns struct AreaToCentroid <: DistanceMethod
-    # Field        | Default | Flat | Bounds      | Description
+    # Field          | Default | Flat | Bounds      | Description
     subsampling::Int | 10.0    | true | (2.0, 40.0) | "Subsampling for brute-force integration"
 end
 AreaToCentroid(subsampling::AbstractFloat) = AreaToCentroid(round(Int, subsampling))
@@ -220,3 +220,35 @@ $(FIELDDOCTABLE)
     λ::P    | 1.0     | true | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
 end
 (f::ExponentialKernel)(distance) = exp(-distance / f.λ)
+
+@columns struct ExponentialKernel2{P} <: KernelFormulation
+    # Field | Default | Flat | Bounds     | Description
+    λ::P    | 1.0     | true | (0.0, 2.0) | "Parameter for adjusting spread of dispersal propability"
+end
+(f::ExponentialKernel2)(distance) = 1/(2 * π * f.λ^2) * exp(-distance / f.λ)
+
+"""
+    GeometricKernel(p)
+
+Probability of dispersal with a geometric relationship to distance.
+
+$(FIELDDOCTABLE)
+"""
+@columns struct GeometricKernel{P} <: KernelFormulation
+    # Field | Default | Flat | Bounds     | Description
+    β::P    | 0.5     | true | (-100.0, 100.0) | "Parameter for adjusting spread of dispersal propability"
+end
+(f::GeometricKernel)(distance) = (f.β+1)*(f.β+2) / (2*π) * (1+distance)^f.β
+
+"""
+    GaussianKernel(m)
+
+Probability of dispersal with a geometric relationship to distance.
+
+$(FIELDDOCTABLE)
+"""
+@columns struct GaussianKernel{P} <: KernelFormulation
+    # Field | Default | Flat | Bounds     | Description
+    α::P    | 0.5     | true | (0.0, 100.0) | "Parameter for adjusting spread of dispersal propability"
+end
+(f::GaussianKernel)(distance) = 1 / (π*f.α^2) * exp(-(distance/f.α)^2)
