@@ -16,3 +16,26 @@ end
     @fastmath rule.localContribution*variable + rule.hoodContribution*mean(neighborhood(rule)) / (rule.localContribution + rule.hoodContribution)
 end
 
+"""
+Mating dispersal rules.
+"""
+
+@mix @columns struct Jump{JX,JY}
+    # Field       | Default  | Flat  | Bounds    | Description
+    jumpX::JX     | 1        | true  | (1, 100)  | "Dispersal in X"
+    jumpY::JY     | 1        | true  | (1, 100)  | "Dispersal in Y"
+end
+
+@Jump struct MatingDispersal{R,W} <: ManualRule{R,W} end
+
+@inline applyrule!(data, rule::MatingDispersal{R,W}, state, index) where {R,W} = begin
+    # Ignore empty cells
+    state > zero(state) || return state
+    # 
+    jump = (rule.jumpX,rule.jumpY)
+    jumpdest, is_inbounds = inbounds(jump .+ index, gridsize(data), RemoveOverflow())
+    # Update spotted cell if it's on the grid
+    if is_inbounds
+        @inbounds data[W][jumpdest...] = state
+    end
+end
