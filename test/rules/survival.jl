@@ -70,6 +70,25 @@ end
                        6.98935  13.9787   20.968] atol=1e-4
 end
 
+
+@testset "loglogistic survival with ArrayOutput layer" begin
+    init =  [10.0 40.0 70.0;
+            20.0 50.0 80.0;
+            30.0 60.0 90.0]
+
+    suit = [100.0 100.0 100.0;
+            50.0  50.0  50.0;
+            20.0  20.0  20.0]
+
+    # suit = output
+    # outputStack = ArrayOutput(init; tspan=1:3, aux=(suit=suit,index=1:3))
+    # rule = Ruleset(SurvLogLogisticMap(layerkey=:suit, timeindex=:index))
+    # sim!(outputStack, rule)
+
+end
+
+
+
 @testset "survival map masking" begin
     init = [1.0 1.0 1.0;
         1.0 1.0 1.0;
@@ -130,4 +149,46 @@ end
     popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6, aux=(survParameter=survParameter,));
     survRule = Ruleset(SurvLogLogisticMap2(layerkey=:survParameter));
     sim!(popSizeGrids, survRule);
+end
+
+@testset "Test double grids DiscreteGrowth2" begin
+    init = (pop1 = [.5 0. 0.;
+                0. 0. 1.;
+                0. 0. 0.],
+            pop2 = [.5 0. 0.;
+                0. 1. 0.;
+                0. 0. 0.],
+            pop3 = [.5 0. 0.;
+                0. 1. 0.;
+                0. 1. 0.],)
+
+    exposure = repeat([0.0  0.0  0.0;
+                20.0 20.0 20.0;
+                50.0 50.0 50.0],
+                inner=(1, 1,3))
+
+    output = ArrayOutput(init; tspan=1:3, aux=(exposure=exposure,))
+
+    ruleGrowthSurv =  GrowthSurvLogLogisticMap3{Tuple{:pop1,:pop2,:pop3},Tuple{:pop1,:pop2,:pop3}}(
+        layerkey=:exposure,
+        intrinsicrate=1.5,
+        hillcoefficient=2.5,
+        LC501=50,
+        LC502=40,
+        LC503=30,
+        carrycap = 5.)
+
+    sim!(output,ruleGrowthSurv);
+
+    @test output[1] == init
+
+    @test output[2].pop1 ≈ [.525 0. 0.;
+                        0. 0. 1.08973;
+                        0. 0. 0.] atol=1e-4
+    @test output[2].pop2 ≈ [.525 0. 0.;
+                        0. 0.764801  0.;
+                        0. 0. 0.] atol=1e-4
+    @test output[2].pop3 ≈ [.525 0. 0.;
+                        0. 0.660363 0.;
+                        0. 0.26166 0.] atol=1e-4
 end

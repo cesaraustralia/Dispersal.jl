@@ -4,8 +4,8 @@
 end
 
 @mix @columns struct HillCoefficient{HC}
-    # Field           | Default  | Flat  | Bounds      | Description
-    hillcoefficient::HC         | 0.1      | true  | (0.0, 1e9) | "Hill coefficient, or shape of a log logistic function"
+    # Field                 | Default  | Flat  | Bounds      | Description
+    hillcoefficient::HC     | 0.1      | true  | (0.0, 1e9) | "Hill coefficient, or shape of a log logistic function"
 end
 
 @mix @columns struct Exposure{XP}
@@ -72,6 +72,25 @@ $(FIELDDOCTABLE)
     population > zero(population) || return zero(population)
     exposure = layer(rule, data, index)
     @fastmath population * ( 1/ (1 + (exposure / rule.LC50)^rule.hillcoefficient) )
+end
+
+@mix @columns struct LC503{LC1,LC2,LC3}
+    # Field           | Default  | Flat  | Bounds      | Description
+    LC501::LC1        | 10.0     | true  | (0.0, 1e9)  | "Lethal concentration for 50% of individuals."
+    LC502::LC2        | 10.0     | true  | (0.0, 1e9)  | "Lethal concentration for 50% of individuals."
+    LC503::LC3        | 10.0     | true  | (0.0, 1e9)  | "Lethal concentration for 50% of individuals."
+end
+
+@Layers @LC503 @HillCoefficient @CarryCap @InstrinsicGrowthRate struct GrowthSurvLogLogisticMap3{R,W} <: SurvMapRule{R,W} end
+
+@inline applyrule(data, rule::GrowthSurvLogLogisticMap3, (population1,population2,population3), index, args...) = begin
+    growthCarrycapEffect =  rule.intrinsicrate * (1-(population1+population2+population3)/rule.carrycap)
+    exposure = layer(rule, data, index)
+    @fastmath (
+        population1 * ( 1/ (1 + (exposure / rule.LC501)^rule.hillcoefficient) ) * growthCarrycapEffect,
+        population2 * ( 1/ (1 + (exposure / rule.LC502)^rule.hillcoefficient) ) * growthCarrycapEffect,
+        population3 * ( 1/ (1 + (exposure / rule.LC503)^rule.hillcoefficient) ) * growthCarrycapEffect
+    )
 end
 
 
