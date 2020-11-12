@@ -237,3 +237,65 @@ end
     growthRule = Ruleset(ExactLogisticGrowthMap2(layerkey=:popParameter));
     sim!(popSizeGrids, growthRule);
 end
+
+# @testset "Test double layers ExactLogisticGrowthMap3" begin
+#     popSizeInit = [ 1.0 4.0 7.0;
+#                     2.0 5.0 8.0;
+#                     3.0 6.0 9.0]
+
+#     intrinsicRate = cat([ 1.0 1.0 1.0;
+#                         1.0 1.0 1.0;
+#                         1.0 1.0 1.0],
+#                         [ 2.0 2.0 2.0;
+#                         2.0 2.0 2.0;
+#                         2.0 2.0 2.0],
+#                         [ 1.0 1.0 1.0;
+#                         1.0 1.0 1.0;
+#                         1.0 1.0 1.0]; dims=3)
+
+#     carryingCapacity = cat([ 10.0 10.0 10.0;
+#                             10.0 10.0 10.0;
+#                             10.0 10.0 10.0],
+#                             [ 10.0 10.0 10.0;
+#                             10.0 10.0 10.0;
+#                             10.0 10.0 10.0],
+#                             [ 10.0 10.0 10.0;
+#                             10.0 10.0 10.0;
+#                             10.0 10.0 10.0]; dims=3)
+ 
+#     popSizeGrids = ArrayOutput(popSizeInit; tspan=1:6);
+#     growthRule = ExactLogisticGrowthMap3(ratekey=intrinsicRate, carrycapkey=carryingCapacity);
+#     sim!(popSizeGrids, growthRule);   
+# end
+
+@testset "Test double grids DiscreteGrowth2" begin
+    init = (pop1 = [.5 0. 0.;
+                0. 0. 1.;
+                0. 0. 0.],
+            pop2 = [.5 0. 0.;
+                0. 1. 0.;
+                0. 0. 0.],)
+
+    exposure= [1. .5 0.;
+            .5 0. 0.;
+            0. 0. 0.]
+
+    output = ArrayOutput(init; tspan=1:3)
+    ruleGrowth =  DiscreteGrowth2{Tuple{:pop1,:pop2},Tuple{:pop1,:pop2}}(intrinsicrate1=1.5, intrinsicrate2=2.0, carrycap = 10.0)
+
+    hood = DispersalKernel{1}(; formulation=ExponentialKernel(15))
+    ruleDispersalPop1 = InwardsPopulationDispersal{:pop1,:pop1}(;neighborhood=hood)
+    ruleDispersalPop2 = InwardsPopulationDispersal{:pop2,:pop2}(;neighborhood=hood)
+
+    rulesetGrowthDispersal = Ruleset(
+     ruleGrowth, ruleDispersalPop1, ruleDispersalPop2;
+     overflow=WrapOverflow()
+     );
+
+    sim!(output,rulesetGrowthDispersal);
+    output[1].pop1
+    output[2].pop1
+
+    output[1].pop2
+    output[2].pop2
+end
