@@ -60,9 +60,11 @@ Base.zero(::Type{<:LandeVariable{T1,T2}}) where {T1,T2} = LandeVariable(zero(T1)
 
 @inline applyrule(data, rule::SelectionGradient1locusSurv, landeVariable, args...) = begin
     @fastmath LandeVariable(
-        landeVariable.alleleFrequency +
+    landeVariable.alleleFrequency +
     landeVariable.alleleFrequency * (1-landeVariable.alleleFrequency)*(rule.deviationPhenotype + rule.dominanceDegree*(1-2*landeVariable.alleleFrequency))*
-    rule.hillcoefficient*(rule.exposure/landeVariable.phenotype)^rule.hillcoefficient / ( landeVariable.phenotype *((rule.exposure/landeVariable.phenotype)^rule.hillcoefficient +1)),
+    rule.hillcoefficient*(rule.exposure/landeVariable.phenotype)^rule.hillcoefficient / ( landeVariable.phenotype *((rule.exposure/landeVariable.phenotype)^rule.hillcoefficient +1))
+    ,
+    
     landeVariable.phenotype + 
         2*landeVariable.alleleFrequency*(1-landeVariable.alleleFrequency) * (rule.deviationPhenotype + rule.dominanceDegree*(1-2*landeVariable.alleleFrequency))^2*
       rule.hillcoefficient*(rule.exposure/landeVariable.phenotype)^rule.hillcoefficient / ( landeVariable.phenotype *((rule.exposure/landeVariable.phenotype)^rule.hillcoefficient +1)) *
@@ -84,3 +86,4 @@ end
       (1-rule.dominanceDegree*rule.hillcoefficient*(exposure/landeVariable.phenotype)^rule.hillcoefficient / ( landeVariable.phenotype *((exposure/landeVariable.phenotype)^rule.hillcoefficient +1)))
     )
 end
+
