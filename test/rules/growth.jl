@@ -55,7 +55,7 @@ end
     #          12.0 24.0 36.0]
 
     output = ArrayOutput(init; tspan=1:3)
-    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)))
+    rule = Ruleset(ExponentialGrowth(intrinsicrate=log(2.0)))
     sim!(output, rule)
 
     @test output[1] == test1
@@ -63,7 +63,7 @@ end
     @test output[3] == test3
 
     output = ArrayOutput(init; tspan=1d:1d:3d)
-    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0), timestep=1d); timestep=1d)
+    rule = Ruleset(ExponentialGrowth(intrinsicrate=log(2.0), timestep=1d); timestep=1d)
     sim!(output, rule)
 
     @test output[1] == test1
@@ -71,7 +71,7 @@ end
     @test output[3] == test3
 
     output = ArrayOutput(init; tspan=DateTime(2001,1,1):Day(5):DateTime(2001,1,15))
-    rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0)/5, timestep=Day(1)); timestep=Day(5))
+    rule = Ruleset(ExponentialGrowth(intrinsicrate=log(2.0)/5, timestep=Day(1)); timestep=Day(5))
     sim!(output, rule)
 
     @test output[1] == test1
@@ -90,7 +90,7 @@ end
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
     output.extent
-    rule = Ruleset(ExactExponentialGrowthMap(auxkey=Val(:suit)))
+    rule = Ruleset(ExponentialGrowthMap(auxkey=Val(:suit)))
     sim!(output, rule)
 
     @test output[1] == [1.0 1.0 1.0;
@@ -127,7 +127,7 @@ end
              5.0      8.0      9.41176;
              6.31579  8.57143  9.72973]
 
-    rule = Ruleset(ExactLogisticGrowth(intrinsicrate=log(2.0), carrycap=10))
+    rule = Ruleset(LogisticGrowth(intrinsicrate=log(2.0), carrycap=10))
     output = ArrayOutput(init; tspan=1:3)
 
     sim!(output, rule)
@@ -160,7 +160,7 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
-    rule = Ruleset(ExactLogisticGrowthMap(auxkey=Val(:suit), carrycap=10))
+    rule = Ruleset(LogisticGrowthMap(auxkey=Val(:suit), carrycap=10))
     sim!(output, rule)
 
     @test output[1] == test1

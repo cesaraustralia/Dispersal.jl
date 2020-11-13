@@ -50,8 +50,9 @@ export AlleeExtinction, JumpDispersal, HumanDispersal
 
 export BatchGroups, HeirarchicalGroups
 
-export ExactExponentialGrowth, ExactLogisticGrowth
+export ExponentialGrowth, LogisticGrowth
 
+<<<<<<< HEAD
 export DiscreteGrowth, DiscreteGrowthMap, DiscreteGrowth2, DiscreteGrowth3
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap, ExactLogisticGrowthMap2, ExactLogisticGrowthMap3
@@ -69,6 +70,8 @@ export SelectionGradient1locusSurv, SelectionGradient1locusSurvMap, LandeVariabl
 export DeltaAlleleFrequencySurv, DeltaAlleleFrequencySurvMap, DeltaAlleleFrequencySurvMap_noFastmath
 
 export MatingPopulation, MatingDispersal
+
+export MaskGrowthMap, ExponentialGrowthMap, LogisticGrowthMap
 
 export AuxCopy
 

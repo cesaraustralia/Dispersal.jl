@@ -32,7 +32,7 @@ suitseq = DimensionalArray(a, dimz)
 init = zero(suitseq)
 
 @testset "sequence of layers" begin
-    rule = ExactExponentialGrowthMap(; auxkey=Val(:suit))
+    rule = ExponentialGrowthMap(; auxkey=Val(:suit))
     ruleset = Ruleset(rule; timestep=1d)
     data = SimData(Extent(init=init, aux=(suit=suitseq,), tspan=1:1), ruleset)
 

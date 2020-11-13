@@ -30,7 +30,7 @@ end
     ngroups = 1
     groupsize = 1
     rate = log(2.0)
-    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate=rate))
+    ruleset = Ruleset(ExponentialGrowth(intrinsicrate=rate))
     output = ArrayOutput(init; tspan=tspan)
     sim!(output, ruleset)
 
@@ -85,7 +85,7 @@ end
 
     objective = RegionObjective(detectionthreshold, regionlookup, occurance, framesperstep, 1)
     output = RegionOutput(init; tspan=tspan, objective=objective)
-    ruleset = Ruleset(ExactExponentialGrowth(intrinsicrate = log(2.0)))
+    ruleset = Ruleset(ExponentialGrowth(intrinsicrate = log(2.0)))
     loss = ZeroOneLoss()
 
     @testset "SingleCoreReplicates" begin
