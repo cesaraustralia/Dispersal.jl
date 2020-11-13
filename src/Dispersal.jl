@@ -52,7 +52,6 @@ export BatchGroups, HeirarchicalGroups
 
 export ExponentialGrowth, LogisticGrowth
 
-<<<<<<< HEAD
 export DiscreteGrowth, DiscreteGrowthMap, DiscreteGrowth2, DiscreteGrowth3
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap, ExactLogisticGrowthMap2, ExactLogisticGrowthMap3

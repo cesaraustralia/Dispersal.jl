@@ -1,22 +1,6 @@
-
-@defkw struct AlleleFrequency{AF}
-    "Allele frequency"
-    allele_frequency::AF = Param(0.5; bounds=(0.0, 1.0))
-end
-
-@defkw struct DeviationPhenotype{DP}
-    "Deviation of homozygous to the average phenotype"
-    deviation_phenotype::DP Param(0.5; bounds=(-1.0, 1.0))
-end
-
-@defkw struct DominanceDegree{DD}
-    "AdditDegree of dominance between two alleles"
-    dominance_degree::DD = Param(0.5; bounds=(-1.0, 1.0))
-end
-
-isprobvec(p::AbstractVector{<:Real}) =
-    all(x -> x ≥ zero(x), p) && isapprox(sum(p), one(eltype(p)))
-
+const ALLELE_FREQUENCY_PARAM = Param(0.5; bounds=(0.0, 1.0))
+const DEVIATION_PHENOTYPE_PARAM = Param(0.5; bounds=(-1.0, 1.0))
+const DOMINANCE_DEGREE_PARAM = Param(0.5; bounds=(-1.0, 1.0))
 
 abstract type DeltaAlleleFrequencyRule{R,W} <: CellRule{R,W} end
 
@@ -24,49 +8,75 @@ DynamicGrids.precalcrules(rule::DeltaAlleleFrequencyRule, data) = rule
 
 abstract type DeltaAlleleFrequencyMapRule{R,W} <: DeltaAlleleFrequencyRule{R,W} end
 
-DynamicGrids.precalcrules(rule::DeltaAlleleFrequencyMapRule, data) = begin
-    precalclayer(layer(rule, data), rule, data)
-end
-
-# @Exposure @LC50 @HillCoefficient @DeviationPhenotype @DominanceDegree 
-struct DeltaAlleleFrequencySurv{R,W} <: DeltaAlleleFrequencyRule{R,W} 
-end
-
-@inline applyrule(data, rule::DeltaAlleleFrequencySurv, alleleFrequency, args...) = begin
-    alleleFrequency > zero(alleleFrequency) || return zero(alleleFrequency)
-    @fastmath alleleFrequency + 
-        alleleFrequency * (1-alleleFrequency)*(rule.deviation_phenotype + rule.dominance_degree*(1-2*alleleFrequency))*
-        rule.hillcoefficient*(rule.exposure/rule.LC50)^rule.hillcoefficient / ( rule.LC50 *((rule.exposure/rule.LC50)^rule.hillcoefficient +1))
-end
-
-# @Layers @LC50 @HillCoefficient @DominanceDegree @DeviationPhenotype 
-struct DeltaAlleleFrequencySurvMap{R,W} <: DeltaAlleleFrequencyMapRule{R,W} 
-    "AdditDegree of dominance between two alleles"
-    dominance_degree::DD = Param(0.5; bounds=(-1.0, 1.0))
+struct DeltaAlleleFrequencySurv{R,W,LC,HC,X,AF,DP,DD} <: DeltaAlleleFrequencyRule{R,W}
+    "Lethal concentration for 50% of individuals."
+    lc50::LC
+    "Hill coefficient, or shape of a log logistic function"
+    hillcoefficient::HC
+    "Exposure: environmental concentration to which the population is exposed to"
+    exposure::X
+    "Allele frequency"
+    allele_frequency::AF
     "Deviation of homozygous to the average phenotype"
-    deviation_phenotype::DP Param(0.5; bounds=(-1.0, 1.0))
+    deviation_phenotype::DP
+    "AdditDegree of dominance between two alleles"
+    dominance_degree::DD
+end
+function DeltaAlleleFrequencySurv{R,W}(;
+    lc50=LC50_PARAM,
+    hillcoefficient=HILLCOEFFICIENT_PARAM,
+    exposure=EXPOSURE_PARAM,
+    allele_frequency=ALLELE_FREQUENCY_PARAM,
+    deviation_phenotype=DEVIATION_PHENOTYPE_PARAM,
+    dominance_degree=DOMINANCE_DEGREE_PARAM,
+) where {R,W}
+    DeltaAlleleFrequencySurv{R,W}(
+        lc50, hillcoefficient, exposure, allele_frequency, deviation_phenotype, dominance_degree,
+    )
 end
 
-@inline applyrule(data, rule::DeltaAlleleFrequencySurvMap, allele_frequency, index, args...) = begin
+@inline function applyrule(data, rule::DeltaAlleleFrequencySurv, allele_frequency, index)
     allele_frequency > zero(allele_frequency) || return zero(allele_frequency)
-    exposure = layer(rule, data, index)
     @fastmath allele_frequency +
         allele_frequency * (1-allele_frequency)*(rule.deviation_phenotype + rule.dominance_degree*(1-2*allele_frequency))*
-        rule.hillcoefficient*(exposure/rule.LC50)^rule.hillcoefficient / ( rule.LC50 *((exposure/rule.LC50)^rule.hillcoefficient +1))
+        rule.hillcoefficient*(rule.exposure/rule.lc50)^rule.hillcoefficient / ( rule.lc50 *((rule.exposure/rule.lc50)^rule.hillcoefficient +1))
 end
 
-# @Layers @LC50 @HillCoefficient @DeviationPhenotype @DominanceDegree 
-struct DeltaAlleleFrequencySurvMap_noFastmath{R,W} <: DeltaAlleleFrequencyMapRule{R,W} 
+struct DeltaAlleleFrequencySurvMap{R,W,LC,HC,DP,DD,EK,AT} <: DeltaAlleleFrequencyMapRule{R,W}
+    "Lethal concentration for 50% of individuals."
+    lc50::LC
+    "Hill coefficient, or shape of a log logistic function"
+    hillcoefficient::HC
     "Deviation of homozygous to the average phenotype"
-    deviation_phenotype::DP Param(0.5; bounds=(-1.0, 1.0))
+    deviation_phenotype::DP
     "AdditDegree of dominance between two alleles"
-    dominance_degree::DD = Param(0.5; bounds=(-1.0, 1.0))
+    dominance_degree::DD
+    "Key for growth rate layer"
+    exposurekey::EK
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+end
+function DeltaAlleleFrequencySurvMap{R,W}(;
+    lc50=LC50_PARAM,
+    hillcoefficient=HILLCOEFFICIENT_PARAM,
+    deviation_phenotype=DEVIATION_PHENOTYPE_PARAM,
+    dominance_degree=DOMINANCE_DEGREE_PARAM,
+    exposurekey,
+    auxtimeindex=1,
+) where {R,W}
+    DeltaAlleleFrequencySurvMap{R,W}(
+        lc50, hillcoefficient, deviation_phenotype, dominance_degree, exposurekey, auxtimeindex,
+    )
 end
 
-@inline applyrule(data, rule::DeltaAlleleFrequencySurvMap_noFastmath, alleleFrequency, index, args...) = begin
-    alleleFrequency > zero(alleleFrequency) || return zero(alleleFrequency)
-    exposure = layer(rule, data, index)
-    alleleFrequency +
+function DynamicGrids.precalcrules(rule::DeltaAlleleFrequencySurvMap, data)
+    precalc_auxtimeindex(aux(data, rule.exposurekey), rule, data)
+end
+
+@inline function applyrule(data, rule::DeltaAlleleFrequencySurvMap, allele_frequency, index)
+    allele_frequency > zero(allele_frequency) || return zero(allele_frequency)
+    exposure = auxval(data, rule.exposurekey, index..., rule.auxtimeindex) 
+    allele_frequency +
         allele_frequency * (1-allele_frequency)*(rule.deviation_phenotype + rule.dominance_degree*(1-2*allele_frequency))*
-        rule.hillcoefficient*(exposure/rule.LC50)^rule.hillcoefficient / ( rule.LC50 *((exposure/rule.LC50)^rule.hillcoefficient +1))
+        rule.hillcoefficient*(exposure/rule.lc50)^rule.hillcoefficient / ( rule.lc50 *((exposure/rule.lc50)^rule.hillcoefficient +1))
 end

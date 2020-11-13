@@ -6,7 +6,10 @@ using Dispersal, Test
              0.7 0.8 0.9]
 
     output = ArrayOutput(init; tspan=1:3)
-    rule = Ruleset(DeltaAlleleFrequencySurv(exposure = 10, LC50=10, hillcoefficient=2.0, deviationPhenotype = 10.0, dominanceDegree = -1))
+    rule = DeltaAlleleFrequencySurv(
+        exposure=10, lc50=10, hillcoefficient=2.0, 
+        deviation_phenotype=10.0, dominance_degree=-1
+    )
     sim!(output, rule)
     @test output[1] == init
     @test output[2] ≈ [0.1828  0.3504  0.5016;
@@ -26,7 +29,7 @@ using Dispersal, Test
 end
 
 @testset "allele frequency on LC50 Map" begin
-    pFreqinit =  [0.1 0.2 0.3;
+    pfreqinit =  [0.1 0.2 0.3;
                   0.4 0.5 0.6;
                   0.7 0.8 0.9]
 
@@ -34,12 +37,14 @@ end
                 20.0 20.0 20.0;
                 0.0 0.0 0.0]
 
-    output = ArrayOutput(pFreqinit; tspan=1:5, aux=(exposure=exposure,))
-    rule = Ruleset(DeltaAlleleFrequencySurvMap(layerkey=Val(:exposure),
-                    LC50=10, hillcoefficient=2.0, deviationPhenotype = 10.0, dominanceDegree = -1.0))
+    output = ArrayOutput(pfreqinit; tspan=1:5, aux=(exposure=exposure,))
+    rule = DeltaAlleleFrequencySurvMap(
+        exposurekey=Val(:exposure), lc50=10, hillcoefficient=2.0, 
+        deviation_phenotype=10.0, dominance_degree=-1.0
+    )
     sim!(output, rule)
 
-    @test output[1] == pFreqinit
+    @test output[1] == pfreqinit
     @test output[2] ≈ [ 0.259231  0.489231  0.687692;
                         0.77632   0.9       0.99168;
                         0.7       0.8       0.9] atol=1e-4
@@ -59,9 +64,11 @@ end
     # @test (output[4] .<= 1.1) == trues(3,3)
     # @test (0.0 .<= output[4]) == trues(3,3)
 
-    output = ArrayOutput(pFreqinit; tspan=1:5, aux=(exposure=exposure,))
-    rule = Ruleset(DeltaAlleleFrequencySurvMap_noFastmath(layerkey=Val(:exposure),
-                    LC50=10, hillcoefficient=2.0, deviationPhenotype = 10.0, dominanceDegree = 1))
+    output = ArrayOutput(pfreqinit; tspan=1:5, aux=(exposure=exposure,))
+    rule = DeltaAlleleFrequencySurvMap(
+        exposurekey=Val(:exposure), lc50=10, hillcoefficient=2.0, 
+        deviation_phenotype=10.0, dominance_degree=1
+    )
     sim!(output, rule)
 
 end

@@ -1,7 +1,7 @@
 
-const CARRYCAP      = Param(100000.0; bounds=(0.0, 10.0))
-const INTRINSICRATE = Param(0.1,      bounds=(0.0, 10.0))
-const THRESHOLD     = Param(0.5;      bounds=(0.0, 1.0))
+const CARRYCAP_PARAM      = Param(100000.0; bounds=(0.0, 10.0))
+const INTRINSICRATE_PARAM = Param(0.1,      bounds=(0.0, 10.0))
+const THRESHOLD_PARAM     = Param(0.5;      bounds=(0.0, 1.0))
 
 """
 Extends CellRule for rules of growth dynamics
@@ -38,7 +38,7 @@ struct ExponentialGrowth{R,W,GR,TS,S} <: GrowthRule{R,W}
     nsteps::S
 end
 ExponentialGrowth{R,W}(;
-    intrinsicrate=INTRINSICRATE,
+    intrinsicrate=INTRINSICRATE_PARAM,
     timestep=nothing,
     nsteps=1.0,
 ) where {R,W} = ExponentialGrowth{R,W}(intrinsicrate, timestep, nsteps)
@@ -69,8 +69,8 @@ struct LogisticGrowth{R,W,CC,GR,TS,S} <: GrowthRule{R,W}
     nsteps::S
 end
 LogisticGrowth{R,W}(;
-    carrycap=CARRYCAP,
-    intrinsicrate=INTRINSICRATE,
+    carrycap=CARRYCAP_PARAM,
+    intrinsicrate=INTRINSICRATE_PARAM,
     timestep=nothing,
     nsteps=1.0,
     ) where {R,W} = LogisticGrowth{R,W}(carrycap, intrinsicrate, timestep, nsteps)
@@ -144,7 +144,7 @@ end
 LogisticGrowthMap{R,W}(;
     auxkey,
     auxtimeindex=:1,
-    carrycap=CARRYCAP,
+    carrycap=CARRYCAP_PARAM,
     timestep=nothing,
     nsteps=1.0,
 ) where {R,W} = LogisticGrowthMap{R,W}(auxkey, auxtimeindex, carrycap, timestep, nsteps)
@@ -184,7 +184,7 @@ end
 MaskGrowthMap{R,W}(;
     auxkey,
     auxtimeindex=1,
-    threshold=THRESHOLD,
+    threshold=THRESHOLD_PARAM,
 ) where {R,W} = MaskGrowthMap{R,W}(auxkey, auxtimeindex, threshold)
 
 # DynamicGrids.jl interface

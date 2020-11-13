@@ -33,8 +33,7 @@ Returns the value of a single layer or interplated value from a sequence of laye
 Corresponding layers must be include as the `aux` keyword to the `Output` or `sim!`.
 """
 function auxval end
-auxval(data::SimData, key::Union{Symbol,Val}, I...) = 
-    auxval(aux(data, key), I...) 
+auxval(data::SimData, key::Union{Symbol,Val}, I...) = auxval(aux(data, key), I...) 
 # If there is no time dimension we return the same data for every timestep
 auxval(A::Matrix, y, x, t=nothing) = A[y, x] 
 # If there is a time dimension we index into it with `t`

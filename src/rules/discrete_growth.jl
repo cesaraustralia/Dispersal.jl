@@ -1,14 +1,14 @@
+const INTRINSICRATE_PARAM = Param(0.1, bounds=(0.0, 10.0))
 
 """
 Simple discrete growth rate.
 $(FIELDDOCTABLE)
 """
-
-struct DiscreteGrowth{R,W,GR} <: GrowthRule{R,W} 
+struct DiscreteGrowth{R,W,GR} <: GrowthRule{R,W}
     "Intrinsic rate of growth per timestep"
     intrinsicrate::GR
 end
-function DiscreteGrowth{R,W}(; intrinsicrate=Param(0.1, bounds=(0.0, 10.0))) where {R,W}
+function DiscreteGrowth{R,W}(; intrinsicrate=INTRINSICRATE_PARAM) where {R,W}
     DiscreteGrowth{R,W}(intrinsicrate)
 end
 
@@ -17,66 +17,73 @@ end
     rule.intrinsicrate * population
 end
 
-struct CappedDiscreteGrowth{R,W,GR} <: GrowthRule{R,W} 
+struct CappedDiscreteGrowth{R,W,GR,CC} <: GrowthRule{R,W}
     "Intrinsic rate of growth per timestep"
     intrinsicrate::GR
+    "Carrying capacity"
+    carrycap::CC
 end
-function DiscreteGrowth{R,W}(; intrinsicrate=Param(0.1, bounds=(0.0, 10.0))) where {R,W}
-    DiscreteGrowth{R,W}(intrinsicrate)
+function CappedDiscreteGrowth{R,W}(; 
+    intrinsicrate=INTRINSICRATE_PARAM,
+    carrycap=CARRYCAP_PARAM,
+) where {R,W}
+    CappedDiscreteGrowth{R,W}(intrinsicrate, carrycap)
 end
 
 @inline function applyrule(data, rule::CappedDiscreteGrowth, pops, args...)
-    carrycap_effect = (1 - sum(pops)/ rule.carrycap)
-    map(pops,  rule.intrinsicrate1) do pop, ir
+    carrycap_effect = (1 - sum(pops) / rule.carrycap)
+    map(values(pops),  rule.intrinsicrate) do pop, ir
         ir * pop * carrycap_effect
     end
 end
-
 
 """
 Simple discrete growth rate.
 $(FIELDDOCTABLE)
 """
-# @Layers 
-struct DiscreteGrowthMap{R,W} <: GrowthMapRule{R,W} 
+struct DiscreteGrowthMap{R,W,RK,AT} <: GrowthMapRule{R,W}
+    "key for carrycap layer"
+    ratekey::RK
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+end
+function DiscreteGrowthMap{R,W}(; ratekey, auxtimeindex=1) where {R,W}
+    DiscreteGrowthMap{R,W}(ratekey, auxtimeindex)
 end
 
 @inline function applyrule(data, rule::DiscreteGrowthMap, population, index, args...)
     population > zero(population) || return zero(population)
-    intrinsicrate = layer(rule, data, index)
+    intrinsicrate = auxval(data, rule.ratekey, index..., rule.auxtimeindex) 
     @fastmath intrinsicrate * population
 end
 
-
-# Define the struct from scratch without all the macros, just Base@kwdef for default values
-# instead of `layerkey` we have two keys `ratekey` and `carrycapkey` so there are two
-# datasets you can retrieve. 
-struct DoubleLayers{RK,CK,TI}
-end
-
-# @DoubleLayers @Timestep 
-struct ExactLogisticGrowthMap3{R,W} <: GrowthMapRule{R,W}
+struct LogisticGrowthMap3{R,W,RK,CK,AT,TS,S} <: GrowthMapRule{R,W}
     "Key for growth rate layer"
-    ratekey::RK  
+    ratekey::RK
     "key for carrycap layer"
     carrycapkey::CK
-    "Precalculated interpolation indices. Not set by users"
-    timeindex::TI
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+    "Timestep used in formulation"
+    timestep::TS
+    "The fractional number of rule timesteps in the current simulation timestep"
+    nsteps::S
 end
-function ExactLogisticGrowthMap3{R,W}(
-    ratekey=Val{:intrinsicrate},
-    carrycapkey=Val{:carrycap},
-    timeindex=1,
+function LogisticGrowthMap3{R,W}(;
+    ratekey,
+    carrycapkey,
+    auxtimeindex=1,
+    timestep=nothing,
     nsteps=1
 ) where {R,W}
-    ExactLogisticGrowthMap3{R,W}(ratekey, carrycapkey, timeindex, nsteps)
+    LogisticGrowthMap3{R,W}(ratekey, carrycapkey, auxtimeindex, timestep, nsteps)
 end
 
-@inline function applyrule(data, rule::ExactLogisticGrowthMap3, population, index, args...)
+@inline function applyrule(data, rule::LogisticGrowthMap3, population, index, args...)
     population > zero(population) || return zero(population)
     # I'll think of a cleaner way to do this part
-    intrinsicrate = aux(data)[unwrap(rule.ratekey)][index..., timeindex(rule)]
-    carrycap = aux(data)[unwrap(rule.carrycapkey)][index..., timeindex(rule)]
+    intrinsicrate = aux(data)[unwrap(rule.ratekey)][index..., rule.auxtimeindex]
+    carrycap = aux(data)[unwrap(rule.carrycapkey)][index..., rule.auxtimeindex]
 
     if intrinsicrate > zero(intrinsicrate)
         @fastmath (population * carrycap) / (population + (carrycap - population) *
