@@ -4,8 +4,6 @@
 
 Preferably use the keyword constructor to build the array from
 a dispersal kernel function.
-
-$(FIELDDOCTABLE)
 """
 struct DispersalKernel{R,K,B,F,C,D} <: AbstractKernel{R}
     "Kernal matrix"
@@ -129,8 +127,6 @@ dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) =
 #     CentroidToCentroid(; subsampling=10.0)
 #
 # Calculates probability of dispersal between source cell centroid and destination cell area.
-#
-# $(FIELDDOCTABLE)
 # """
 # @columns struct CentroidToArea <: DistanceMethod
     # Field        | Default | Flat | Bounds      | Description
@@ -144,8 +140,6 @@ dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) =
     AreaToCentroid(; subsampling=10.0)
 
 Calculates probability of dispersal between source cell area and destination centroid.
-
-$(FIELDDOCTABLE)
 """
 Base.@kwdef struct AreaToCentroid{SS<:Number} <: DistanceMethod
     "Subsampling for numerical integration"
@@ -169,8 +163,6 @@ end
 
 
 Calculates probability of dispersal between source and destination cell areas.
-
-$(FIELDDOCTABLE)
 """
 Base.@kwdef struct AreaToArea{SS<:Number} <: DistanceMethod
     subsampling::SS = Param(10.0; bounds=(2.0, 40.0))
@@ -210,8 +202,6 @@ abstract type KernelFormulation end
     ExponentialKernel(λ)
 
 Probability of dispersal with a negatitve exponential relationship to distance.
-
-$(FIELDDOCTABLE)
 """
 @Base.kwdef struct ExponentialKernel{P} <: KernelFormulation
     "Parameter for adjusting spread of dispersal propability"

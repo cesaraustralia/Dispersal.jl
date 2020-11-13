@@ -9,7 +9,6 @@ using ConstructionBase,
       Distributed,
       Distributions,
       DocStringExtensions,
-      FieldDocTables,
       Flatten,
       LinearAlgebra,
       LossFunctions,
@@ -88,9 +87,6 @@ export targets, predictions
     $(TYPEDEF)
     $(DOCSTRING)
     """
-
-const FIELDDOCTABLE = FieldDocTable(NamedTuple())
-
 
 include("downsampling.jl")
 include("utils.jl") 

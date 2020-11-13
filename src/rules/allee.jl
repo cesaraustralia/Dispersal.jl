@@ -7,8 +7,6 @@ Causes extinction in a cell when a population is below the
 minimum number of individuals required to maintain it. 
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
-
-$(FIELDDOCTABLE)
 """
 struct AlleeExtinction{R,W,MF} <: CellRule{R,W}
     "Minimum founding individuals required to to start an ongoing population"

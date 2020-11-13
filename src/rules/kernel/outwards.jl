@@ -32,8 +32,6 @@ Cells in the surrounding neighborhood have some propability of
 invasion if the current cell is occupied.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
-
-$(FIELDDOCTABLE)
 """
 struct OutwardsBinaryDispersal{R,W,NH,PT} <: OutwardsDispersal{R,W}
     "Normalised proportions of dispersal to surrounding cells"
@@ -65,8 +63,6 @@ Dispersal reduces the current cell population, increasing the populations of the
 cells in the surrounding neighborhood.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
-
-$(FIELDDOCTABLE)
 """
 struct OutwardsPopulationDispersal{R,W,NH} <: OutwardsDispersal{R,W}
     "Normalised proportions of dispersal to surrounding cells"

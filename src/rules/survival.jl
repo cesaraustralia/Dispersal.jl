@@ -36,8 +36,6 @@ Dose-response log-logistic survival model is defined as:
     See [wikipedia on Hill equation](https://en.wikipedia.org/wiki/Hill_equation_(biochemistry))
 
     Surv(x; α, β) = 1-F(x; α, β) = 1/(1 + (x/ α)^β )
-
-$(FIELDDOCTABLE)
 """
 struct SurvLogLogistic{R,W,LC,HC,X} <: SurvRule{R,W}
     "Lethal concentration for 50% of individuals."
@@ -62,7 +60,6 @@ end
 
 """
 LogLogistic survival based on an exposure layer
-$(FIELDDOCTABLE)
 """
 struct SurvLogLogisticMap{R,W,LC,HC,EK,AT} <: SurvMapRule{R,W}
     "Lethal concentration for 50% of individuals."
@@ -133,7 +130,6 @@ end
 
 """
 LogLogistic survival based on an exposure layer
-$(FIELDDOCTABLE)
 """
 struct SurvLogLogisticMap2{R,W,HC,EK,LK,AT} <: SurvMapRule{R,W}
     "Hill coefficient, or shape of a log logistic function"
@@ -164,7 +160,6 @@ end
 # TODO: Should we gather MaskSurvMap with MaskGrowthMap?
 """
 Simple layer mask. Values below a certain threshold are replaced with zero.
-$(FIELDDOCTABLE)
 
 """
 struct MaskSurvMap{R,W,ST,EK,AT} <: SurvMapRule{R,W}

@@ -3,8 +3,6 @@
 
 A simple rule that copies aux array slices to a grid over time.
 This can be used for comparing simulation dynamics to aux data dynamics.
-
-$(FIELDDOCTABLE)
 """
 struct AuxCopy{R,W,L,TI} <: Rule{R,W} 
     "Key for auxillary data source"

@@ -63,8 +63,6 @@ will downsample the grid to improve precalulation time and runtime performance. 
 scale value is good for use in a live interface.
 
 ## Keyword Arguments
-
-$(FIELDDOCTABLE)
 """
 struct HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D} <: ManualRule{R,W}
     "Dispersal mode"

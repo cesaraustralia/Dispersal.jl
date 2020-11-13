@@ -2,7 +2,6 @@ const INTRINSICRATE_PARAM = Param(0.1, bounds=(0.0, 10.0))
 
 """
 Simple discrete growth rate.
-$(FIELDDOCTABLE)
 """
 struct DiscreteGrowth{R,W,GR} <: GrowthRule{R,W}
     "Intrinsic rate of growth per timestep"
@@ -39,7 +38,6 @@ end
 
 """
 Simple discrete growth rate.
-$(FIELDDOCTABLE)
 """
 struct DiscreteGrowthMap{R,W,RK,AT} <: GrowthMapRule{R,W}
     "key for carrycap layer"

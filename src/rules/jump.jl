@@ -12,8 +12,6 @@ Jump dispersal simulates random long distance dispersal events. A random cell wi
 the `spotrange` is invaded. 
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
-
-$(FIELDDOCTABLE)
 """
 struct JumpDispersal{R,W,PT,SR} <: AbstractJumpDispersal{R,W}
     "A real number between one and zero"

@@ -18,16 +18,12 @@ growth rate data.
 a
 [GrowthMaps.jl](http://github.com/cesaraustralia/GrowthMaps.jl)
 can produce these growth maps from environmental data.
-
-$(FIELDDOCTABLE)
 """
 abstract type GrowthMapRule{R,W} <: GrowthRule{R,W} end
 
 
 """
 Simple fixed exponential growth rate using exact solution.
-
-$(FIELDDOCTABLE)
 """
 struct ExponentialGrowth{R,W,GR,TS,S} <: GrowthRule{R,W}
     "Intrinsic rate of growth per timestep"
@@ -38,7 +34,7 @@ struct ExponentialGrowth{R,W,GR,TS,S} <: GrowthRule{R,W}
     nsteps::S
 end
 ExponentialGrowth{R,W}(;
-    intrinsicrate=INTRINSICRATE_PARAM,
+    intrinsicrate=INTRINSICRATE,
     timestep=nothing,
     nsteps=1.0,
 ) where {R,W} = ExponentialGrowth{R,W}(intrinsicrate, timestep, nsteps)
@@ -55,8 +51,6 @@ end
 
 """
 Simple fixed logistic growth rate using exact solution
-
-$(FIELDDOCTABLE)
 """
 struct LogisticGrowth{R,W,CC,GR,TS,S} <: GrowthRule{R,W}
     "Carrying capacity for each cell. Not currently scaled by area."
@@ -89,8 +83,6 @@ end
 
 """
 Exponential growth based on a growth rate data, using exact solution.
-
-$(FIELDDOCTABLE)
 """
 struct ExponentialGrowthMap{R,W,AK<:Val,AT,TS,S} <: GrowthMapRule{R,W}
     "Key for aux data"
@@ -127,7 +119,6 @@ end
 Logistic growth based on a growth rate layer, using exact solution.
 
 Saturation only applies with positive growth
-$(FIELDDOCTABLE)
 """
 struct LogisticGrowthMap{R,W,AK<:Val,AT,CC,TS,S} <: GrowthMapRule{R,W}
     "Key for aux layer"
@@ -170,8 +161,6 @@ end
 
 """
 Simple layer mask. Values below a certain threshold are replaced with zero.
-
-$(FIELDDOCTABLE)
 """
 struct MaskGrowthMap{R,W,AK<:Val,AT,Th} <: GrowthMapRule{R,W}
     "Key for aux data"

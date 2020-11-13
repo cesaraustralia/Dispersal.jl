@@ -21,8 +21,6 @@ The current cell is invaded if there is pressure from surrounding cells and
 suitable habitat. Otherwise it keeps its current state.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
-
-$(FIELDDOCTABLE)
 """
 struct InwardsBinaryDispersal{R,W,NH,PT} <: InwardsDispersal{R,W}
     "Normalised proportions of dispersal to surrounding cells"
@@ -55,8 +53,6 @@ surrounding cells, using a dispersal kernel deterministically.
 This will only make sense where cell populations are large.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
-
-$(FIELDDOCTABLE)
 """
 struct InwardsPopulationDispersal{R,W,NH} <: InwardsDispersal{R,W}
     "Normalised proportions of dispersal to surrounding cells"
