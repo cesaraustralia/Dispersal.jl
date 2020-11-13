@@ -65,7 +65,6 @@ end
     output = ArrayOutput(init; tspan=1d:1d:3d)
     rule = Ruleset(ExactExponentialGrowth(intrinsicrate=log(2.0), timestep=1d); timestep=1d)
     sim!(output, rule)
-    typeof(rule.rules[1].timestep)
 
     @test output[1] == test1
     @test output[2] == test2
@@ -91,7 +90,7 @@ end
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
     output.extent
-    rule = Ruleset(ExactExponentialGrowthMap(layerkey=Val(:suit)))
+    rule = Ruleset(ExactExponentialGrowthMap(auxkey=Val(:suit)))
     sim!(output, rule)
 
     @test output[1] == [1.0 1.0 1.0;
@@ -161,7 +160,7 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
-    rule = Ruleset(ExactLogisticGrowthMap(layerkey=Val(:suit), carrycap=10))
+    rule = Ruleset(ExactLogisticGrowthMap(auxkey=Val(:suit), carrycap=10))
     sim!(output, rule)
 
     @test output[1] == test1
@@ -171,9 +170,9 @@ end
 end
 
 @testset "growth map masking" begin
-    init = [1.0 1.0 1.0;
-            1.0 1.0 1.0;
-            1.0 1.0 1.0]
+    init =  [1.0 1.0 1.0;
+             1.0 1.0 1.0;
+             1.0 1.0 1.0]
 
     suit =  [1.0 1.0 2.0;
              2.0 2.0 0.5;
@@ -188,7 +187,7 @@ end
              0.0 0.0 0.0]
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
-    maskrule = MaskGrowthMap(layerkey=Val(:suit), threshold=1.1)
+    maskrule = MaskGrowthMap(auxkey=Val(:suit), threshold=1.1)
     ruleset = Ruleset(maskrule)
     data = SimData(extent(output), ruleset)
 

@@ -1,4 +1,4 @@
-using DynamicGrids, Dispersal, Test, Colors, FieldDefaults
+using DynamicGrids, Dispersal, Test, Colors
 import DynamicGrids: grid2image
 
 init =  [1.0  1.0  0.5

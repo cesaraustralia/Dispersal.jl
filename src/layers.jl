@@ -13,17 +13,9 @@ If multiple layers are available the product will be returned. Corresponding
 layers must be include in the `aux` `NamedTuple` in the out put or passed to `sim!`
 """
 function layer end
-layer(rule::Rule, data) = aux(data)[unwrap(layerkey(rule))]
-layer(rule::Rule, data, I) =
+Base.@propagate_inbounds layer(rule::Rule, data) = aux(data)[unwrap(layerkey(rule))]
+Base.@propagate_inbounds layer(rule::Rule, data, I) =
     layer(layer(rule, data), I, timeindex(rule))
-layer(rule::Rule, data, I, L) =
-    layer(layer(rule, data), I, timeindex(rule), L)
-
-layer(l::Matrix, I, timeindex) = l[I...]
-layer(l::AbstractArray{T,3}, I, timeindex) where T =
-    l[I..., timeindex]
-layer(l::AbstractArray{T,4}, I, timeindex, layerindex) where T =
-    l[I..., timeindex, layerindex]
 
 timeindex(rule::Rule) = rule.timeindex
 layerkey(rule::Rule) = rule.layerkey
@@ -43,7 +35,11 @@ replaced with an external interpolation package.
 # Truncated version
 precalc_timeindex(layer, rule, data, t=currenttime(data)) = begin
     # Convert Month etc timesteps to a realised DateTime period
-    layerstep = length(starttime(layer):timestep(layer):t)
+    layerstep = if starttime(layer) <= t
+        length(starttime(layer):timestep(layer):t)
+    else
+        2-length(t:timestep(layer):starttime(layer))
+    end
     cyclic_index(layerstep, size(layer, 3))
 end
 # Interpolated version
@@ -75,19 +71,19 @@ cyclic_index(i::Integer, len::Integer) =
 
 # Get time step/start/stop from AbstractDimensionalArray
 # Integer fallbacks are for other array types is the indices of dim 3
-DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, TimeDim))
+DynamicGrids.timestep(A::AbstractDimensionalArray) = step(dims(A, Ti()))
 DynamicGrids.timestep(A::AbstractArray) = 1
 
-starttime(A::AbstractDimensionalArray) = first(dims(A, TimeDim))
+starttime(A::AbstractDimensionalArray) = first(dims(A, Ti()))
 starttime(A::AbstractArray) = firstindex(A, 3)
 
-stoptime(A::AbstractDimensionalArray) = last(dims(A, TimeDim))
+stoptime(A::AbstractDimensionalArray) = last(dims(A, Ti()))
 stoptime(A::AbstractArray) = lastindex(A, 3)
 
 """
     LayerCopy(layerkey, timeindex)
 
-A simple rule that copies a layer to a grid over time. 
+A simple rule that copies a layer to a grid over time.
 This can be used for comparing simulation dynamics to layer dynamics.
 
 $(FIELDDOCTABLE)

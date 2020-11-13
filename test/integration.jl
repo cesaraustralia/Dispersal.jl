@@ -18,17 +18,17 @@ end
     radius = 1
     hood = DispersalKernel{radius}()
 
-    # time sequence of layers
+    # time sequence for auxillary input
     a = cat([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8], dims=3)
-    dimz = X(1:2), Y(1:2), Ti(1d:10d:11d)
+    dimz = Y(1:2), X(1:2), Ti(1d:10d:11d)
     suitseq = DimensionalArray(a, dimz)
 
     # Regular
     ruleset1 = Ruleset(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                       MaskGrowthMap(layerkey=Val(:suitseq), threshold=0.4); timestep=1d)
+                       MaskGrowthMap(auxkey=Val(:suitseq), threshold=0.4); timestep=1d)
     # Chained
     ruleset2 = Ruleset(Chain(InwardsBinaryDispersal(neighborhood=hood, prob_threshold=0.0),
-                       MaskGrowthMap(layerkey=Val(:suitseq), threshold=0.4)) ; timestep=1d)
+                       MaskGrowthMap(auxkey=Val(:suitseq), threshold=0.4)) ; timestep=1d)
     output1 = ArrayOutput(init; tspan=1d:1d:25d)
     output2 = ArrayOutput(init; tspan=1d:1d:25d)
 
@@ -103,7 +103,7 @@ end
                  1 0 1 1 1]
 
     # Dispersal in radius 1 neighborhood
-    maskgrowth = MaskGrowthMap(layerkey=:suit)
+    maskgrowth = MaskGrowthMap(auxkey=Val(:suit))
     radius = 1
     hood = DispersalKernel{radius}(; formulation=ExponentialKernel(1.0))
 
@@ -198,7 +198,7 @@ end
              0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0;]
 
     # Dispersal in radius 1 neighborhood
-    mask = MaskGrowthMap(layerkey=:suit)
+    mask = MaskGrowthMap(auxkey=Val(:suit))
     radius = 2
 
     @testset "inwards population dispersal fills the grid where reachable and suitable" begin

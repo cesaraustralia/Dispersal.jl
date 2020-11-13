@@ -14,7 +14,7 @@ end
 
 precalctimestep(rule, data) = precalctimestep(rule.timestep, rule, data)
 precalctimestep(ruletimestep::DatePeriod, rule, data) =
-    @set rule.nsteps = currenttimestep(data) / Millisecond(ruletimestep)
-precalctimestep(ruletimestep::Nothing, rule, data) = @set rule.nsteps = 1
+    @set rule.nsteps = convert(typeof(rule.nsteps), currenttimestep(data) / Millisecond(ruletimestep))
+precalctimestep(ruletimestep::Nothing, rule, data) = @set rule.nsteps = oneunit(rule.nsteps)
 precalctimestep(ruletimestep, rule, data) =
-    @set rule.nsteps = timestep(data) / ruletimestep
+    @set rule.nsteps = convert(typeof(rule.nsteps), timestep(data) / ruletimestep)
