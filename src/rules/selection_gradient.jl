@@ -110,7 +110,6 @@ end
         lande_variable.allele_frequency * (1-lande_variable.allele_frequency)*(rule.deviation_phenotype + rule.dominance_degree*(1-2*lande_variable.allele_frequency))*
         rule.hillcoefficient*(rule.exposure/lande_variable.phenotype)^rule.hillcoefficient / ( lande_variable.phenotype *((rule.exposure/lande_variable.phenotype)^rule.hillcoefficient +1))
         ,
-        
         lande_variable.phenotype + 
             2*lande_variable.allele_frequency*(1-lande_variable.allele_frequency) * (rule.deviation_phenotype + rule.dominance_degree*(1-2*lande_variable.allele_frequency))^2*
           rule.hillcoefficient*(rule.exposure/lande_variable.phenotype)^rule.hillcoefficient / ( lande_variable.phenotype *((rule.exposure/lande_variable.phenotype)^rule.hillcoefficient +1)) *
@@ -156,3 +155,41 @@ end
     )
 end
 
+
+
+struct SelectionGradientMapTuple{R,W,HC,DP,DD,EK,AT} <: SelectionGradientMapRule{R,W} 
+    "Hill coefficient, or shape of a log logistic function"
+    hillcoefficient::HC
+    "Deviation of homozygous to the average phenotype"
+    deviation_phenotype::DP
+    "AdditDegree of dominance between two alleles"
+    dominance_degree::DD
+    "Key for aux data"
+    exposurekey::EK
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+end
+function SelectionGradientMapTuple{R,W}(;
+    hillcoefficient=HILLCOEFFICIENT_PARAM,
+    deviation_phenotype=DEVIATION_PHENOTYPE_PARAM,
+    dominance_degree=DOMINANCE_DEGREE_PARAM,
+    exposurekey,
+    auxtimeindex=1,
+) where {R,W}
+SelectionGradientMapTuple{R,W}(
+        hillcoefficient, deviation_phenotype, dominance_degree, exposurekey, auxtimeindex
+    )
+end
+
+@inline function applyrule(data, rule::SelectionGradientMapTuple, (allele_frequency, phenotype), index)
+    exposure = auxval(data, rule.exposurekey, index..., rule.auxtimeindex) 
+    @fastmath (allele_frequency +
+        allele_frequency * (1-allele_frequency)*(rule.deviation_phenotype + rule.dominance_degree*(1-2*allele_frequency))*
+        rule.hillcoefficient*(exposure/phenotype)^rule.hillcoefficient / ( phenotype *((exposure/phenotype)^rule.hillcoefficient +1)),
+
+        phenotype + 
+            2*allele_frequency*(1-allele_frequency) * (rule.deviation_phenotype + rule.dominance_degree*(1-2*allele_frequency))^2*
+          rule.hillcoefficient*(exposure/phenotype)^rule.hillcoefficient / ( phenotype *((exposure/phenotype)^rule.hillcoefficient +1)) *
+          (1-rule.dominance_degree*rule.hillcoefficient*(exposure/phenotype)^rule.hillcoefficient / ( phenotype *((exposure/phenotype)^rule.hillcoefficient +1)))
+    )
+end
