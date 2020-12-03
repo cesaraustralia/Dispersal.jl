@@ -81,4 +81,30 @@ end
     sim!(output, rule)
 
     @test output[1] == landeinit
+
+    # second implementation:
+    landeinit = (
+        pfreq = [0.1 0.5;
+                 0.5 0.8],
+        lc50 = [50.0 50.0;
+                5.0 5.0],
+    )
+    output = ArrayOutput(landeinit; tspan=1:3, aux=(exposure=exposure,))
+
+    exposure = [50.0 50.0;
+                10.0 10.0]
+    grids = Tuple{:pfreq,:lc50}
+    rule = SelectionGradientMapTuple{grids,grids}(
+        exposurekey=:exposure,
+        hillcoefficient=2.0,  
+        deviation_phenotype=10.0,
+        dominance_degree=-1.0
+    )
+    sim!(output, rule)
+
+    @test output[1] == landeinit
+    @test output[2].pfreq ≈ [0.11656 0.55;
+                             1.3 1.34272] atol=1e-4
+    @test output[2].lc50 ≈ [50.3108 51.02;
+                              26.12 20.1875] atol=1e-4
 end

@@ -51,19 +51,19 @@ export BatchGroups, HeirarchicalGroups
 
 export ExponentialGrowth, LogisticGrowth
 
-export DiscreteGrowth, DiscreteGrowthMap, DiscreteGrowth2, DiscreteGrowth3
+export DiscreteGrowth, DiscreteGrowthMap, DiscreteGrowth2
 
 export MaskGrowthMap, ExactExponentialGrowthMap, ExactLogisticGrowthMap, ExactLogisticGrowthMap2, ExactLogisticGrowthMap3
 
 export SurvLogLogistic, SurvLogLogisticMap, SurvLogLogisticMap2
 
-export GrowthSurvLogLogisticMap3
+export GrowthSurvLogLogisticMap3, SurvLogLogisticMapTuple, GrowthMapTuple
 
 export MaskSurvMap
 
 export SelectionGradientSurv, SelectionGradientSurvMap
 
-export SelectionGradient1locusSurv, SelectionGradient1locusSurvMap, LandeVariable
+export SelectionGradient1locusSurv, SelectionGradient1locusSurvMap, LandeVariable, SelectionGradientMapTuple
 
 export DeltaAlleleFrequencySurv, DeltaAlleleFrequencySurvMap, DeltaAlleleFrequencySurvMap_noFastmath
 

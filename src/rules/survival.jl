@@ -128,6 +128,74 @@ end
     end
 end
 
+# TODO: function named GrowthSurvLogLogisticMap3 is a combination of 2 new function: SurvLogLogisticMapTuple and GrowthMapTuple
+
+struct SurvLogLogisticMapTuple{R,W,LC,HC,EK,AT,TS,S} <: SurvMapRule{R,W}
+    "Lethal concentration for 50% of individuals."
+    lc50::LC
+    "Hill coefficient, or shape of a log logistic function"
+    hillcoefficient::HC
+    "Key for growth rate layer"
+    exposurekey::EK
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+    "Timestep used in formulation"
+    timestep::TS
+    "The fractional number of rule timesteps in the current simulation timestep"
+    nsteps::S
+end
+function SurvLogLogisticMapTuple{R,W}(;
+    lc50=LC50PARAM,
+    hillcoefficient=HILLCOEFFICIENT_PARAM,
+    exposurekey,
+    auxtimeindex=1,
+    timestep=nothing,
+    nsteps=1.0,
+) where {R,W}
+SurvLogLogisticMapTuple{R,W}(
+        lc50, hillcoefficient, exposurekey, auxtimeindex, timestep, nsteps,
+    )
+end
+
+@inline function applyrule(data, rule::SurvLogLogisticMapTuple, pops, index, args...)
+    exposure = auxval(data, rule.exposurekey, index..., rule.auxtimeindex) 
+    map(values(pops), rule.lc50) do pop, lc50
+        @fastmath pop * (1 / (1 + (exposure / lc50)^rule.hillcoefficient))
+    end
+end
+
+# ------------------------
+struct GrowthMapTuple{R,W,CC,GR,AT,TS,S} <: GrowthMapRule{R,W}
+    "Carrying capacity for each cell. Not currently scaled by area."
+    carrycap::CC
+    "Intrinsic rate of growth per timestep"
+    intrinsicrate::GR
+    "Precalculated time interpolation index for aux data"
+    auxtimeindex::AT
+    "Timestep used in formulation"
+    timestep::TS
+    "The fractional number of rule timesteps in the current simulation timestep"
+    nsteps::S
+end
+function GrowthMapTuple{R,W}(;
+    carrycap=CARRYCAP_PARAM,
+    intrinsicrate=INTRINSICRATE_PARAM,
+    auxtimeindex=1,
+    timestep=nothing,
+    nsteps=1.0,
+) where {R,W}
+GrowthMapTuple{R,W}(
+        carrycap, intrinsicrate, auxtimeindex, timestep, nsteps,
+    )
+end
+
+@inline function applyrule(data, rule::GrowthMapTuple, pops, index, args...)
+    growth_carrycap_effect = rule.intrinsicrate * (1 - (sum(pops)) / rule.carrycap)
+    map(values(pops)) do pop
+        @fastmath pop * growth_carrycap_effect
+    end
+end
+
 """
 LogLogistic survival based on an exposure layer
 """

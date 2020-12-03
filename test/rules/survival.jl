@@ -140,7 +140,7 @@ end
     sim!(popsizegrids, survrule);
 end
 
-@testset "Test double grids DiscreteGrowth2" begin
+@testset "Test double grids GrowthSurvLogLogisticMap3" begin
     init = (
         pop1=[0.5 0.0 0.0;
               0.0 0.0 1.0;
@@ -166,6 +166,31 @@ end
         carrycap = 5.0,
     )
     GrowthSurvLogLogisticMap3{grids,grids}(1,2,3,4,4,5,6,7)
+
+    sim!(output, rule)
+
+    @test output[1] == init
+    @test output[2].pop1 ≈ [.525 0. 0.;
+                            0. 0. 1.08973;
+                            0. 0. 0.] atol=1e-4
+    @test output[2].pop2 ≈ [.525 0. 0.;
+                            0. 0.764801  0.;
+                            0. 0. 0.] atol=1e-4
+    @test output[2].pop3 ≈ [.525 0. 0.;
+                            0. 0.660363 0.;
+                            0. 0.26166 0.] atol=1e-4
+
+    # ----------------- SIMPLER SAME FUNCTION
+    ruleSurv = SurvLogLogisticMapTuple{grids,grids}(
+        exposurekey=:exposure,
+        hillcoefficient=2.5,
+        lc50=(50, 40, 30),
+    )
+    ruleGrowth = GrowthMapTuple{grids,grids}(
+        carrycap=5.0,
+        intrinsicrate=1.5,
+    )
+    rule = Ruleset(ruleGrowth, ruleSurv)
 
     sim!(output, rule)
 
