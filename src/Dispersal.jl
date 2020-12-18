@@ -3,67 +3,36 @@ module Dispersal
 @doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
 using ConstructionBase,
-      Colors,
       Dates,
       DimensionalData,
-      Distributed,
       Distributions,
       DocStringExtensions,
-      FieldDocTables,
-      Flatten,
       LinearAlgebra,
-      LossFunctions,
       ModelParameters,
-      PoissonRandom,
       Reexport,
       Setfield,
-      Statistics
+      StaticArrays
 
-@reexport using DynamicGrids
-@reexport using ModelParameters
+@reexport using DynamicGrids, 
+                ModelParameters
 
-using LossFunctions: ZeroOneLoss
+using ModelParameters: params
 
-import Base: getindex, setindex!, lastindex, size, length, push!
-
-import DynamicGrids: applyrule, applyrule!, precalcrule,
-       neighbors, sumneighbors, neighborhood, setneighbor!, mapsetneighbor!,
-       radius, gridsize, mask, overflow, cellsize, ruleset, inbounds, extent,
-       currenttime, currenttimestep, timestep, tspan,
-       buffer, SimData, WritableGridData, aux, unwrap, kernel
-
-import ConstructionBase: constructorof
-
-
-export AbstractDispersalKernel, DispersalKernel
+import DynamicGrids: applyrule, applyrule!, precalcrule, kernel
 
 export KernelFormulation, ExponentialKernel
 
-export DistanceMethod, CentroidToCentroid, CentroidToArea, AreaToArea, AreaToCentroid
+export DistanceMethod, CentroidToCentroid, AreaToArea, AreaToCentroid #, CentroidToArea, 
 
-export AbstractInwardsDispersal, InwardsBinaryDispersal, InwardsPopulationDispersal,
-       SwitchedInwardsPopulationDispersal
+export DispersalKernel
 
-export AbstractOutwardsDispersal, OutwardsBinaryDispersal, OutwardsPopulationDispersal
+export InwardsDispersal, OutwardsDispersal
 
+export AlleeExtinction, JumpDispersal
 
-export AlleeExtinction, JumpDispersal, HumanDispersal
+export HumanDispersal, BatchGroups, HeirarchicalGroups
 
-export BatchGroups, HeirarchicalGroups
-
-export ExponentialGrowth, LogisticGrowth
-
-export MaskGrowthMap, ExponentialGrowthMap, LogisticGrowthMap
-
-export AuxCopy
-
-export Parametriser, AbstractObjective, SimpleObjective, RegionObjective, RegionOutput,
-       ColorRegionFit, Accuracy
-
-export ThreadedReplicates, DistributedReplicates, SingleCoreReplicates
-
-export targets, predictions
-
+export ThresholdGrowth, ExponentialGrowth, LogisticGrowth
 
 # Documentation templates
 @template TYPES =
@@ -72,22 +41,16 @@ export targets, predictions
     $(DOCSTRING)
     """
 
-const FIELDDOCTABLE = FieldDocTable(NamedTuple())
-
+const DG = DynamicGrids
 
 include("downsampling.jl")
 include("utils.jl") 
-include("rules/kernel/common.jl")
-include("rules/kernel/inwards.jl")
-include("rules/kernel/outwards.jl")
-include("rules/growth.jl")
-include("rules/human.jl")
-include("rules/jump.jl")
-include("rules/allee.jl")
-include("rules/auxcopy.jl")
-include("optimisation/optimisation.jl")
-include("optimisation/objectives.jl")
-include("optimisation/output.jl")
-
+include("kernel/common.jl")
+include("kernel/inwards.jl")
+include("kernel/outwards.jl")
+include("growth.jl")
+include("human.jl")
+include("jump.jl")
+include("allee.jl")
 
 end # module
