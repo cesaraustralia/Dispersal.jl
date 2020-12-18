@@ -26,7 +26,7 @@ DynamicGrids = "0.13"
 ModelParameters = "0.3"
 Reexport = "0.2"
 Setfield = "0.5, 0.6, 0.7"
-StaticArrays = "0.12"
+StaticArrays = "0.12, 1.0"
 julia = "1"
 
 [extras]
