@@ -2,7 +2,7 @@
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://cesaraustralia.github.io/Dispersal.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://cesaraustralia.github.io/Dispersal.jl/dev)
-![CI](https://github.com/cesaraustralia/Dispersal.jl/workflows/CI/badge.svg)
+[![Build Status](https://travis-ci.org/cesaraustralia/Dispersal.jl.svg?branch=master)](https://travis-ci.org/cesaraustralia/Dispersal.jl)
 [![codecov.io](http://codecov.io/github/cesaraustralia/Dispersal.jl/coverage.svg?branch=master)](http://codecov.io/github/cesaraustralia/Dispersal.jl?branch=master)
 
 ![Spotted wing drosophola dispersal](https://raw.githubusercontent.com/cesaraustralia/packagegifs/master/SWD_USA.gif)

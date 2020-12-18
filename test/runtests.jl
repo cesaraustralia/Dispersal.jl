@@ -1,12 +1,20 @@
-using SafeTestsets
+using Dispersal, Aqua, SafeTestsets
 
-@time @safetestset "ouput" begin include("optimisation/output.jl") end
-@time @safetestset "integration" begin include("integration.jl") end
+if VERSION >= v"1.5.0"
+    # Amibiguities are not owned by Dispersal
+    # Aqua.test_ambiguities([Dispersal, Base, Core])
+    Aqua.test_unbound_args(Dispersal)
+    Aqua.test_undefined_exports(Dispersal)
+    Aqua.test_project_extras(Dispersal)
+    Aqua.test_stale_deps(Dispersal)
+    Aqua.test_deps_compat(Dispersal)
+    Aqua.test_project_toml_formatting(Dispersal)
+end
+
 @time @safetestset "downsampling" begin include("downsampling.jl") end
-@time @safetestset "utils" begin include("utils.jl") end
-@time @safetestset "human dispersal" begin include("rules/human.jl") end
-@time @safetestset "jump dispersal" begin include("rules/jump.jl") end
-@time @safetestset "kernels" begin include("rules/kernels.jl") end
-@time @safetestset "allee effects" begin include("rules/allee.jl") end
-@time @safetestset "growth" begin include("rules/growth.jl") end
-#@time @safetestset "optimisation" begin include("optimisation/optimisation.jl") end
+@time @safetestset "human dispersal" begin include("human.jl") end
+@time @safetestset "jump dispersal" begin include("jump.jl") end
+@time @safetestset "kernels" begin include("kernels.jl") end
+@time @safetestset "allee effects" begin include("allee.jl") end
+@time @safetestset "growth" begin include("growth.jl") end
+@time @safetestset "integration" begin include("integration.jl") end

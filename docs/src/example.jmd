@@ -38,7 +38,7 @@ aust = Lon(Between(113.338953078, 153.569469029)),
 
 ### Define a `RuleSet`: climate driven population growth
 
-This will involve combining multiple dispersal componenents into a single
+This will involve combining multiple dispersal components into a single
 `RuleSet` object: population growth, local dispersal, Allee effects, and human
 dispersal.
 
