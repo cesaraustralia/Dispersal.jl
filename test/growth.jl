@@ -3,7 +3,7 @@ using DynamicGrids, Dispersal, Test, Unitful, Dates
 using DynamicGrids: applyrule, SimData, extent
 using Unitful: d
 
-using DimensionalData: DimArray
+using DimensionalData
 
 @testset "exponential growth" begin
     init =  [1.0 4.0 7.0;
@@ -137,9 +137,8 @@ end
 @testset "logistic growth with rate from a growth 3D map" begin
 
     init =  [1.0 1.0 1.0;
-    1.0 1.0 1.0;
-    1.0 1.0 1.0]
-
+        1.0 1.0 1.0;
+        1.0 1.0 1.0]
    
     suit =  reshape(
         repeat(
@@ -152,7 +151,14 @@ end
     output = ArrayOutput(init; tspan=1:3, aux=(suit_DD=suit_DD,))
     rule = Ruleset(LogisticGrowth(rate=Aux(:suit_DD), carrycap=10))
     sim!(output, rule)
+    output[Ti(2)]
 
+    ti = Ti(DateTime(2001,1,1):Day(5):DateTime(2001,1,15))
+    suit_DD_Date = DimArray(suit, (X, Y, ti));
+    outputDate = ArrayOutput(init; tspan=DateTime(2001,1,1):Day(5):DateTime(2001,1,15), aux=(suit_DD_Date=suit_DD_Date,))
+    rule = Ruleset(LogisticGrowth(rate=Aux(:suit_DD_Date), timestep=Day(1)); timestep=Day(5))
+    sim!(outputDate, rule)
+    
 end
 
 @testset "growth map masking" begin
