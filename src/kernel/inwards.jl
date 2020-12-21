@@ -1,12 +1,12 @@
 """
-    InwardsPopulationDispersal(neighborhood)
-    InwardsPopulationDispersal(; neighborhood=DispersalKernel{3}())
-    InwardsPopulationDispersal{R,W}(neighborhood)
+    InwardsDispersal(neighborhood)
+    InwardsDispersal(; neighborhood=DispersalKernel{3}())
+    InwardsDispersal{R,W}(neighborhood)
 
-Disperses to the current cells from the populations of the
+Disperses to the current cells from the objects of the
 surrounding cells, using a dispersal kernel deterministically.
 
-This will only make sense where cell populations are large.
+This will only make sense where cell objects are large.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 
