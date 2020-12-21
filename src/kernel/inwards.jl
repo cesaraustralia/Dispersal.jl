@@ -4,7 +4,7 @@
     InwardsPopulationDispersal{R}(; neighborhood)
     InwardsPopulationDispersal{R,W}(; neighborhood)
 
-Disperses to the current cells from the populations of the
+Disperses to the current cells from the objects of the
 surrounding cells, using a dispersal kernel deterministically.
 
 This will make sense ecologically where cell populations are large, 
