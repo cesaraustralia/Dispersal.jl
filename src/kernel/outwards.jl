@@ -1,10 +1,10 @@
 """
-    OutwardsPopulationDispersal(neighborhood)
-    OutwardsPopulationDispersal(; neighborhood=DispersalKernel{3}())
-    OutwardsPopulationDispersal{R,W}(neighborhood)
-    OutwardsPopulationDispersal{R,W}(; neighborhood=DispersalKernel{3}())
+    OutwardsDispersal(neighborhood)
+    OutwardsDispersal(; neighborhood=DispersalKernel{3}())
+    OutwardsDispersal{R,W}(neighborhood)
+    OutwardsDispersal{R,W}(; neighborhood=DispersalKernel{3}())
 
-Dispersal reduces the current cell population, increasing the populations of the
+Dispersal reduces the current cell object, increasing the populations of the
 cells in the surrounding neighborhood.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
