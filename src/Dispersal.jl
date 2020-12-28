@@ -34,6 +34,12 @@ export HumanDispersal, BatchGroups, HeirarchicalGroups
 
 export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 
+export LogisticSurvival
+
+export Pulsed_Exposure, Degradation_Exposure, Threshold_Exposure
+
+export Lande_Resistance
+
 # Documentation templates
 @template TYPES =
     """
@@ -51,5 +57,8 @@ include("growth.jl")
 include("human.jl")
 include("jump.jl")
 include("allee.jl")
+include("exposure.jl")
+include("survival.jl")
+include("resistance.jl")
 
 end # module
