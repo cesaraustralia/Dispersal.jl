@@ -5,12 +5,11 @@
 Preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 """
-struct DispersalKernel{R,K,B,F,C,D} <: AbstractKernel{R}
-    "Kernal matrix"
+struct DispersalKernel{R,N,K,F,C,D} <: AbstractKernel{R}
+    "Neighborhood object"
+    neighborhood::N
+    "Kernel"
     kernel::K
-    "Neighborhood buffer"
-    "Neighborhood buffer"
-    _buffer::B
     "Kernel formulation object"
     formulation::F
     "Simulation cell size"
@@ -18,17 +17,20 @@ struct DispersalKernel{R,K,B,F,C,D} <: AbstractKernel{R}
     "Method for calculating distance between cells"
     distancemethod::D
 end
-DispersalKernel{R}(kernel, _buffer, formulation, cellsize, distancemethod) where R = begin
+DispersalKernel{R}(hood, kernel, formulation, cellsize, distancemethod) where R = begin
     # Build the kernel matrix
     newkernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
     # Convert the kernel matrix to the type of the init array
     S = 2R + 1
-    DispersalKernel{R,map(typeof, (newkernel, _buffer, formulation, cellsize, distancemethod))...
-                         }(newkernel, _buffer, formulation, cellsize, distancemethod)
+    DispersalKernel{
+        R,map(typeof, (hood, newkernel, formulation, cellsize, distancemethod))...
+    }(
+        hood, newkernel, formulation, cellsize, distancemethod
+    )
 end
 DispersalKernel{R}(;
+    hood=Window{R}(),            
     kernel=nothing,
-    _buffer=nothing,
     formulation=ExponentialKernel(),
     cellsize=1.0,
     distancemethod=CentroidToCentroid(),
@@ -37,9 +39,10 @@ DispersalKernel{R}(;
 end
 ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
 
-function DynamicGrids._setbuffer(k::DispersalKernel{R,K,<:Any,F,C,D}, _buffer::B2) where {R,K,F,C,D,B2} 
-    DispersalKernel{R,K,B2,F,C,D}(
-        k.kernel, _buffer, k.formulation, k.cellsize, k.distancemethod
+function DynamicGrids._setbuffer(n::DispersalKernel{R,<:Any,K,F,C,D}, _buffer) where {R,N,K,F,C,D} 
+    hood = _setbuffer(neighborhood(n), buf)
+    DispersalKernel{R,typeof(hood),K,F,C,D}(
+        hood, n.kernel, n.formulation, n.cellsize, n.distancemethod
     )
 end
 

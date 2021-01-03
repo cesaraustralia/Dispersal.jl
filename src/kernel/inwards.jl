@@ -19,12 +19,4 @@ end
 InwardsDispersal{R,W}(; neighborhood=DispersalKernel{3}()) where {R,W} =
     InwardsDispersal{R,W}(neighborhood)
 
-@inline applyrule(data, rule::InwardsDispersal, state, I) = _dot(neighborhood(rule))
-
-function _dot(hood::AbstractKernel{R}) where R
-    sum = zero(eltype(kernel(hood)))
-    @simd for i in 1:(2R+1)^2 
-        @inbounds sum += kernel(hood)[i] * neighbors(hood)[i]
-    end
-    sum
-end
+@inline applyrule(data, rule::InwardsDispersal, state, I) = LinearAlgebra.dot(neighborhood(rule))
