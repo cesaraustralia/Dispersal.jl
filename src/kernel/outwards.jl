@@ -13,7 +13,7 @@ The result should be identical to [`InwardsDispersal`](@ref) but may be more
 efficient than when a small number of cells are occupied. It is less efficient
 when a large proportion of the grid is occupied.
 """
-struct OutwardsDispersal{R,W,N} <: SetNeighborhoodRule{R,W}
+struct OutwardsDispersal{R,W,N<:AbstractKernel} <: SetNeighborhoodRule{R,W}
     neighborhood::N
 end
 function OutwardsDispersal{R,W}(; neighborhood=DispersalKernel{3}()) where {R,W} 
@@ -22,10 +22,9 @@ end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, state, I) where {R,W}
     state == zero(state) && return
-    hood = neighborhood(rule)
     sum = zero(state)
-    for offset in offsets(rule)
-        @inbounds propagules = state * kernel(hood)[(offset .+ radius(hood) .+ 1)...]
+    for (i, offset) in enumerate(offsets(rule))
+        @inbounds propagules = state * kernel(rule)[i]
         @inbounds add!(data[W], propagules, I .+ offset...)
         sum += propagules
     end
