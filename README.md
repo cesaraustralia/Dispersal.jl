@@ -19,9 +19,6 @@ complex dispersal models. Custom rules can easily added and combined with the
 provided set. See the documentation for examples and the lists of included
 rules.
 
-There are also methods for optimisation of stochastic dispersal models using
-observation data.
-
 [DynamicGridsInteract](https://github.com/cesaraustralia/DynamicGridsInteract.jl)
 provides an interactive interface for atom and jupyter notbooks (InteractOuput),
 desktop (ElectronOutput) and online web applications (ServerOuput), 
