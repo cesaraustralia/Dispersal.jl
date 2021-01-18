@@ -5,12 +5,11 @@
 Preferably use the keyword constructor to build the array from
 a dispersal kernel function.
 """
-struct DispersalKernel{R,K,B,F,C,D} <: AbstractKernel{R}
-    "Kernal matrix"
+struct DispersalKernel{R,L,N<:Neighborhood{R,L},K,F,C,D} <: AbstractKernel{R,L}
+    "Neighborhood object"
+    neighborhood::N
+    "Kernel"
     kernel::K
-    "Neighborhood buffer"
-    "Neighborhood buffer"
-    _buffer::B
     "Kernel formulation object"
     formulation::F
     "Simulation cell size"
@@ -18,46 +17,49 @@ struct DispersalKernel{R,K,B,F,C,D} <: AbstractKernel{R}
     "Method for calculating distance between cells"
     distancemethod::D
 end
-DispersalKernel{R}(kernel, _buffer, formulation, cellsize, distancemethod) where R = begin
+function DispersalKernel(hood::N, kernel, formulation::F, cellsize::C, distancemethod::D
+) where {N<:Neighborhood{R,L},F,C,D} where {R,L}
     # Build the kernel matrix
-    newkernel = scale(buildkernel(formulation, distancemethod, cellsize, R))
+    newkernel = scale(buildkernel(hood, formulation, distancemethod, cellsize))
     # Convert the kernel matrix to the type of the init array
     S = 2R + 1
-    DispersalKernel{R,map(typeof, (newkernel, _buffer, formulation, cellsize, distancemethod))...
-                         }(newkernel, _buffer, formulation, cellsize, distancemethod)
+    DispersalKernel{R,L,N,typeof(newkernel),F,C,D}(
+        hood, newkernel, formulation, cellsize, distancemethod
+    )
 end
-DispersalKernel{R}(;
+function DispersalKernel(;
+    neighborhood=Window{1}(),
     kernel=nothing,
-    _buffer=nothing,
     formulation=ExponentialKernel(),
     cellsize=1.0,
     distancemethod=CentroidToCentroid(),
-) where R = begin
-    DispersalKernel{R}(kernel, _buffer, formulation, cellsize, distancemethod)
+)
+    DispersalKernel(neighborhood, kernel, formulation, cellsize, distancemethod)
 end
-ConstructionBase.constructorof(::Type{<:DispersalKernel{R}}) where R = DispersalKernel{R}
+function DispersalKernel{R}(; neighborhood=Window{R}(), kw...) where R 
+    DispersalKernel(; neighborhood=neighborhood, kw...)
+end
 
-function DynamicGrids._setbuffer(k::DispersalKernel{R,K,<:Any,F,C,D}, _buffer::B2) where {R,K,F,C,D,B2} 
-    DispersalKernel{R,K,B2,F,C,D}(
-        k.kernel, _buffer, k.formulation, k.cellsize, k.distancemethod
+ConstructionBase.constructorof(::Type{<:DispersalKernel}) = DispersalKernel 
+
+function DG._setbuffer(n::DispersalKernel{R,L,<:Any,K,F,C,D}, buffer) where {R,L,K,F,C,D}
+    newhood = DG._setbuffer(neighborhood(n), buffer)
+    DispersalKernel{R,L,typeof(newhood),K,F,C,D}(
+        newhood, kernel(n), formulation(n), cellsize(n), distancemethod(n)
     )
 end
 
-DynamicGrids.radius(hood::DispersalKernel{R}) where R = R
-
-DynamicGrids._buffer(hood::DispersalKernel) = hood._buffer
-DynamicGrids.kernel(hood::DispersalKernel) = hood.kernel
 cellsize(hood::DispersalKernel) = hood.cellsize
 distancemethod(hood::DispersalKernel) = hood.distancemethod
 formulation(hood::DispersalKernel) = hood.formulation
 
-buildkernel(formulation, distancemethod, cellsize, r) = begin
+function buildkernel(window::Window{R}, formulation, distancemethod, cellsize) where R
     # The radius doesn't include the center cell, so add it
-    sze = 2r + 1
-    kernel = zeros(typeof(cellsize), sze, sze)
-    r1 = r + one(r)
+    S = 2R + 1
+    kernel = zeros(typeof(cellsize), S, S)
+    r1 = R + one(R)
     # Paper: l. 97
-    for x = 0:r, y = 0:r
+    for x = 0:R, y = 0:R
         # Calculate the distance effect from the center cell to this cell
         prob = dispersalprob(formulation, distancemethod, x, y, cellsize)
         # Update the kernel value based on the formulation and distance
@@ -66,42 +68,13 @@ buildkernel(formulation, distancemethod, cellsize, r) = begin
         kernel[-x + r1, y + r1] = prob
         kernel[-x + r1, -y + r1] = prob
     end
-    SMatrix{sze,sze}(kernel)
+    SMatrix{S,S}(kernel)
+end
+function buildkernel(window::Neighborhood{<:Any,L}, f, dm, cellsize) where L
+    SVector{L}(Tuple(dispersalprob(f, dm, x, y, cellsize) for (x, y) in offsets(window)))
 end
 
 scale(x) = x ./ sum(x)
-
-
-# build_dispersal_kernel(formulation, distancemethod, cellsize, r) = begin
-#     # The radius doesn't include the center cell, so add it
-#     sze = 2r + 1
-#     kernels = [zeros(Float64, sze, sze) for thread in 1:Threads.nthreads()]
-#     r1 = r + one(r)
-
-#     # Calculate one quadrant
-#     Threads.@threads for x = 0:r
-#         kernel = kernels[Threads.threadid()]
-#         for y = 0:r
-#             kernel[x + r1, y + r1] = dispersalprob(formulation, distancemethod, x, y, cellsize)
-#         end
-#     end
-#     kernel = sum(kernels)
-#     println()
-#     println(length(kernels))
-#     display(kernels)
-#     println()
-#     # Update the other 3 quadrants
-#     for x = 0:r, y = 0:r
-#         # Just sum the threads, most are zero
-#         prob = kernel[x + r1, y + r1]
-#         kernel[x + r1, -y + r1] = prob
-#         kernel[-x + r1, y + r1] = prob
-#         kernel[-x + r1, -y + r1] = prob
-#     end
-#     # Normalise
-#     kernel ./= sum(kernel)
-# end
-
 
 """
 Abstract supertype for methods of calculating distances and dispersal probabilities
@@ -119,8 +92,7 @@ This is the obvious, naive method, but it will not handle low grid resolution we
 """
 struct CentroidToCentroid <: DistanceMethod end
 
-dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) =
-    sqrt(x^2 + y^2) * cellsize |> f
+dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = f(sqrt(x^2 + y^2) * cellsize)
 
 # """
 #     CentroidToCentroid(subsampling)
@@ -146,7 +118,7 @@ Base.@kwdef struct AreaToCentroid{SS<:Number} <: DistanceMethod
     subsampling::SS = Param(10.0; bounds=(2.0, 40.0))
 end
 
-@inline dispersalprob(f, dm::AreaToCentroid, x, y, cellsize) = begin
+@inline function dispersalprob(f, dm::AreaToCentroid, x, y, cellsize)
     prob = zero(cellsize)
     centerfirst = 1 / subsampling(dm) / 2 - 0.5
     centerlast = centerfirst * -1
@@ -168,7 +140,7 @@ Base.@kwdef struct AreaToArea{SS<:Number} <: DistanceMethod
     subsampling::SS = Param(10.0; bounds=(2.0, 40.0))
 end
 
-@inline dispersalprob(f, dm::AreaToArea, x, y, cellsize) = begin
+@inline function dispersalprob(f, dm::AreaToArea, x, y, cellsize)
     prob = zero(cellsize)
     # Get the center point of the first cell (for both dimensions)
     centerfirst = 1 / subsampling(dm) / 2 - 0.5

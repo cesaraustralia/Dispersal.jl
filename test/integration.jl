@@ -139,28 +139,32 @@ end
         hood = DispersalKernel{radius}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
         inwards = InwardsDispersal(neighborhood=hood)
         rules = Ruleset(inwards, mask; timestep=1d)
-        in_output = ArrayOutput(init; tspan=4d:1d:6d, aux=(suit=suit,))
-        sim!(in_output, rules)
-        @test in_output[1] == test1
-        @test in_output[2] == test2
-        @test in_output[3] ≈ test3
-        # As subrules
-        rules = Ruleset(Chain(inwards, mask); timestep=1d)
-        sim!(in_output, rules; tspan=4d:1d:6d)
-        @test in_output[1] == test1
-        @test in_output[2] == test2
-        @test in_output[3] ≈ test3
+        output = ArrayOutput(init; tspan=4d:1d:6d, aux=(suit=suit,))
+        for kw in ((), (opt=SparseOpt(),), (proc=ThreadedCPU(),), (proc=ThreadedCPU(), opt=SparseOpt()))
+            sim!(output, rules; kw...)
+            @test output[1] == test1
+            @test output[2] == test2
+            @test output[3] ≈ test3
+            # Chained
+            rules = Ruleset(Chain(inwards, mask); timestep=1d, kw...)
+            sim!(output, rules; tspan=4d:1d:6d)
+            @test output[1] == test1
+            @test output[2] == test2
+            @test output[3] ≈ test3
+        end
     end
 
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin
         hood = DispersalKernel{radius}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
         outwards = OutwardsDispersal(neighborhood=hood)
         rules = Ruleset(outwards, mask; timestep=Month(1))
-        out_output = ArrayOutput(init; tspan=Date(2001, 1):Month(1):Date(2001, 3))
-        sim!(out_output, rules; aux=(suit=suit,))
-        @test out_output[1] == test1
-        @test out_output[2] == test2
-        @test out_output[3] ≈ test3
+        output = ArrayOutput(init; tspan=Date(2001, 1):Month(1):Date(2001, 3), aux=(suit=suit,))
+        for kw in ((), (opt=SparseOpt(),), (proc=ThreadedCPU(),), (proc=ThreadedCPU(), opt=SparseOpt()))
+            sim!(output, rules; kw...)
+            @test output[1] == test1
+            @test output[2] == test2
+            @test output[3] ≈ test3
+        end
     end
 
 end
