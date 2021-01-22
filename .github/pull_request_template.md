@@ -12,9 +12,9 @@
 # Checklist:
 
 - [ ] My code follows the [BlueStyle](https://github.com/invenia/BlueStyle) style guide
-- [ ] Code is commented with explanations of anything hard to understand
+- [ ] My code is commented with explanations of anything hard to understand
 - [ ] There are no unnecessary or unrelated code changes included in this PR
-- [ ] There are no depencecies added, if so please consider if they are necessary and explain why they are required
+- [ ] There are no depencecies added: if so, please consider if they are necessary and explain why they are required
 
 ### For bugfixes
 
