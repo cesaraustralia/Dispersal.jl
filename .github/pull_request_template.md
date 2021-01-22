@@ -2,9 +2,10 @@
 
 [Describe what this PR adds to the package]
 
-## Changes (choose one only):
+## Changes (choose one only, with x or click creating PR):
 
 - [ ] New formulation/rule
+- [ ] Documentation
 - [ ] Bug fix for existing rules (non-breaking syntax)
 - [ ] Major change to existing rules (breaking syntax, needs a breaking version bump)
 
