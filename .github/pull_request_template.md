@@ -2,7 +2,7 @@
 
 [Describe what this PR adds to the package]
 
-## Changes (choose one only, with x or click creating PR):
+## Changes (choose one only, with x or click after creating PR):
 
 - [ ] New formulation/rule
 - [ ] Documentation
