@@ -38,9 +38,6 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 
 
 """
-    HumanDispersal{R,W}(mode, human_pop, cellsize, scale, aggregator, human_exponent,
-                        dist_exponent, dispersalperpop, max_dispersers, nshortlisted,
-                        dest_shortlists, proportion_covered, human_buffer, distances)
     HumanDispersal{R,W}(; mode=BatchGroups(),
                           human_pop,
                           cellsize=1.0,
@@ -63,32 +60,34 @@ will downsample the grid to improve precalulation time and runtime performance. 
 scale value is good for use in a live interface.
 
 ## Keyword Arguments
+
+- `mode`: Dispersal mode: Defaults to `BatchGroups()`, otherwise `HeirarchicalGroups()`.
+- `human_pop`: An array match the grid size containing human population data.
+- `cellsize`: The size of the cell width, assuming they are square
+- `scale`: Downscaling factor to reduce memory use and improve performance, defaults to 4 which means a 1:16 ratio.
+- `aggregator`: a function that aggregates scaled-down cells, defualting to `mean`.
+- `human_exponent`: human population exponent.
+- `dist_exponent`: distance exponent.
+- `dispersalperpop`: scales the number of dispersing individuals by human activity.
+- `max_dispersers`: maximum number of dispersers in a dispersal events
+- `nshortlisted`: length of the dispersal destination shortlist for each cell. 
+  Longer lists are more accurate in the tail of the distribution, but are slower to access.
+
+Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """
 struct HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D} <: SetCellRule{R,W}
-    "Dispersal mode"
     mode::M
-    "An array match the grid size containing human population data."
     human_pop::HP
-    "The size of the cell width, assuming they are square"
     cellsize::CS
     scale::S
-    "A function that aggregates scaled down cells"
     aggregator::AG
-    "Human population exponent"
     human_exponent::HE
-    "Distance exponent"
     dist_exponent::DE
-    "Scales the number of dispersing individuals by human activity (ie population^human_exponent)"
     dispersalperpop::DP
-    "Maximum number of dispersers in a dispersal events"
     max_dispersers::MD
-    "Length of dest shortlist"
     nshortlisted::SL
-    "Array of destination vectors for each cell. Automatically calculated"
     dest_shortlists::PC
-    "Buffer array used in precalculation"
     human_buffer::B
-    "Buffer array used in precalculation"
     distances::D
     # This constructor is run for every parameter change
     function HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D}(

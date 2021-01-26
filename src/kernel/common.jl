@@ -1,40 +1,47 @@
 """
-    DispersalKernel{Radius}(formulation::F, kernel::K, cellsize::C, distancemethod::D)
-    DispersalKernel{Radius}(; formulation=ExponentialKernel(1.0), cellsize=1.0, distancemethod=CentroidToCentroid())
+    DispersalKernel{R}(; 
+        neighborhood=Window{R=1}(),
+        formulation=ExponentialKernel(1.0), 
+        cellsize=1.0, 
+        distancemethod=CentroidToCentroid()
+    )
 
-Preferably use the keyword constructor to build the array from
-a dispersal kernel function.
+Dispersal kernel or radius `R`. May hold any `Neighborhood` object: the kernel
+will be built to match the shape, following the `folumation`, `cellsize`
+and `distancemethod`.
+
+# Keyword Arguments
+
+- `neighborhood`: `Neighborhood` object.
+- `formulation`: kernel formulation object.
+- `cellsize`: simulation cell size.
+- `distancemethod`: method object for calculating distance between cells. The default is
+  [`ExponentialKernel`](@ref).
+    
+`R` will be taken from the neighborhood, unless no neighborhood is provided.
 """
 struct DispersalKernel{R,L,N<:Neighborhood{R,L},K,F,C,D} <: AbstractKernel{R,L}
-    "Neighborhood object"
     neighborhood::N
-    "Kernel"
     kernel::K
-    "Kernel formulation object"
     formulation::F
-    "Simulation cell size"
     cellsize::C
-    "Method for calculating distance between cells"
     distancemethod::D
 end
 function DispersalKernel(hood::N, kernel, formulation::F, cellsize::C, distancemethod::D
 ) where {N<:Neighborhood{R,L},F,C,D} where {R,L}
     # Build the kernel matrix
     newkernel = scale(buildkernel(hood, formulation, distancemethod, cellsize))
-    # Convert the kernel matrix to the type of the init array
-    S = 2R + 1
     DispersalKernel{R,L,N,typeof(newkernel),F,C,D}(
         hood, newkernel, formulation, cellsize, distancemethod
     )
 end
 function DispersalKernel(;
     neighborhood=Window{1}(),
-    kernel=nothing,
     formulation=ExponentialKernel(),
     cellsize=1.0,
     distancemethod=CentroidToCentroid(),
 )
-    DispersalKernel(neighborhood, kernel, formulation, cellsize, distancemethod)
+    DispersalKernel(neighborhood, nothing, formulation, cellsize, distancemethod)
 end
 function DispersalKernel{R}(; neighborhood=Window{R}(), kw...) where R 
     DispersalKernel(; neighborhood=neighborhood, kw...)

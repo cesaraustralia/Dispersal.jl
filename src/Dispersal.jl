@@ -32,7 +32,7 @@ export AlleeExtinction, JumpDispersal
 
 export HumanDispersal, BatchGroups, HeirarchicalGroups
 
-export ThresholdGrowth, ExponentialGrowth, LogisticGrowth
+export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 
 # Documentation templates
 @template TYPES =
@@ -44,7 +44,6 @@ export ThresholdGrowth, ExponentialGrowth, LogisticGrowth
 const DG = DynamicGrids
 
 include("downsampling.jl")
-include("utils.jl") 
 include("kernel/common.jl")
 include("kernel/inwards.jl")
 include("kernel/outwards.jl")

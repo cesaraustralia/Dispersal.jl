@@ -18,6 +18,7 @@ NetCDF and GeoTiff files, respectively.
 ```{julia; results="hidden"}
 # using Pkg
 # Pkg.add(PackageSpec(url="https://github.com/rafaqz/GeoData.jl", rev="master"))
+
 using GeoData, DimensionalData, Dispersal, Dates, NCDatasets, ArchGDAL, Plots
 using DimensionalData: rebuild, Forward, Reverse
 basedir = joinpath(dirname(Base.pathof(Dispersal)), "../docs")
@@ -59,9 +60,8 @@ And select just the bounding box for Australia, and set the dimension order to L
 ```{julia; results="hidden"}
 growthrates = NCDarray(growthratesfilepath)
 # Set the length of the timestep. TODO: get this automatically from NetCDF units in GeoData.jl
-ti = dims(growthrates, Ti)
 mode_ = Sampled(DimensionalData.order(ti), Regular(timestep), Intervals(Start()))
-growthrates = setdims(growthrates, rebuild(ti; mode=mode_));
+growthrates = set(growthrates, Ti=mode_);
 ```
 
 Plot the growth layer:
