@@ -19,7 +19,7 @@ using Unitful: d
              12.0 24.0 36.0]
 
     output = ArrayOutput(init; tspan=1:3)
-    rule = Ruleset(ExponentialGrowth(rate=log(2.0)))
+    rule = Ruleset(ExponentialGrowth(rate=log(2.0), timestep=1))
     sim!(output, rule)
 
     @test output[1] == test1
@@ -54,7 +54,7 @@ end
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
     output.extent
-    rule = Ruleset(ExponentialGrowth(rate=Aux(:suit)))
+    rule = Ruleset(ExponentialGrowth(rate=Aux(:suit), timestep=1))
     sim!(output, rule)
 
     @test output[1] == [1.0 1.0 1.0;
@@ -90,7 +90,7 @@ end
     test3 = [3.07692  7.27273  9.03226;
              5.0      8.0      9.41176;
              6.31579  8.57143  9.72973]
-    rule = Ruleset(LogisticGrowth(rate=log(2.0), carrycap=10))
+    rule = Ruleset(LogisticGrowth(rate=log(2.0), carrycap=10, timestep=1))
     output = ArrayOutput(init; tspan=1:3)
 
     sim!(output, rule)
@@ -123,7 +123,7 @@ end
                   1.0 1.0 0.5])
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
-    rule = Ruleset(LogisticGrowth(rate=Aux(:suit), carrycap=10))
+    rule = Ruleset(LogisticGrowth(rate=Aux(:suit), carrycap=10, timestep=1))
     sim!(output, rule)
 
     @test output[1] == test1

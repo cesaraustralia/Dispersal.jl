@@ -8,7 +8,7 @@ struct TestFormulation <: KernelFormulation end
     init = [0.0 1.0 0.0;
             1.0 0.0 1.0]
     radius = 2
-    dk = DispersalKernel{radius}(formulation=ExponentialKernel(1.0), kernel=init, cellsize=1.0).kernel
+    dk = DispersalKernel{radius}(formulation=ExponentialKernel(1.0), cellsize=1.0).kernel
     @test size(dk) == (5, 5)
     @test sum(dk) ≈ 1.0
 end
@@ -16,7 +16,7 @@ end
 @testset "binary dispersal and growth mask" begin
     init = [0.0 0.0; 0.0 1.0]
     radius = 1
-    hood = DispersalKernel{radius}(; kernel=ExponentialKernel(2.0))
+    hood = DispersalKernel{radius}(; formulation=ExponentialKernel(2.0))
 
     # time sequence for auxillary input
     a = cat([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8], dims=3)

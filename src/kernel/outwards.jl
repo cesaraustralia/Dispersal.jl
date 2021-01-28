@@ -1,17 +1,24 @@
 """
     OutwardsPopulationDispersal(neighborhood)
-    OutwardsPopulationDispersal(; neighborhood=DispersalKernel{3}())
-    OutwardsPopulationDispersal{R,W}(neighborhood)
-    OutwardsPopulationDispersal{R,W}(; neighborhood=DispersalKernel{3}())
+    OutwardsPopulationDispersal(; neighborhood)
+    OutwardsPopulationDispersal{R}(; neighborhood)
+    OutwardsPopulationDispersal{R,W}(; neighborhood)
 
 Dispersal reduces the current cell population, increasing the populations of the
-cells in the surrounding neighborhood.
+cells in the surrounding neighborhood deterministically.
 
-Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
+This will make sense ecologically where cell populations are large, 
+otherwise a randomised kernel may be more suitable.
 
 The result should be identical to [`InwardsDispersal`](@ref) but may be more
 efficient than when a small number of cells are occupied. It is less efficient
 when a large proportion of the grid is occupied.
+
+# Arguments
+
+- `neighborhood`: a [`DispersalKernel`](@ref) based on any DynamicGrids.jl `Neighborhood`.
+
+Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
 struct OutwardsDispersal{R,W,N<:AbstractKernel} <: SetNeighborhoodRule{R,W}
     neighborhood::N

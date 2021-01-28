@@ -1,22 +1,20 @@
 """
-Jump dispersal rules.
-"""
-abstract type AbstractJumpDispersal{R,W} <: SetCellRule{R,W} end
-
-"""
-    JumpDispersal(spotrange)
-    JumpDispersal{R,W}(spotrange)
-    JumpDispersal(; spotrange=30.0)
+    JumpDispersal(; prob_threshold, spotrange)
+    JumpDispersal{R}(; prob_threshold, spotrange)
+    JumpDispersal{R,W}(; prob_threshold, spotrange)
 
 Jump dispersal simulates random long distance dispersal events. A random cell within 
 the `spotrange` is invaded. 
 
-Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
+# Keyword Arguments
+
+- `prob_threshold`: a real number between one and zero
+- `spotrange`: number of cells in range of jumps, in any direction
+
+Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """
-struct JumpDispersal{R,W,PT,SR} <: AbstractJumpDispersal{R,W}
-    "A real number between one and zero"
+struct JumpDispersal{R,W,PT,SR} <: SetCellRule{R,W}
     prob_threshold::PT
-    "A number or Unitful.jl distance with the same units as cellsize"
     spotrange::SR
 end
 function JumpDispersal{R,W}(; 
@@ -26,8 +24,7 @@ function JumpDispersal{R,W}(;
     JumpDispersal{R,W}(prob_threshold, spotrange)
 end
 
-# TODO update this and test
-@inline function applyrule!(data, rule::AbstractJumpDispersal{R,W}, state, I) where {R,W}
+@inline function applyrule!(data, rule::JumpDispersal{R,W}, state, I) where {R,W}
     # Ignore empty cells
     state > zero(state) || return state
     # Random dispersal events
