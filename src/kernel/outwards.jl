@@ -28,7 +28,7 @@ function OutwardsDispersal{R,W}(; neighborhood=DispersalKernel{3}()) where {R,W}
 end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
-    N == zero(N) && return
+    N == zero(N) && return nothing
     sum = zero(N)
     for (i, offset) in enumerate(offsets(rule))
         @inbounds propagules = N * kernel(rule)[i]

@@ -26,10 +26,10 @@ end
 
 @inline function applyrule!(data, rule::JumpDispersal{R,W}, N, I) where {R,W}
     # Ignore empty cells
-    N > zero(N) || return N
+    N > zero(N) || return nothing
     # Random dispersal events
     p = get(data, rule.prob_threshold, I...) 
-    rand() < p || return N
+    rand() < p || return nothing
 
     # Randomly select spotting distance
     intspot = round(Int, rule.spotrange)
