@@ -38,9 +38,9 @@ precalcrule(rule::ExponentialGrowth, data) = precalc_timestep(rule, data)
 
 @inline function applyrule(data, rule::ExponentialGrowth, N, I)
     N > zero(N) || return zero(N)
-    r = get(data, rule.rate, I...) * rule.nsteps
+    rt = get(data, rule.rate, I...) * rule.nsteps
 
-    return @fastmath N * exp(r)
+    return @fastmath N * exp(rt)
 end
 
 """
@@ -79,13 +79,13 @@ precalcrule(rule::LogisticGrowth, data) = precalc_timestep(rule, data)
 @inline function applyrule(data, rule::LogisticGrowth, N, I)
     N > zero(N) || return zero(N)
 
-    r = get(data, rule.rate, I...) * rule.nsteps 
+    rt = get(data, rule.rate, I...) * rule.nsteps 
     k = get(data, rule.carrycap, I...) 
 
-    if r > zero(r)
-        return @fastmath (N * k) / (N + (k - N) * exp(-r))
+    if rt > zero(rt)
+        return @fastmath (N * k) / (N + (k - N) * exp(-rt))
     else
-        return @fastmath N * exp(r)
+        return @fastmath N * exp(rt)
     end
 end
 
