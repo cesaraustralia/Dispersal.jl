@@ -36,10 +36,11 @@ end
 
 precalcrule(rule::ExponentialGrowth, data) = precalc_timestep(rule, data)
 
-@inline function applyrule(data, rule::ExponentialGrowth, population, I)
-    population > zero(population) || return zero(population)
-    intrinsicrate = get(data, rule.rate, I...)
-    @fastmath population * exp(intrinsicrate * rule.nsteps)
+@inline function applyrule(data, rule::ExponentialGrowth, N, I)
+    N > zero(N) || return zero(N)
+    r = get(data, rule.rate, I...) * rule.nsteps
+
+    return @fastmath N * exp(r)
 end
 
 """
@@ -75,16 +76,16 @@ end
 
 precalcrule(rule::LogisticGrowth, data) = precalc_timestep(rule, data)
 
-@inline function applyrule(data, rule::LogisticGrowth, population, I)
-    population > zero(population) || return zero(population)
-    intrinsicrate = get(data, rule.rate, I...) 
-    carrycap = get(data, rule.carrycap, I...) 
+@inline function applyrule(data, rule::LogisticGrowth, N, I)
+    N > zero(N) || return zero(N)
 
-    if intrinsicrate > zero(intrinsicrate)
-        @fastmath (population * carrycap) / (population + (carrycap - population) *
-                  exp(-intrinsicrate * rule.nsteps))
+    r = get(data, rule.rate, I...) * rule.nsteps 
+    k = get(data, rule.carrycap, I...) 
+
+    if r > zero(r)
+        return @fastmath (N * k) / (N + (k - N) * exp(-r))
     else
-        @fastmath population * exp(intrinsicrate * rule.nsteps)
+        return @fastmath N * exp(r)
     end
 end
 
@@ -114,14 +115,14 @@ function ThresholdGrowth{R,W}(;
     ThresholdGrowth{R,W}(rate, threshold)
 end
 
-@inline function applyrule(data, rule::ThresholdGrowth, population, I)
-    intrinsicrate = get(data, rule.rate, I...)
-    threshold = get(data, rule.threshold, I...)
-    intrinsicrate >= threshold ? population : zero(population)
+@inline function applyrule(data, rule::ThresholdGrowth, N, I)
+    r = get(data, rule.rate, I...)
+    t = get(data, rule.threshold, I...)
+
+    return r >= t ? N : zero(N)
 end
 
 precalc_timestep(rule, data) = precalc_timestep(rule.timestep, rule, data)
-precalc_timestep(ruletimestep::DatePeriod, rule, data) =
-    @set rule.nsteps = currenttimestep(data) / Millisecond(ruletimestep)
-precalc_timestep(ruletimestep, rule, data) =
-    @set rule.nsteps = timestep(data) / ruletimestep
+precalc_timestep(rulestep::DatePeriod, rule, data) =
+    @set rule.nsteps = currenttimestep(data) / Millisecond(rulestep)
+precalc_timestep(rulestep, rule, data) = @set rule.nsteps = timestep(data) / rulestep

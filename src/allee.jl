@@ -17,7 +17,8 @@ end
 AlleeExtinction{R,W}(; minfounders=Param(5.0, bounds=(1.0, 200.0))) where {R,W} = 
     AlleeExtinction{R,W}(minfounders)
 
-@inline function applyrule(data, rule::AlleeExtinction, state, I)
-    minfounders = get(data, rule.minfounders, I...)
-    state >= minfounders ? state : zero(state)
+@inline function applyrule(data, rule::AlleeExtinction, N, I)
+    f = get(data, rule.minfounders, I...)
+
+    return N >= f ? N : zero(N)
 end

@@ -24,21 +24,20 @@ function JumpDispersal{R,W}(;
     JumpDispersal{R,W}(prob_threshold, spotrange)
 end
 
-@inline function applyrule!(data, rule::JumpDispersal{R,W}, state, I) where {R,W}
+@inline function applyrule!(data, rule::JumpDispersal{R,W}, N, I) where {R,W}
     # Ignore empty cells
-    state > zero(state) || return state
+    N > zero(N) || return N
     # Random dispersal events
-    prob_threshold = get(data, rule.prob_threshold, I...) 
-    rand() < prob_threshold || return state
+    p = get(data, rule.prob_threshold, I...) 
+    rand() < p || return N
 
     # Randomly select spotting distance
     intspot = round(Int, rule.spotrange)
     rnge = -intspot:intspot
-    jump = (rand(rnge), rand(rnge))
-    jumpdest, is_inbounds = inbounds(jump .+ I, data)
+    dest, is_inbounds = inbounds((rand(rnge), rand(rnge)) .+ I, data)
 
     # Update spotted cell if it's on the grid
-    is_inbounds && @inbounds add!(data[W], state, jumpdest...)
+    is_inbounds && @inbounds add!(data[W], N, dest...)
 
-    return state
+    return nothing
 end

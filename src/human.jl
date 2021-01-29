@@ -268,11 +268,11 @@ end
 
 # DynamicGrids Interface ###################################################
 
-@inline function applyrule!(data, rule::HumanDispersal{R,W}, population, cellindex) where {R,W}
-    population == zero(population) && return
-    dispersalprob = rule.human_pop[cellindex...] * rule.dispersalperpop
+@inline function applyrule!(data, rule::HumanDispersal{R,W}, N, I) where {R,W}
+    N == zero(N) && return
+    dispersalprob = rule.human_pop[I...] * rule.dispersalperpop
     ismissing(dispersalprob) && return
-    shortlist = rule.dest_shortlists[downsample_index(cellindex, rule.scale)...]
+    shortlist = rule.dest_shortlists[downsample_index(I, rule.scale)...]
     #ismissing(shortlist) && return
 
     #= This formulation introduces a bias where total_dispersers is
@@ -280,9 +280,9 @@ end
     chunks size will allways equal the max chunk size, so the amount wont be random.
     =#
     dispersed = disperse!(
-        data[W], mode(rule), rule, shortlist, dispersalprob, population, cellindex
+        data[W], mode(rule), rule, shortlist, dispersalprob, N, I
     )
-    add!(data[W], -dispersed, cellindex...)
+    add!(data[W], -dispersed, I...)
     return 
 end
 
@@ -297,31 +297,31 @@ end
 
 @inline function disperse!(
     data::DG.WritableGridData, mode::HeirarchicalGroups, rule::HumanDispersal,
-    shortlist, dispersalprob, population, cellindex
+    shortlist, dispersalprob, N, I
 )
-    dispersed = zero(population)
+    dispersed = zero(N)
     nevents = rand(Binomial(human_pop, dispersalperpop))
     for i in 1:nevents
-        maybedispersing = rand(Poissonn(population * mode.scalar))
+        maybedispersing = rand(Poissonn(N * mode.scalar))
         # Just exit the loop if we exceed the existing populaiton
-        (maybedispersing + dispersed > population) && break
+        (maybedispersing + dispersed > N) && break
         dispersed += disperse2dest!(data, rule, shortlist, maybedispersing)
     end
     return dispersed
 end
 @inline function disperse!(
     data::DG.WritableGridData, mode::BatchGroups, rule::HumanDispersal,
-    shortlist, dispersalprob, population, cellindex
+    shortlist, dispersalprob, N, I
 )
-    # Find the expected number of dispersers given population and dispersal prob
-    total_dispersers = trunc(Int, min(population * dispersalprob, population))
+    # Find the expected number of dispersers given N and dispersal prob
+    total_dispersers = trunc(Int, min(N * dispersalprob, N))
 
     # Maximum number of discrete dispersers in any single dispersal event
     # We never know this number, is this defensible
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
-    dispersed = zero(population)
+    dispersed = zero(N)
     while dispersed < total_dispersers
         # Select a subset of the remaining dispersers for a dispersal event
         maybedispersing = min(rand(1:max_dispersers), total_dispersers - dispersed)
