@@ -163,7 +163,7 @@ function alloc_gravities(human, nshortlisted)
         gravities[i, j] = Gravity(0.0f0, (i, j))
     end
     gravity_vector = deepcopy(vec(gravities))
-    gravities, gravity_vector
+    return gravities, gravity_vector
 end
 
 # Precalculate a dispersal shortlist for each cell
@@ -185,6 +185,7 @@ function precalc_human_dispersal!(
     Threads.@threads for j in 1:size(human_buffer, 2)
         precalc_col!(dest_shortlists, nshortlisted, human_buffer, distances, thread_alloc, j)
     end
+    return dest_shortlists
 end
 
 # Raise the human population/activity matrix to some exponent
@@ -211,12 +212,13 @@ function precalc_col!(dest_shortlists, nshortlisted, human, distances, thread_al
     for i = 1:size(human, 1)
         precalc_cell!(dest_shortlists, nshortlisted, human, distances, col_alloc, i, j)
     end
+    return nothing
 end
 
 function precalc_cell!(dest_shortlists, nshortlisted, human, distances, (gravities, gravity_vector), i, j)
     if ismissing(human[i, j])
         dest_shortlists[i, j] = missing
-        return
+        return nothing
     end
     # Calculate the gravity for all cells in the grid
     assign_gravities!(gravities, human, distances, i, j)
@@ -227,6 +229,7 @@ function precalc_cell!(dest_shortlists, nshortlisted, human, distances, (graviti
     gravity_shortlist = view(gravity_vector, 1:nshortlisted)
     # Convert shortlies gravities to intervals
     gravity2inverval!(dest_shortlists[i, j], gravity_shortlist)
+    return nothing
 end
 
 # Calculate the gravity for all cells in the grid
@@ -241,6 +244,7 @@ function assign_gravities!(gravities, human, distances, i, j)
             (human[ii, jj] / distances[celldist...])
         end
     end
+    return gravities
 end
 
 # Convert the gravity of a cell to an interval than can
@@ -268,11 +272,11 @@ end
 
 # DynamicGrids Interface ###################################################
 
-@inline function applyrule!(data, rule::HumanDispersal{R,W}, population, cellindex) where {R,W}
-    population == zero(population) && return
-    dispersalprob = rule.human_pop[cellindex...] * rule.dispersalperpop
-    ismissing(dispersalprob) && return
-    shortlist = rule.dest_shortlists[downsample_index(cellindex, rule.scale)...]
+@inline function applyrule!(data, rule::HumanDispersal{R,W}, N, I) where {R,W}
+    N == zero(N) && return nothing
+    dispersalprob = rule.human_pop[I...] * rule.dispersalperpop
+    ismissing(dispersalprob) && return nothing
+    shortlist = rule.dest_shortlists[downsample_index(I, rule.scale)...]
     #ismissing(shortlist) && return
 
     #= This formulation introduces a bias where total_dispersers is
@@ -280,10 +284,10 @@ end
     chunks size will allways equal the max chunk size, so the amount wont be random.
     =#
     dispersed = disperse!(
-        data[W], mode(rule), rule, shortlist, dispersalprob, population, cellindex
+        data[W], mode(rule), rule, shortlist, dispersalprob, N, I
     )
-    add!(data[W], -dispersed, cellindex...)
-    return 
+    add!(data[W], -dispersed, I...)
+    return nothing
 end
 
 
@@ -297,31 +301,31 @@ end
 
 @inline function disperse!(
     data::DG.WritableGridData, mode::HeirarchicalGroups, rule::HumanDispersal,
-    shortlist, dispersalprob, population, cellindex
+    shortlist, dispersalprob, N, I
 )
-    dispersed = zero(population)
+    dispersed = zero(N)
     nevents = rand(Binomial(human_pop, dispersalperpop))
     for i in 1:nevents
-        maybedispersing = rand(Poissonn(population * mode.scalar))
+        maybedispersing = rand(Poissonn(N * mode.scalar))
         # Just exit the loop if we exceed the existing populaiton
-        (maybedispersing + dispersed > population) && break
+        (maybedispersing + dispersed > N) && break
         dispersed += disperse2dest!(data, rule, shortlist, maybedispersing)
     end
     return dispersed
 end
 @inline function disperse!(
     data::DG.WritableGridData, mode::BatchGroups, rule::HumanDispersal,
-    shortlist, dispersalprob, population, cellindex
+    shortlist, dispersalprob, N, I
 )
-    # Find the expected number of dispersers given population and dispersal prob
-    total_dispersers = trunc(Int, min(population * dispersalprob, population))
+    # Find the expected number of dispersers given N and dispersal prob
+    total_dispersers = trunc(Int, min(N * dispersalprob, N))
 
     # Maximum number of discrete dispersers in any single dispersal event
     # We never know this number, is this defensible
     max_dispersers = trunc(Int, rule.max_dispersers)
 
     # Simulate (possibly) multiple dispersal events from the cell during the timeframe
-    dispersed = zero(population)
+    dispersed = zero(N)
     while dispersed < total_dispersers
         # Select a subset of the remaining dispersers for a dispersal event
         maybedispersing = min(rand(1:max_dispersers), total_dispersers - dispersed)
@@ -341,13 +345,13 @@ function disperse2dest!(data::DG.WritableGridData, rule, shortlist, maybedispers
     upsample = upsample_index(shortlist[dest_id].index, rule.scale)
     dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
     # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
-    return if !DynamicGrids.ismasked(data, dest_index...) &&
+    if !DynamicGrids.ismasked(data, dest_index...) &&
         DynamicGrids.isinbounds(dest_index, data)
         # Disperse to the cell.
         add!(data, maybedispersing, dest_index...)
-        maybedispersing
+        return maybedispersing
     else
-        zero(maybedispersing)
+        return zero(maybedispersing)
     end
 end
 

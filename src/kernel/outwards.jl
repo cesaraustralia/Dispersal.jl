@@ -27,15 +27,14 @@ function OutwardsDispersal{R,W}(; neighborhood=DispersalKernel{3}()) where {R,W}
     OutwardsDispersal{R,W}(neighborhood)
 end
 
-@inline function applyrule!(data, rule::OutwardsDispersal{R,W}, state, I) where {R,W}
-    state == zero(state) && return
-    sum = zero(state)
+@inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
+    N == zero(N) && return nothing
+    sum = zero(N)
     for (i, offset) in enumerate(offsets(rule))
-        @inbounds propagules = state * kernel(rule)[i]
+        @inbounds propagules = N * kernel(rule)[i]
         @inbounds add!(data[W], propagules, I .+ offset...)
         sum += propagules
     end
-    # Subtract from current cell, unless state is Bool
-    state isa Bool || @inbounds sub!(data[W], sum, I...)
+    @inbounds sub!(data[W], sum, I...)
     return nothing
 end

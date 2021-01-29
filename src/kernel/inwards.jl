@@ -25,5 +25,4 @@ function InwardsDispersal{R,W}(; neighborhood=DispersalKernel{3}()) where {R,W}
     InwardsDispersal{R,W}(neighborhood)
 end
 
-@inline applyrule(data, rule::InwardsDispersal, state, I) = 
-    LinearAlgebra.dot(neighborhood(rule))
+@inline applyrule(data, rule::InwardsDispersal, N, I) = dot(neighborhood(rule))
