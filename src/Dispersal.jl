@@ -36,7 +36,9 @@ export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 
 export LogisticSurvival
 
-export Pulsed_Exposure, Degradation_Exposure, Threshold_Exposure
+export Threshold_Exposure, Rotation_Exposure
+
+export Rotation_InitGrid
 
 export Lande_Resistance
 

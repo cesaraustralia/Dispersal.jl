@@ -34,7 +34,7 @@ Lande_Resistance{R,W}(;
 precalcrule(rule::Lande_Resistance, data) = precalc_timestep(rule, data)
 
 @inline function applyrule(data, rule::Lande_Resistance, (popAlleleFreq, popPhenotype, population, exposure), I)
-    # RETUNE Tuple(popAlleleFreq, popAlleleFreq)
+    # RETURN Tuple(popAlleleFreq, popAlleleFreq)
     population > zero(population) || return (zero(popAlleleFreq), zero(popPhenotype))
     # Exposure is a layer
     phenotype = popPhenotype / population
