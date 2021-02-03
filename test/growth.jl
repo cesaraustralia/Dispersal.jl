@@ -149,7 +149,7 @@ end
     suit_DD = DimArray(suit, (X, Y, Ti));
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit_DD=suit_DD,))
-    rule = Ruleset(LogisticGrowth(rate=Aux(:suit_DD), carrycap=10))
+    rule = Ruleset(LogisticGrowth(rate=Aux(:suit_DD), carrycap=10, timestep = 1))
     sim!(output, rule)
     output[Ti(2)]
 
