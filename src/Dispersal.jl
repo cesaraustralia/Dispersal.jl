@@ -44,7 +44,9 @@ export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 const DG = DynamicGrids
 
 include("downsampling.jl")
-include("kernel/common.jl")
+include("kernel/formulations.jl")
+include("kernel/distancemethods.jl")
+include("kernel/kernel.jl")
 include("kernel/inwards.jl")
 include("kernel/outwards.jl")
 include("growth.jl")
