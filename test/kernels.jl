@@ -1,5 +1,4 @@
-using Dispersal, Test, DimensionalData, Setfield, OffsetArrays, DynamicGrids, Random, StaticArrays
-using DynamicGrids: WritableGridData, SimData, Extent, grids, neighborhood
+using Dispersal, Test, Setfield, DynamicGrids, StaticArrays
 using Dispersal: dispersalprob
 
 struct TestFormulation <: KernelFormulation end
@@ -72,11 +71,8 @@ end
              0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
              0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0]
 
-    hood = Window(1) 
-    kernel = DispersalKernel{1}(; neighborhood=hood, formulation=TestFormulation())
-
     @testset "inwards" begin
-        ruleset = Ruleset(InwardsDispersal(;neighborhood=kernel))
+        ruleset = Ruleset(InwardsDispersal(; radius=1, formulation=TestFormulation()))
         output = REPLOutput(init; tspan=1:3, store=true)
         sim!(output, ruleset)
         @test output[1] == init
@@ -93,7 +89,7 @@ end
     end
 
     @testset "outwards" begin
-        ruleset = Ruleset(OutwardsDispersal(;neighborhood=kernel))
+        ruleset = Ruleset(OutwardsDispersal(; radius=1, formulation=TestFormulation()))
         output = REPLOutput(init; tspan=1:3, store=true)
         sim!(output, ruleset)
         @test output[1] == init
@@ -145,10 +141,9 @@ end
              0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0]
 
     hood = Positional((-1, 0), (0, -1), (0, 0), (1, 0), (0, 1)) 
-    kernel = DispersalKernel{1}(; neighborhood=hood, formulation=TestFormulation())
 
     @testset "inwards" begin
-        rule = InwardsDispersal(; neighborhood=kernel)
+        rule = InwardsDispersal(; neighborhood=hood, formulation=TestFormulation())
         output = REPLOutput(init; tspan=1:3, store=true)
         for kw in ((), (opt=SparseOpt(),), (proc=ThreadedCPU(),), (proc=ThreadedCPU(), opt=SparseOpt()))
             sim!(output, rule; kw...)
@@ -159,7 +154,7 @@ end
     end
 
     @testset "outwards" begin
-        rule = OutwardsDispersal(;neighborhood=kernel)
+        rule = OutwardsDispersal(; neighborhood=hood, formulation=TestFormulation())
         output = REPLOutput(init; tspan=1:3, store=true)
         for kw in ((), (opt=SparseOpt(),), (proc=ThreadedCPU(),), (proc=ThreadedCPU(), opt=SparseOpt()))
             sim!(output, rule; kw...)
