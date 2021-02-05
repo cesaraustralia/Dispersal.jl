@@ -52,18 +52,17 @@ ThresholdExposure{R,W}(;
     pulselevel=PULSE_LEVEL,
     popthreshold=POPULATION_THRESHOLD,
     degradationrate=DEGRADATION_RATE,
-    timestep=nothing,
-    nsteps=1.0,
-) where {R,W} = ThresholdExposure{R,W}(crop, pulselevel, popthreshold, degradationrate, timestep, nsteps)
+    timestep,
+) where {R,W} = ThresholdExposure{R,W}(crop, pulselevel, popthreshold, degradationrate, timestep, nothing)
 
 precalcrule(rule::ThresholdExposure, data) = precalc_timestep(rule, data)
 
 @inline function applyrule(data, rule::ThresholdExposure, (pesticide, population), I)
     crop = get(data, rule.crop, I...) 
+    crop > zero(crop) || return zero(pesticide) 
     pulse = get(data, rule.pulselevel, I...)
     z = get(data, rule.popthreshold, I...)
     rt = get(data, rule.degradationrate, I...) * rule.nsteps
-    crop > zero(crop) || return zero(pesticide) 
     # return pesticide only
     if population < z
         @fastmath pesticide * exp(- rt) 
@@ -99,6 +98,7 @@ another [`Grid`](@ref).
  [`Aux`](@ref) array or another [`Grid`](@ref) of a type compatible with `pulselevel`.
 - `timestep`: Time step for the exposure, in a type compatible with the simulation `tspan`.
 
+Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 Read: Tuple(pesticide, population, rotation)
 Written: Tuple(pesticide, rotation)
 """
@@ -119,18 +119,17 @@ RotationExposure{R,W}(;
     pulselevel=PULSE_LEVEL,
     popthreshold=POPULATION_THRESHOLD,
     degradationrate=DEGRADATION_RATE,
-    timestep=nothing,
-    nsteps=1.0,
-) where {R,W} = RotationExposure{R,W}(crop, rotationsize, rotationindex, pulselevel, popthreshold, degradationrate, timestep, nsteps)
+    timestep,
+) where {R,W} = RotationExposure{R,W}(crop, rotationsize, rotationindex, pulselevel, popthreshold, degradationrate, timestep, nothing)
 
 precalcrule(rule::RotationExposure, data) = precalc_timestep(rule, data)
 
 @inline function applyrule(data, rule::RotationExposure, (pesticide, population, rotation), I)
     crop = get(data, rule.crop, I...) 
+    crop > zero(crop) || return (zero(pesticide), rotation)
     pulse = get(data, rule.pulselevel, I...)
     z = get(data, rule.popthreshold, I...)
     rt = get(data, rule.degradationrate, I...) * rule.nsteps
-    crop > zero(crop) || return (zero(pesticide), rotation)
     if  ( population >= z &&
         mod(_rotationstep(rotation), rule.rotationsize) == mod(rule.rotationindex, rule.rotationsize) &&
         _timestep(rotation) != currentframe(data) )
@@ -170,5 +169,5 @@ _updatestep(rs::RotationStruct, y::DateTime) = RotationStruct(rs.rotationStep, y
 _rotationstep(rs::RotationStruct) = rs.rotationStep
 _timestep(rs::RotationStruct) = rs.timeStep
 
-init_rotation(tspan_start, dims) = fill(RotationStruct(1,tspan_start), dims)
+InitRotation(tspan_start, dims) = fill(RotationStruct(1,tspan_start), dims)
 
