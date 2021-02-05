@@ -72,6 +72,10 @@ precalcrule(rule::ThresholdExposure, data) = precalc_timestep(rule, data)
 end
 
 """
+    RotationExposure{R,W}(;
+        crop, rotationsize, rotationindex, popthreshold, degradationrate, timestep,
+    )
+
 Exposure by several treatments in rotation depending on a threshold layer (population size) set with `popthreshold`.
 Treatment is applied only on `crop` fields.
 `rotationsize` is the total number of treatments, and `rotationindex` is the number (index) of a specific treatment.
