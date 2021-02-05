@@ -111,13 +111,13 @@ end
         @test US(RS(3,2), 4) == RS(3,4)
         @test US(RS(3,DateTime(2020,2,1)), DateTime(2021,1,10)) == RS(3,DateTime(2021,1,10))
 
-        @test InitRotation(1, (3,3)) == [
+        @test initrotation(1, (3,3)) == [
             RS(1,1) RS(1,1) RS(1,1);
             RS(1,1) RS(1,1) RS(1,1);
             RS(1,1) RS(1,1) RS(1,1)
         ]
 
-        @test InitRotation(DateTime(2020,2,1), (2,2)) == [
+        @test initrotation(DateTime(2020,2,1), (2,2)) == [
             RS(1,DateTime(2020,2,1)) RS(1,DateTime(2020,2,1)) ;
             RS(1,DateTime(2020,2,1)) RS(1,DateTime(2020,2,1))
         ]
@@ -130,7 +130,7 @@ end
             pesticide1 = zeros(nr,nc),
             pesticide2 = zeros(nr,nc),
             pesticide3 = zeros(nr,nc),
-            rotation = InitRotation(1, (nr,nc)),
+            rotation = initrotation(1, (nr,nc)),
             population = ones(nr,nc).*10^4, )
 
         crop = ones(nr,nc)
