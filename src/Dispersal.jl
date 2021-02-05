@@ -36,7 +36,7 @@ export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 
 export ThresholdExposure, RotationExposure
 
-export InitRotation
+export initrotation
 
 # Documentation templates
 @template TYPES =

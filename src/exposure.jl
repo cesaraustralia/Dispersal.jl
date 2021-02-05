@@ -173,5 +173,5 @@ _updatestep(rs::RotationStruct, y::DateTime) = RotationStruct(rs.rotationStep, y
 _rotationstep(rs::RotationStruct) = rs.rotationStep
 _timestep(rs::RotationStruct) = rs.timeStep
 
-InitRotation(tspan_start, dims) = fill(RotationStruct(1,tspan_start), dims)
+initrotation(tspan_start, dims) = fill(RotationStruct(1,tspan_start), dims)
 
