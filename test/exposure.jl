@@ -102,7 +102,11 @@ end
         ]
     end
 
-
+    @testset "generate image with rotation structure" begin
+        @test DynamicGrids.to_rgb(ObjectScheme(), RS(99.0, 1.0) / 99) == ARGB32(1.0)
+        @test DynamicGrids.to_rgb(ObjectScheme(), RS(00.0, 0.0) / 99) == ARGB32(0.0)
+        @test DynamicGrids.to_rgb(ObjectScheme(), DynamicGrids.normalise(RS(99.0, 1.0), nothing, 99)) == ARGB32(1.0)
+    end
   
     @testset "Rotation rules" begin
         nr, nc = 1, 1

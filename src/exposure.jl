@@ -195,6 +195,8 @@ Base.oneunit(::Type{<:Rotation{T1,T2}}) where {T1,T2} = Rotation(oneunit(T1), on
 _updaterotation(rs::Rotation, y::Int)  = Rotation(rs.rotationstep+1, y)
 _updaterotation(rs::Rotation, y::DateTime) = Rotation(rs.rotationstep+1, y)
 
+DynamicGrids.to_rgb(scheme::ObjectScheme, rs::Rotation) = ARGB32(rs.rotationstep)
+DynamicGrids.to_rgb(scheme, rs::Rotation) = get(scheme, rs.rotationstep)
 
 """
     initrotation(tspan_start, dims)
