@@ -34,7 +34,7 @@ export HumanDispersal, BatchGroups, HeirarchicalGroups
 
 export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 
-export ThresholdExposure, RotationExposure
+export ExponentialDecrease, ThresholdExposure, RotationExposure
 
 export initrotation
 
