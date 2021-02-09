@@ -1,7 +1,7 @@
 name = "Dispersal"
 uuid = "8797f018-3445-11e9-3969-c13eb94a0661"
 authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
-version = "0.2.1"
+version = "0.2.2"
 
 [deps]
 ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
@@ -22,7 +22,7 @@ ConstructionBase = "1.0"
 DimensionalData = "0.13, 0.14, 0.15, 0.16"
 Distributions = "0.21, 0.22, 0.23, 0.24"
 DocStringExtensions = "0.8"
-DynamicGrids = "0.14"
+DynamicGrids = "0.15"
 ModelParameters = "0.3"
 Reexport = "0.2, 1.0"
 Setfield = "0.5, 0.6, 0.7"
