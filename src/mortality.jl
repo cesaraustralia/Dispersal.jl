@@ -14,9 +14,9 @@ abstract type Mortality{R,W} <: CellRule{R,W} end
 """
     LoglogisticMortality <: Mortality
 
-    LoglogisticMortality(; median, hillcoefficient, timestep)
-    LoglogisticMortality{R}(; median, hillcoefficient, timestep)
-    LoglogisticMortality{R,W}(; median, hillcoefficient, timestep)
+    LoglogisticMortality(; median, hillcoefficient, timestep, [nsteps_type])
+    LoglogisticMortality{R}(; median, hillcoefficient, timestep, [nsteps_type])
+    LoglogisticMortality{R,W}(; median, hillcoefficient, timestep, [nsteps_type])
 
 Loglogistic mortality based on median, ``α`` and hill coefficient ``β``.
 
@@ -63,9 +63,9 @@ end
 """
     ExponentialMortality <: Mortality
 
-    ExponentialMortality(; rate, threshold, timestep)
-    ExponentialMortality{R}(; rate, threshold, timestep)
-    ExponentialMortality{R,W}(; rate, threshold, timestep)
+    ExponentialMortality(; rate, threshold, timestep, [nsteps_type])
+    ExponentialMortality{R}(; rate, threshold, timestep, [nsteps_type])
+    ExponentialMortality{R,W}(; rate, threshold, timestep, [nsteps_type])
 
 Exponential mortality based on exposure threshold and mortality rate parameter, using exact solution.
 
@@ -81,6 +81,8 @@ N_{t+1} = N_{t}e^{-r t(X-z)}
 - `rate`: Mortality rate.
 - `threshold`: Exposure threshold under which there is no effect.
 - `timestep`: Time step for the growth rate, in a type compatible with the simulation `tspan`.
+- `nsteps_type`: Specify the floating point type to use when `nsteps` is generated from the
+    timestep, if it is required for type-stability or performance. The default is `Float64`.
 
 `rate` and `threshold` can be a `Number`, an `Aux` array or another Grid`.
 
@@ -101,7 +103,7 @@ function ExponentialMortality{R,W}(;
     ExponentialMortality{R,W}(rate, threshold, timestep, nothing)
 end
 
-modifyrule(rule::ExponentialMortality, data) = precalc_timestep(rule, data)
+modifyrule(rule::ExponentialMortality, data) = precalc_nsteps(rule, data)
 
 @inline function applyrule(data, rule::ExponentialMortality, (N,X), I)
     N > zero(N) || return zero(N)

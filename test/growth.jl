@@ -44,33 +44,33 @@ using Unitful: d
 end
 
 @testset "exponential growth with rate from growth map" begin
-    init = [1.0 1.0 1.0;
-            1.0 1.0 1.0;
-            1.0 1.0 1.0]
+    init = Float32[1.0 1.0 1.0;
+                   1.0 1.0 1.0;
+                   1.0 1.0 1.0]
 
-    suit =  log.([1.0 1.0 2.0;
-                  2.0 1.0 0.5;
-                  1.0 1.0 0.5])
+    suit =  log.(Float32[1.0 1.0 2.0;
+                         2.0 1.0 0.5;
+                         1.0 1.0 0.5])
 
     output = ArrayOutput(init; tspan=1:3, aux=(suit=suit,))
     output.extent
-    rule = Ruleset(ExponentialGrowth(rate=Aux(:suit), timestep=1))
+    rule = Ruleset(ExponentialGrowth(rate=Aux(:suit), timestep=1, nsteps_type=Float32))
     sim!(output, rule)
 
-    @test output[1] == [1.0 1.0 1.0;
-                        1.0 1.0 1.0;
-                        1.0 1.0 1.0]
-    @test output[2] ≈  [1.0 1.0 2.0;
-                        2.0 1.0 0.5;
-                        1.0 1.0 0.5]
-    @test output[3] ≈  [1.0 1.0 4.0;
-                        4.0 1.0 0.25;
-                        1.0 1.0 0.25]
+    @test output[1] == Float32[1.0 1.0 1.0;
+                               1.0 1.0 1.0;
+                               1.0 1.0 1.0]
+    @test output[2] ≈  Float32[1.0 1.0 2.0;
+                               2.0 1.0 0.5;
+                               1.0 1.0 0.5]
+    @test output[3] ≈  Float32[1.0 1.0 4.0;
+                               4.0 1.0 0.25;
+                               1.0 1.0 0.25]
 
-    @test DynamicGrids.normalise.(output[3], 0.25, 4) == [0.2  0.2  1.0;
-                                                          1.0  0.2  0.0;
-                                                          0.2  0.2  0.0]
-
+    @test DynamicGrids.normalise.(output[3], 0.25f0, 4) == Float32[0.2 0.2 1.0;
+                                                                   1.0 0.2 0.0;
+                                                                   0.2 0.2 0.0]
+    @test isinferred(output, rule)
 end
 
 @testset "logistic growth" begin
