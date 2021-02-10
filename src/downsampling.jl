@@ -13,7 +13,7 @@ end
 
 Downsample matrix `a` to another matrix `out` of the correct size.
 
-- `aggregator` is a function such as mean or sum that can combine the 
+- `aggregator` is a function such as `mean` or `sum` that can combine the 
     value of multiple cells to generate the downsampled cell.
 - `scale` is the downsampling factor.
 """
@@ -33,7 +33,7 @@ end
 """
     initdownsample(a, scale)
 
-Generate an array for downsampleing array `a` by `scale`.
+Generate an array for downsampling array `a` by `scale`.
 """
 initdownsample(a, scale) = similar(a, downsample_index(size(a), scale))
 

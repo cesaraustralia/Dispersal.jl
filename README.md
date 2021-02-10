@@ -28,7 +28,5 @@ simulations.
 [DynamicGridsGtk](https://github.com/cesaraustralia/DynamicGridsGtk.jl) provides
 GtkOutput for a simple graphical viewer.
 
-[GrowthMaps.jl](https://github.com/cesaraustralia/GrowthMaps.jl) can efficiently
-generate the layers required for growth rules based on temperature
-response and stress factors.
+[GrowthMaps.jl](https://github.com/cesaraustralia/GrowthMaps.jl) can efficiently generate summarised raster data for vital rates (e.g. intrinsic growth rates) based on higher resolution and shorter interval environmental data.  
 
