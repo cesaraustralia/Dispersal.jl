@@ -7,7 +7,7 @@
 
 ![Spotted wing drosophola dispersal](https://raw.githubusercontent.com/cesaraustralia/packagegifs/master/SWD_USA.gif)
 
-*Fitted dispersal simulation of the spotted-wing drosophola invasion of continental USA.*
+*A simulation of the spotted-wing drosophola invasion of the continental United States as detailed in [Maino, Schouten, and Umina (2021)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/1365-2664.13812)*
 
 [Dispersal.jl](https://github.com/cesaraustralia/Dispersal.jl) extends
 [DynamicGrids.jl](https://github.com/cesaraustralia/DynamicGrids.jl) to provide
