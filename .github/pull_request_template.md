@@ -7,6 +7,7 @@
 - [ ] New formulation/rule
 - [ ] Documentation
 - [ ] Bug fix for existing rules (non-breaking syntax)
+- [ ] Minor change to existing rules (no breaks to old syntax)
 - [ ] Major change to existing rules (breaking syntax, needs a breaking version bump)
 
 # Checklist:
