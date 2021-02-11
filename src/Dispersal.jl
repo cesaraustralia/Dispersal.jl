@@ -34,6 +34,8 @@ export HumanDispersal, BatchGroups, HeirarchicalGroups
 
 export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 
+export LoglogisticMortality, LoglogisticMortalityR, ExponentialMortality, ExponentialMortalityR
+
 # Documentation templates
 @template TYPES =
     """
@@ -53,5 +55,6 @@ include("growth.jl")
 include("human.jl")
 include("jump.jl")
 include("allee.jl")
+include("mortality.jl")
 
 end # module
