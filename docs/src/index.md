@@ -36,6 +36,9 @@ Kernels extend `DynamicGrids.Neighborhood`, and use `neighbors()` methods.
 DispersalKernel
 KernelFormulation
 ExponentialKernel
+GeometricKernel
+GaussianKernel
+BivariateStudentKernel
 ```
 
 ### Distance methods
