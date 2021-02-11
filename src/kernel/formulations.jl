@@ -92,7 +92,7 @@ y = (β-1) / (π α^2) (1+ d^2/α^2) )^(-β) e^(c1 cos(θ-c_2))
 """
 @Base.kwdef struct BivariateStudentKernel{P1,P2,P3,P4,P5} <: KernelFormulation
     α::P1 = Param(1.0, bounds=(0.0, 1000.0))
-    β::P2 = Param(1.0, bounds=(0.0, 1000.0))
+    β::P2 = Param(0.5, bounds=(0.0, 1.0))
     θ::P3 = Param(0.5, bounds=(0.0, 10.0))
     c1::P4 = Param(0.5, bounds=(0.0, 10.0))
     c2::P5 = Param(0.5, bounds=(0.0, 2*π))
