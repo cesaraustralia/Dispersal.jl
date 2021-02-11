@@ -6,17 +6,17 @@
         distancemethod=CentroidToCentroid()
     )
 
-Dispersal kernel or radius `R`. May hold any `Neighborhood` object: the kernel
-will be built to match the shape, following the `folumation`, `cellsize`
+A discretised two-dimensional dispersal kernel. May hold any `Neighborhood` object: the 
+kernel will be built to match the shape, following the `formulation`, `cellsize`
 and `distancemethod`.
 
 # Keyword Arguments
 
-- `neighborhood`: `Neighborhood` object.
-- `formulation`: kernel formulation object.
-- `cellsize`: simulation cell size.
-- `distancemethod`: method object for calculating distance between cells. The default is
-  [`ExponentialKernel`](@ref).
+- `neighborhood`: `Neighborhood` object specifying the range from the origin of the 
+discretised dispersal kernal.
+- `formulation`: kernel formulation object holding the exact form of the kernal.
+- `cellsize`: the cell size of the discretised kernal (i.e. simulation grid size)
+- `distancemethod`: method object for calculating distance between cells. The default is [`ExponentialKernel`](@ref).
     
 `R` will be taken from the neighborhood, unless no neighborhood is provided.
 """
@@ -70,9 +70,9 @@ function buildkernel(window::Window{R}, formulation, distancemethod, cellsize) w
         # Calculate the distance effect from the center cell to this cell
         prob = dispersalprob(formulation, distancemethod, x, y, cellsize)
         # Update the kernel value based on the formulation and distance
-        kernel[x + r1, y + r1] = prob
-        kernel[x + r1, -y + r1] = prob
-        kernel[-x + r1, y + r1] = prob
+        kernel[ x + r1,  y + r1] = prob
+        kernel[ x + r1, -y + r1] = prob
+        kernel[-x + r1,  y + r1] = prob
         kernel[-x + r1, -y + r1] = prob
     end
     SMatrix{S,S}(kernel)
@@ -84,8 +84,8 @@ end
 scale(x) = x ./ sum(x)
 
 """
-Abstract supertype for methods of calculating distances and dispersal probabilities
-between cells in a grid.
+Abstract supertype for methods of calculating distances and discretised dispersal 
+probabilities between cells in a grid.
 """
 abstract type DistanceMethod end
 
@@ -94,8 +94,9 @@ subsampling(method::DistanceMethod) = method.subsampling
 """
     CentroidToCentroid()
 
-Calculates probability of dispersal between source and destination cell centroids
-This is the obvious, naive method, but it will not handle low grid resolution well.
+Calculates the discrete probability of dispersal between source and destination cell 
+centroids. This is the naive method, but it will not handle low grid resolution well 
+due to severe truncation.
 """
 struct CentroidToCentroid <: DistanceMethod end
 
@@ -117,8 +118,9 @@ dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = f(sqrt(x^2 + y^2) * cel
 """
     AreaToCentroid(subsampling)
     AreaToCentroid(; subsampling=10.0)
-
-Calculates probability of dispersal between source cell area and destination centroid.
+    
+Calculates the discrete probability of dispersal between source cell area and destination
+centroid.
 """
 Base.@kwdef struct AreaToCentroid{SS<:Number} <: DistanceMethod
     "Subsampling for numerical integration"
@@ -141,7 +143,8 @@ end
     AreaToArea(; subsampling=10.0)
 
 
-Calculates probability of dispersal between source and destination cell areas.
+Calculates the discrete probability of dispersal between source and destination based on 
+cell areas.
 """
 Base.@kwdef struct AreaToArea{SS<:Number} <: DistanceMethod
     subsampling::SS = Param(10.0; bounds=(2.0, 40.0))
@@ -163,8 +166,7 @@ end
 
 
 """
-Abstract supertype for functors that calculate the probability of
-dispersal between two points.
+Abstract supertype for functors that calculate the probability density based on distance.
 
 Concrete implementations must define functor methods with the form:
 
@@ -172,15 +174,18 @@ Concrete implementations must define functor methods with the form:
 (k::SomeKernel)(distance) = # do something with `distance` and `k`"
 ```
 
-Using an anonymous funciton for this would not give you rebuildable
-model parameters.
+Using an anonymous function would not allow rebuildable model parameters.
 """
 abstract type KernelFormulation end
 
 """
     ExponentialKernel(λ)
 
-Probability of dispersal with a negatitve exponential relationship to distance.
+Probability density function of distance ``d``.
+```math
+y = e^{-d/λ}
+```
+where λ is a shape parameter.
 """
 @Base.kwdef struct ExponentialKernel{P} <: KernelFormulation
     "Parameter for adjusting spread of dispersal propability"

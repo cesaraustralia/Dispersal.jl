@@ -13,12 +13,17 @@ abstract type GrowthRule{R,W} <: CellRule{R,W} end
     ExponentialGrowth{R}(; rate, timestep)
     ExponentialGrowth{R,W}(; rate, timestep)
 
-Exponential growth based on a growth rate data, using exact solution.
+Exponential growth of population size N based on an intrinsic growth rate ``r``, using the
+exact solution between timesteps ``t`` and ``t-1``:
+
+```math
+N_t = N_{t-1}e^{r t}
+```
 
 # Keyword Arguments
 
-- `rate`: Growth rate. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
-- `timestep`: Time step for the growth rate, in a type compatible with the simulation `tspan`.
+- `rate`: Intrinsic growth rate. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+- `timestep`: Time step for the growth rate calculation, in a type compatible with the simulation `tspan`.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """
@@ -48,9 +53,13 @@ end
     LogisticGrowth{R}(; rate, carrycap, timestep)
     LogisticGrowth{R,W}(; rate, carrycap, timestep)
 
-Logistic growth based on a growth rate layer, using exact solution.
+Logistic growth rate of population size ``N`` based on an intrinsic growth rate ``r`` and
+carry capacity ``K``, using the exact solution between timesteps ``t+1`` and ``t``:
 
-Saturation only applies with positive growth
+```math
+N_{t+1} = (N_t K) / (N_t + (K - N_t) e^{-rt})
+```
+Saturation only applies with positive growth.
 
 # Keyword Arguments
 
@@ -99,8 +108,8 @@ Simple threshold mask. Values below a certain threshold are replaced with zero.
 # Keyword Arguments
 
 - `rate`: Growth rate. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
-- `threshold`: Minimum viability threshold below which population falls to zero. 
-  May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+- `threshold`: Minimum viability threshold below which population falls to zero.  
+May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """

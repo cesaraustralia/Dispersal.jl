@@ -3,10 +3,9 @@
     AlleeExtinction{R}(; minfounders=5.0)
     AlleeExtinction{R,W}(minfounders)
 
-Causes extinction in a cell when a population is below the 
-minimum number of individuals required to maintain it. 
+Causes extinction in a cell when a population is below a minimum number of individuals.
 
-- `minfounders`: minimum founding individuals required to to start an ongoing population.
+- `minfounders`: minimum founding individuals required for a viable population.
   Must be a type that can be compared to the grid values using `isless`.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.

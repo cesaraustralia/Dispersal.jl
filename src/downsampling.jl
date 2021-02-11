@@ -2,7 +2,7 @@
 """
     downsample(a::AbstractMatrix, aggregator, scale)
 
-Allocate a new output array and run [`downsample!`](@ref).
+Allocates a new output array and run [`downsample!`](@ref).
 """
 function downsample(a::AbstractMatrix, aggregator, scale) 
     downsample!(initdownsample(a, scale), a, aggregator, scale)
@@ -11,9 +11,9 @@ end
 """
     downsample!(out::AbstractMatrix, a::AbstractMatrix, aggregator, scale)
 
-Downsample matrix `a` to another matrix `out` of the correct size.
+Downsamples matrix `a` to another matrix `out` of the correct size.
 
-- `aggregator` is a function such as mean or sum that can combine the 
+- `aggregator` is a function such as `mean` or `sum` that can combine the 
     value of multiple cells to generate the downsampled cell.
 - `scale` is the downsampling factor.
 """
@@ -33,7 +33,7 @@ end
 """
     initdownsample(a, scale)
 
-Generate an array for downsampleing array `a` by `scale`.
+Generate an array for downsampling array `a` by `scale`.
 """
 initdownsample(a, scale) = similar(a, downsample_index(size(a), scale))
 

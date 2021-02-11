@@ -49,11 +49,19 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
                           max_dispersers=100.0,
                           nshortlisted=100)
 
-Human-driven dispersal patterns using population data.
+Implements human-driven dispersal patterns using population density data.
 
-Transport connections between grid cells are calculated using distance and human population,
-modified with the `human_exponent` and `dist_exponent` parameters. A shortlist of the most
-connected cells is selected for use in the simulation.
+The number of long-distance migrants from an origin is set proportional to the level of  
+human population with the coefficient `dispersalperpop`. The destination of long-distance  
+migration is is calculated by using the distance ``d`` between and human population ``H`` 
+at origin cell ``i`` and destination cell ``j`` through a simple gravity function:
+
+```math
+g_{i,j} = (H_i H_j)^β/(d_{i,j})^γ
+```    
+where ``β`` (`human_exponent`) and ``γ`` (`dist_exponent`) are parameters. For each grid cell, a  
+shortlist of size `nshortlisted` of the destination cells with the highest gravity are  
+selected for use in the simulation.
 
 The time taken for precalulation will depend on the `scale` argument. Values above 1
 will downsample the grid to improve precalulation time and runtime performance. A high
@@ -64,12 +72,14 @@ scale value is good for use in a live interface.
 - `mode`: Dispersal mode: Defaults to `BatchGroups()`, otherwise `HeirarchicalGroups()`.
 - `human_pop`: An array match the grid size containing human population data.
 - `cellsize`: The size of the cell width, assuming they are square
-- `scale`: Downscaling factor to reduce memory use and improve performance, defaults to 4 which means a 1:16 ratio.
-- `aggregator`: a function that aggregates scaled-down cells, defualting to `mean`.
+- `scale`: Downscaling factor to reduce memory use and improve performance, defaults to 4  
+which means a 1:16 ratio.
+- `aggregator`: a function that aggregates cells, defualting to `mean`.
 - `human_exponent`: human population exponent.
 - `dist_exponent`: distance exponent.
-- `dispersalperpop`: scales the number of dispersing individuals by human activity.
-- `max_dispersers`: maximum number of dispersers in a dispersal events
+- `dispersalperpop`: sets the number of dispersing individuals from the origin as a  
+proportion of the level of human activity.
+- `max_dispersers`: maximum number of dispersers in a single dispersal event.
 - `nshortlisted`: length of the dispersal destination shortlist for each cell. 
   Longer lists are more accurate in the tail of the distribution, but are slower to access.
 
