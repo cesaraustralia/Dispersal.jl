@@ -4,13 +4,16 @@
     OutwardsPopulationDispersal{R}(; neighborhood)
     OutwardsPopulationDispersal{R,W}(; neighborhood)
 
-Implements deterministic dispersal from the current cell to populations in neighboring cells. 
+Implements deterministic dispersal from the current cell to populations in neighboring 
+cells. 
 
 This will make sense ecologically where cell populations are large, 
 otherwise a randomised kernel may be more suitable.
 
-The result should be identical to those obtained substituting `OutwardsDispersal` for [`InwardsDispersal`](@ref) but may be more
-efficient when a small number of cells are occupied. Conversely, is will become less efficient when a large proportion of the grid is occupied.
+The result should be identical to those obtained substituting `OutwardsDispersal` for 
+[`InwardsDispersal`](@ref) but may be more efficient when a small number of cells are 
+occupied. Conversely, it will become less efficient when a large proportion of the grid 
+is occupied.
 
 # Arguments
 

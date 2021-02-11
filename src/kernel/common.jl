@@ -6,17 +6,17 @@
         distancemethod=CentroidToCentroid()
     )
 
-A discretised two-dimensional dispersal kernel. May hold any `Neighborhood` object: the kernel
-will be built to match the shape, following the `formulation`, `cellsize`
+A discretised two-dimensional dispersal kernel. May hold any `Neighborhood` object: the 
+kernel will be built to match the shape, following the `formulation`, `cellsize`
 and `distancemethod`.
 
 # Keyword Arguments
 
-- `neighborhood`: `Neighborhood` object specifying the range from the origin of the discretised dispersal kernal.
+- `neighborhood`: `Neighborhood` object specifying the range from the origin of the 
+discretised dispersal kernal.
 - `formulation`: kernel formulation object holding the exact form of the kernal.
 - `cellsize`: the cell size of the discretised kernal (i.e. simulation grid size)
-- `distancemethod`: method object for calculating distance between cells. The default is
-  [`ExponentialKernel`](@ref).
+- `distancemethod`: method object for calculating distance between cells. The default is [`ExponentialKernel`](@ref).
     
 `R` will be taken from the neighborhood, unless no neighborhood is provided.
 """
@@ -84,8 +84,8 @@ end
 scale(x) = x ./ sum(x)
 
 """
-Abstract supertype for methods of calculating distances and discretised dispersal probabilities
-between cells in a grid.
+Abstract supertype for methods of calculating distances and discretised dispersal 
+probabilities between cells in a grid.
 """
 abstract type DistanceMethod end
 
@@ -94,8 +94,9 @@ subsampling(method::DistanceMethod) = method.subsampling
 """
     CentroidToCentroid()
 
-Calculates the discrete probability of dispersal between source and destination cell centroids
-This is the naive method, but it will not handle low grid resolution well.
+Calculates the discrete probability of dispersal between source and destination cell 
+centroids. This is the naive method, but it will not handle low grid resolution well 
+due to severe truncation.
 """
 struct CentroidToCentroid <: DistanceMethod end
 
@@ -118,7 +119,8 @@ dispersalprob(f, ::CentroidToCentroid, x, y, cellsize) = f(sqrt(x^2 + y^2) * cel
     AreaToCentroid(subsampling)
     AreaToCentroid(; subsampling=10.0)
     
-Calculates the discrete probability of dispersal between source cell area and destination centroid.
+Calculates the discrete probability of dispersal between source cell area and destination
+centroid.
 """
 Base.@kwdef struct AreaToCentroid{SS<:Number} <: DistanceMethod
     "Subsampling for numerical integration"
@@ -141,7 +143,8 @@ end
     AreaToArea(; subsampling=10.0)
 
 
-Calculates the discrete probability of dispersal between source and destination based on cell areas.
+Calculates the discrete probability of dispersal between source and destination based on 
+cell areas.
 """
 Base.@kwdef struct AreaToArea{SS<:Number} <: DistanceMethod
     subsampling::SS = Param(10.0; bounds=(2.0, 40.0))
@@ -178,8 +181,8 @@ abstract type KernelFormulation end
 """
     ExponentialKernel(λ)
 
-Probability density function of distance `d`.
-```
+Probability density function of distance ``d``.
+```math
 y = e^{-d/λ}
 ```
 where λ is a shape parameter.

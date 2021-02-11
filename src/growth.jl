@@ -13,9 +13,10 @@ abstract type GrowthRule{R,W} <: CellRule{R,W} end
     ExponentialGrowth{R}(; rate, timestep)
     ExponentialGrowth{R,W}(; rate, timestep)
 
-Exponential growth of population size N based on an intrinsic growth rate ``r``, using the exact solution between timesteps ``t`` and ``t-1``:
+Exponential growth of population size N based on an intrinsic growth rate ``r``, using the
+exact solution between timesteps ``t`` and ``t-1``:
 
-```
+```math
 N_t = N_{t-1}e^{r t}
 ```
 
@@ -52,9 +53,10 @@ end
     LogisticGrowth{R}(; rate, carrycap, timestep)
     LogisticGrowth{R,W}(; rate, carrycap, timestep)
 
-Logistic growth rate of population size N based on an intrinsic growth rate ``r`` and carry capacity ``K``, using the exact solution between timesteps ``t+1`` and ``t``:
+Logistic growth rate of population size ``N`` based on an intrinsic growth rate ``r`` and
+carry capacity ``K``, using the exact solution between timesteps ``t+1`` and ``t``:
 
-```
+```math
 N_{t+1} = (N_t K) / (N_t + (K - N_t) e^{-rt})
 ```
 Saturation only applies with positive growth.
@@ -106,8 +108,8 @@ Simple threshold mask. Values below a certain threshold are replaced with zero.
 # Keyword Arguments
 
 - `rate`: Growth rate. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
-- `threshold`: Minimum viability threshold below which population falls to zero. 
-  May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+- `threshold`: Minimum viability threshold below which population falls to zero.  
+May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """

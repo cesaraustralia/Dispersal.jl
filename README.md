@@ -7,7 +7,8 @@
 
 ![Spotted wing drosophola dispersal](https://raw.githubusercontent.com/cesaraustralia/packagegifs/master/SWD_USA.gif)
 
-*A simulation of the spotted-wing drosophola invasion of the continental United States as detailed in [Maino, Schouten, and Umina (2021)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/1365-2664.13812)*
+*A simulation of the spotted-wing drosophola invasion of the continental United 
+States as detailed in [Maino, Schouten, and Umina (2021)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/1365-2664.13812)*
 
 [Dispersal.jl](https://github.com/cesaraustralia/Dispersal.jl) extends
 [DynamicGrids.jl](https://github.com/cesaraustralia/DynamicGrids.jl) to provide
@@ -28,5 +29,7 @@ simulations.
 [DynamicGridsGtk](https://github.com/cesaraustralia/DynamicGridsGtk.jl) provides
 GtkOutput for a simple graphical viewer.
 
-[GrowthMaps.jl](https://github.com/cesaraustralia/GrowthMaps.jl) can efficiently generate summarised raster data for vital rates (e.g. intrinsic growth rates) based on higher resolution and shorter interval environmental data.  
+[GrowthMaps.jl](https://github.com/cesaraustralia/GrowthMaps.jl) can efficiently 
+generate summarised raster data for vital rates (e.g. intrinsic growth rates) based on 
+higher resolution and shorter interval environmental data.  
 

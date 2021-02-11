@@ -4,9 +4,12 @@
     InwardsPopulationDispersal{R}(; neighborhood)
     InwardsPopulationDispersal{R,W}(; neighborhood)
 
-Implements deterministic dispersal from populations in neighboring cells to the current cell. 
+Implements deterministic dispersal from populations in neighboring cells to the current 
+cell.
 
-The result should be identical to those obtained substituting `InwardsDispersal` for [`OutwardsDispersal`](@ref) but will perform better when populations are spread across the grid.
+The result should be identical to those obtained substituting `InwardsDispersal` for 
+[`OutwardsDispersal`](@ref) but will perform better when populations are spread across the
+grid.
 
 
 # Arguments
