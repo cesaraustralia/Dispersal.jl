@@ -89,3 +89,12 @@ populate
 downsample
 downsample!
 ```
+
+### Mortality
+
+```@docs
+ExponentialMortality
+ExponentialMortalityR
+LoglogisticMortality
+LoglogisticMortalityR
+```
