@@ -1,4 +1,5 @@
-using Dispersal, Test, Setfield, DynamicGrids, StaticArrays
+using Dispersal
+using Test, Setfield, DynamicGrids, StaticArrays
 using Dispersal: dispersalprob
 
 struct TestFormulation <: KernelFormulation end
@@ -164,4 +165,30 @@ end
         end
     end
 
+end
+
+@testset "kernel formulation" begin
+    @testset "ExponentialKernel" begin
+        hood = DispersalKernel(; formulation=ExponentialKernel(0.5))
+        @test DynamicGrids.radius(hood) == 1
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+    end
+
+    @testset "GeometricKernel" begin
+        hood = DispersalKernel(; formulation=GeometricKernel(0.5))
+        @test DynamicGrids.radius(hood) == 1
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+    end
+
+    @testset "GaussianKernel" begin
+        hood = DispersalKernel(; formulation=GaussianKernel())
+        @test DynamicGrids.radius(hood) == 1
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+    end
+
+    @testset "BivariateStudentKernel" begin
+        hood = DispersalKernel(; formulation=BivariateStudentKernel())
+        @test DynamicGrids.radius(hood) == 1
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+    end
 end
