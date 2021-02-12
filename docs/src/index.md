@@ -89,3 +89,11 @@ populate
 downsample
 downsample!
 ```
+
+### Exposure Rules
+
+```@docs
+ThresholdExposure
+RotationExposure
+initrotation
+```

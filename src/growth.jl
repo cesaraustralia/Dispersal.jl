@@ -1,4 +1,3 @@
-
 const CARRYCAP_PARAM      = Param(100000.0; bounds=(0.0, 10.0))
 const INTRINSICRATE_PARAM = Param(0.1,      bounds=(0.0, 10.0))
 const THRESHOLD_PARAM     = Param(0.5;      bounds=(0.0, 1.0))
