@@ -20,7 +20,7 @@ Cumulative function of loglogistic:
 ```math
 F(x; α, β) =  x^β/(α^β + x^β)
 ```
-where α>0 is the scale and β>0 is the shape.
+where ``α>0`` is the scale and ``β>0`` is the shape.
 
 # Keyword Arguments
 - `median`: Median of the loglogistic function
@@ -29,8 +29,7 @@ where α>0 is the scale and β>0 is the shape.
 - `timestep`: Time step for the mortality rate, in a type compatible with the simulation `tspan`.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
-Read: Tuple(population, exposure)
-Written: Tuple(population)
+`R` is a 2 Grids `NamedTuple` like `Tuple{:population,:exposure}` and `W` return only the first grid `:population`.
 """
 struct LoglogisticMortality{R,W,MD,HC,TS,S} <: Mortality{R,W}
     median::MD
@@ -43,7 +42,7 @@ function LoglogisticMortality{R,W}(;
     hillcoefficient=HILLCOEFFICIENT,
     timestep,
 ) where {R,W}
-LoglogisticMortality{R,W}(median, hillcoefficient, timestep, nothing)
+    LoglogisticMortality{R,W}(median, hillcoefficient, timestep, nothing)
 end
 
 precalcrule(rule::LoglogisticMortality, data) = precalc_timestep(rule, data)
@@ -67,7 +66,7 @@ Exponential mortality based on exposure grid ``X``, an exposure threshold parame
     and a mortality rate ``r`` using exact solution between time ``t`` and ```t+1``:
 
 ```math
-N_{t+1} = N_{t}e^{-r t*(X-z)}
+N_{t+1} = N_{t}e^{-r t(X-z)}
 ```
 
 # Keyword Arguments
@@ -79,8 +78,7 @@ N_{t+1} = N_{t}e^{-r t*(X-z)}
 `rate` and `threshold` can be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
-Read: Tuple(population, exposure)
-Written: Tuple(population)
+`R` is a 2 Grids `NamedTuple` like `Tuple{:population,:exposure}` and `W` return only the first grid `:population`.
 """
 struct ExponentialMortality{R,W,MR,ZX,TS,S} <: GrowthRule{R,W}
     rate::MR
@@ -102,5 +100,5 @@ precalcrule(rule::ExponentialMortality, data) = precalc_timestep(rule, data)
     N > zero(N) || return zero(N)
     rt = get(data, rule.rate, I...) * rule.nsteps
     z = get(data, rule.threshold, I...) 
-    return N * exp(-rt*max(0,X-z))
+    return N * exp(- rt * max(0, X-z))
 end
