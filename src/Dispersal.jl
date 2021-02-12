@@ -34,7 +34,7 @@ export HumanDispersal, BatchGroups, HeirarchicalGroups
 
 export ExponentialGrowth, LogisticGrowth, ThresholdGrowth
 
-export LoglogisticMortality, LoglogisticMortalityR, ExponentialMortality, ExponentialMortalityR
+export LoglogisticMortality, ExponentialMortality
 
 # Documentation templates
 @template TYPES =

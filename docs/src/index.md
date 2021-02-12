@@ -94,7 +94,5 @@ downsample!
 
 ```@docs
 ExponentialMortality
-ExponentialMortalityR
-LoglogisticMortality
-LoglogisticMortalityR
+LoglogisticMortalit
 ```
