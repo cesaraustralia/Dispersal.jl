@@ -9,6 +9,8 @@ Abstract supertype of `CellRule` for growth dynamics rules.
 abstract type GrowthRule{R,W} <: CellRule{R,W} end
 
 """
+    ExponentialGrowth <: CellRule
+
     ExponentialGrowth(; rate, timestep)
     ExponentialGrowth{R}(; rate, timestep)
     ExponentialGrowth{R,W}(; rate, timestep)
@@ -22,7 +24,7 @@ N_t = N_{t-1}e^{r t}
 
 # Keyword Arguments
 
-- `rate`: Intrinsic growth rate. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+- `rate`: Intrinsic growth rate. May be a `Number`, an `Aux` array or another `Grid`.
 - `timestep`: Time step for the growth rate calculation, in a type compatible with the simulation `tspan`.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
@@ -61,10 +63,13 @@ N_{t+1} = (N_t K) / (N_t + (K - N_t) e^{-rt})
 ```
 Saturation only applies with positive growth.
 
-# Keyword Arguments
+# Keywords
 
-- `rate`: Growth rate. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
-- `carrycap`: Carrying capacity. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+These may be a `Number`, an `Aux` array or another `Grid`:
+
+- `rate`: Intrinsic growth rate.
+- `carrycap`: Carrying capacity.
+
 - `timestep`: Time step for the growth rate, in a type compatible with the simulation `tspan`.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
@@ -99,17 +104,20 @@ modifyrule(rule::LogisticGrowth, data) = precalc_timestep(rule, data)
 end
 
 """
+    ThresholdGrowth <: CellRule
+
     ThresholdGrowth(; rate, threshold)
     ThresholdGrowth{G}(; rate, threshold)
     ThresholdGrowth{R,W}(; rate, threshold)
 
 Simple threshold mask. Values below a certain threshold are replaced with zero.
 
-# Keyword Arguments
+# Keywords
 
-- `rate`: Growth rate. May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+These may be a `Number`, an `Aux` array or another `Grid`.
+
+- `rate`: Intrinsic growth rate. 
 - `threshold`: Minimum viability threshold below which population falls to zero.  
-May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """

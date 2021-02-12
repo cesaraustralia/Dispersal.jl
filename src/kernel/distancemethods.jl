@@ -6,14 +6,14 @@ probabilities between cells in a grid.
 between cells in a grid.
 
 Distance calculation methods include:
-- [`CentroidToArea`](@ref)
+- [`CentroidToCentroid`](@ref)
 - [`AreaToArea`](@ref)
 - [`AreaToCentroid`](@ref)
 
 Which are adapted from: "On the approximation of continuous dispersal kernels 
 in discrete-space models, Joseph D. Chipperfield et al 2011"
 
-The CentroidToArea method has not been implemented.
+The `CentroidToArea` method has not been implemented.
 """
 abstract type DistanceMethod end
 
