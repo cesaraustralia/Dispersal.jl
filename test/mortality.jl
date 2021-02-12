@@ -62,7 +62,7 @@ end
             median=Grid(:phenotype), hillcoefficient=0.5, timestep=1
         )
         output = ArrayOutput(init; tspan=1:3)
-        sim!(output, Ruleset(loglogmortalityrule,phenotyperule))
+        sim!(output, Ruleset(loglogmortalityrule, phenotyperule))
         @test output[1].exposure == output[2].exposure == output[3].exposure
         @test output[2].population ≈ [30.9016 100.0; 0.0 0.0] atol=1e-4
         @test output[3].population ≈ [18.1017 100.0; 0.0 0.0] atol=1e-4
@@ -82,7 +82,7 @@ end
             rate=Grid(:phenotype), threshold=20.0, timestep=1
         )
         output = ArrayOutput(init; tspan=1:3)
-        sim!(output, Ruleset(expmortalityrule,phenotyperule))
+        sim!(output, Ruleset(expmortalityrule, phenotyperule))
         @test output[1].exposure == output[2].exposure == output[3].exposure
         @test output[2].population ≈ [44.9328 100.0; 0.0 0.0] atol=1e-4
         @test output[3].population ≈ [0.01507 100.0; 0.0 0.0] atol=1e-4
