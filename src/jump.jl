@@ -1,15 +1,18 @@
 """
+    JumpDispersal <: SetCellRule
+
     JumpDispersal(; prob_threshold, spotrange)
     JumpDispersal{R}(; prob_threshold, spotrange)
     JumpDispersal{R,W}(; prob_threshold, spotrange)
 
 Jump dispersal simulates a random long distance dispersal event, which occurs at a given
- probablity. A random cell within the `spotrange` is invaded by duplicating the entire 
- population of the source cell at the destination cell. 
+probablity. A random cell within the `spotrange` is invaded by duplicating the entire 
+population of the source cell at the destination cell. 
 
 # Keyword Arguments
 
-- `prob_threshold`: a real number between one and zero.
+- `prob_threshold`: probability of dispersal, between one and zero. 
+    May be a `Number`, an `Aux` array or another `Grid`:
 - `spotrange`: number of cells in range of jumps, in any direction.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.

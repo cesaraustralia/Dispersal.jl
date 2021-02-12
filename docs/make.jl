@@ -1,4 +1,4 @@
-using Documenter, Dispersal, Weave, IJulia
+using Documenter, Dispersal, Weave, IJulia, Test
 
 basedir = @__DIR__
 
@@ -11,10 +11,10 @@ mkpath(joinpath(basedir, "build/assets"))
 mkpath(notebookdir)
 
 # Generate examples latex and images
-weave(example, out_path=mdpath, doctype="github")
+@test_nowarn weave(example, out_path=mdpath, doctype="github")
 
 # Generate examples notebook
-convert_doc(example, joinpath(notebookdir, "example.ipynb"))
+@test_nowarn convert_doc(example, joinpath(notebookdir, "example.ipynb"))
 
 # Generate HTML docs
 makedocs(
@@ -25,6 +25,8 @@ makedocs(
         "Examples" => "example.md"
     ],
     clean = false,
+    checkdocs = :all,
+    strict = true,
 )
 
 deploydocs(

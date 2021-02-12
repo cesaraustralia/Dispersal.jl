@@ -1,16 +1,12 @@
 
-"""
-CellGravity allows sorting on gravity while keeping records of the original cell coordinate
-"""
+# CellGravity allows sorting on gravity while keeping records of the original cell coordinate
 mutable struct CellGravity{M,I}
     gravity::M
     index::I
 end
 
-"""
-CellInterval allows ordering a list by the cumulative proportion of the total gravity,
-and plotting based on the fraction of total gravity.
-"""
+# CellInterval allows ordering a list by the cumulative proportion of the total gravity,
+# and plotting based on the fraction of total gravity.
 struct CellInterval{P,I}
     cumprop::P
     index::I
@@ -38,50 +34,44 @@ isless(x, y::CellInterval) = isless(x, y.cumprop)
 
 
 """
-    HumanDispersal{R,W}(; mode=BatchGroups(),
-                          human_pop,
-                          cellsize=1.0,
-                          scale=4,
-                          aggregator=mean,
-                          human_exponent=1.0,
-                          dist_exponent=1.0,
-                          dispersalperpop=1e-3,
-                          max_dispersers=100.0,
-                          nshortlisted=100)
+    HumanDispersal <: SetCellRule
+
+    HumanDispersal{R,W}(; kw...)
 
 Implements human-driven dispersal patterns using population density data.
 
-The number of long-distance migrants from an origin is set proportional to the level of  
-human population with the coefficient `dispersalperpop`. The destination of long-distance  
-migration is is calculated by using the distance ``d`` between and human population ``H`` 
+The number of long-distance migrants from an origin is set proportional to the level of
+human population with the coefficient `dispersalperpop`. The destination of long-distance
+migration is is calculated by using the distance ``d`` between and human population ``H``
 at origin cell ``i`` and destination cell ``j`` through a simple gravity function:
 
 ```math
 g_{i,j} = (H_i H_j)^β/(d_{i,j})^γ
-```    
-where ``β`` (`human_exponent`) and ``γ`` (`dist_exponent`) are parameters. For each grid cell, a  
-shortlist of size `nshortlisted` of the destination cells with the highest gravity are  
-selected for use in the simulation.
+```
+
+where ``β`` (`human_exponent`) and ``γ`` (`dist_exponent`) are parameters. For each grid 
+cell, a shortlist of size `nshortlisted` of the destination cells with the highest gravity 
+are selected for use in the simulation.
 
 The time taken for precalulation will depend on the `scale` argument. Values above 1
 will downsample the grid to improve precalulation time and runtime performance. A high
 scale value is good for use in a live interface.
 
-## Keyword Arguments
+## Keywords
 
 - `mode`: Dispersal mode: Defaults to `BatchGroups()`, otherwise `HeirarchicalGroups()`.
 - `human_pop`: An array match the grid size containing human population data.
 - `cellsize`: The size of the cell width, assuming they are square
-- `scale`: Downscaling factor to reduce memory use and improve performance, defaults to 4  
-which means a 1:16 ratio.
+- `scale`: Downscaling factor to reduce memory use and improve performance, defaults to 4
+    which means a 1:16 ratio.
 - `aggregator`: a function that aggregates cells, defualting to `mean`.
 - `human_exponent`: human population exponent.
 - `dist_exponent`: distance exponent.
-- `dispersalperpop`: sets the number of dispersing individuals from the origin as a  
-proportion of the level of human activity.
+- `dispersalperpop`: sets the number of dispersing individuals from the origin as a
+    proportion of the level of human activity.
 - `max_dispersers`: maximum number of dispersers in a single dispersal event.
-- `nshortlisted`: length of the dispersal destination shortlist for each cell. 
-  Longer lists are more accurate in the tail of the distribution, but are slower to access.
+- `nshortlisted`: length of the dispersal destination shortlist for each cell.
+    Longer lists are more accurate in the tail of the distribution, but are slower to access.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """
@@ -107,11 +97,15 @@ struct HumanDispersal{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D} <: SetCellRule{R,W
         human_buffer::B, distances::B
        ) where {R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D}
 
-        precalc_human_dispersal!(dest_shortlists, human_pop, cellsize, scale, aggregator,
-                                 human_exponent, dist_exponent, nshortlisted, human_buffer, distances)
-        new{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D}(mode, human_pop, cellsize, scale, aggregator, human_exponent,
-                                 dist_exponent, dispersalperpop, max_dispersers, nshortlisted, dest_shortlists,
-                                 human_buffer, distances)
+        precalc_human_dispersal!(
+            dest_shortlists, human_pop, cellsize, scale, aggregator, human_exponent, 
+            dist_exponent, nshortlisted, human_buffer, distances
+        )
+        new{R,W,M,HP,CS,S,AG,HE,DE,DP,MD,SL,PC,B,D}(
+             mode, human_pop, cellsize, scale, aggregator, human_exponent, dist_exponent, 
+             dispersalperpop, max_dispersers, nshortlisted, dest_shortlists, human_buffer, 
+             distances
+        )
     end
 end
 # This constructor is run on initialisation with keyword arguments.
@@ -225,7 +219,9 @@ function precalc_col!(dest_shortlists, nshortlisted, human, distances, thread_al
     return nothing
 end
 
-function precalc_cell!(dest_shortlists, nshortlisted, human, distances, (gravities, gravity_vector), i, j)
+function precalc_cell!(
+    dest_shortlists, nshortlisted, human, distances, (gravities, gravity_vector), i, j
+)
     if ismissing(human[i, j])
         dest_shortlists[i, j] = missing
         return nothing
@@ -390,7 +386,9 @@ function populate!(A::AbstractMatrix, shortlists::AbstractArray, scale::Int=1)
     return A
 end
 # Single shortlist for one cell
-function populate!(A::AbstractMatrix, cells::AbstractVector{<:Union{<:CellInterval,Missing}}, scale::Int=1)
+function populate!(
+    A::AbstractMatrix, cells::AbstractVector{<:Union{<:CellInterval,Missing}}, scale::Int=1
+)
     lastcumprop = 0.0
     for cell in cells
         I = upsample_index(cell.index, scale)

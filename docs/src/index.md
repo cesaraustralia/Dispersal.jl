@@ -89,8 +89,6 @@ JumpDispersal
 HumanDispersal
 populate!
 populate
-downsample
-downsample!
 ```
 
 ### Mortality

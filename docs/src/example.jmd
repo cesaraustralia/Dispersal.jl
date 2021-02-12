@@ -16,12 +16,10 @@ raster files. It requires also loading NCDatasets.jl and ArchGDAL.jl to load
 NetCDF and GeoTiff files, respectively.
 
 ```{julia; results="hidden"}
-# using Pkg
-# Pkg.add(PackageSpec(url="https://github.com/rafaqz/GeoData.jl", rev="master"))
-
-using GeoData, DimensionalData, Dispersal, Dates, NCDatasets, ArchGDAL, Plots
-using DimensionalData: rebuild, Forward, Reverse
-basedir = joinpath(dirname(Base.pathof(Dispersal)), "../docs")
+using GeoData, NCDatasets, ArchGDAL, RasterDataSources
+using Dispersal, Dates, Plots, GrowthMaps, Unitful, Statistics
+using Unitful: °C, K, cal, mol, mm
+basedir = realpath(joinpath(dirname(Base.pathof(Dispersal)), "../docs"))
 ```
 
 ### Define simulation extent in space and time:
@@ -30,7 +28,7 @@ We use `DateTime` of for the time dimension:
 
 ```{julia; results="hidden"}
 timestep = Month(1);
-tspan = DateTime(2016, 1):Month(1):DateTime(2018, 12)
+tspan = DateTime(2016, 1):timestep:DateTime(2018, 12)
 aust = Lon(Between(113.338953078, 153.569469029)),
        Lat(Between(-43.6345972634, -10.6681857235));
 ```
@@ -43,61 +41,20 @@ This will involve combining multiple dispersal components into a single
 `RuleSet` object: population growth, local dispersal, Allee effects, and human
 dispersal.
 
-Follow the [examples tutorial](https://rafaqz.github.io/GrowthRates.jl/dev/example/index.html) over
-at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl). To skip this step
-just download the output saved in the example:
-
-```{julia; results="hidden"}
-dataurl = "https://media.githubusercontent.com/media/cesaraustralia/Dispersal.jl/data"
-growthratesfilename = "growthrates.ncd"
-growthratesfilepath = joinpath(basedir, growthratesfilename)
-isfile(growthratesfilepath) ||
-  download(joinpath(dataurl, growthratesfilename), joinpath(basedir, growthratesfilename));
-```
-
-And select just the bounding box for Australia, and set the dimension order to Lat/Lon:
-
-```{julia; results="hidden"}
-growthrates = NCDarray(growthratesfilepath)
-# Set the length of the timestep. TODO: get this automatically from NetCDF units in GeoData.jl
-mode_ = Sampled(DimensionalData.order(ti), Regular(timestep), Intervals(Start()))
-growthrates = set(growthrates, Ti=mode_);
-```
-
-Plot the growth layer:
-
-```{julia; results="hidden"}
-growthrates[Ti(1)] |> plot
-savefig(joinpath(basedir, "build/assets/growthrates.png"));
-```
-
-Create a `ExactLogisticGrowthMap` rule from the layer, here we use
-unitful units for the layers' time dimension:
-
-```{julia; results="hidden"}
-carrycap = 1e9
-growth = ExactLogisticGrowthMap(layerkey=:growthrates, carrycap=carrycap);
-```
-
 ### Local dispersal
 
 ```{julia; results="hidden"}
-λ = 0.0125
-radius = 1
-sze = 2radius + 1
-dm = AreaToArea(30)
-@time hood = DispersalKernel{radius}(;
-    kernel=zeros(Float64, radius, radius),
-    formulation=ExponentialKernel(λ),
-    distancemethod=dm
+localdisp = InwardsDispersal(;
+    radius=1,
+    formulation=ExponentialKernel(; λ = 0.0125),
+    distancemethod=AreaToArea(30),
 )
-localdisp = InwardsPopulationDispersal(hood);
 ```
 
 ### Allee effects
 
 ```{julia; results="hidden"}
-allee = AlleeExtinction(minfounders=10.0);
+allee = AlleeExtinction(; minfounders=10.0);
 ```
 
 ### Human dispersal
@@ -106,17 +63,22 @@ The human dispersal component is generated from an array or population data.
 First we'll open an input tiff, and move it to a memory backed `GeoArray`.
 
 ```{julia; results="hidden"}
+humanpop_url = "https://github.com/cesaraustralia/DSuzukiiInvasionPaper/blob/master/data/population_density.tif?raw=true"
 humanpop_filename = "population_density.tif"
 humanpop_filepath = joinpath(basedir, humanpop_filename)
-isfile(humanpop_filepath) || download(joinpath(dataurl, humanpop_filename), humanpop_filepath);
+isfile(humanpop_filepath) || download(humanpop_url, humanpop_filepath);
 ```
 
 Again select the Australian bounds. This time we also select the first Band.
 Tiff data always has bands, even when there is only one:
 
 ```{julia; results="hidden"}
-humanpop = GDALarray(humanpop_filepath; usercrs=EPSG(4326))[Band(1), aust...] |>
-    A -> permutedims(A, (Lat, Lon)) |> reorderarray
+humanpop = GDALarray(humanpop_filepath; mappedcrs=EPSG(4326))[Band(1), aust...] |>
+    A -> replace_missing(A, missing) |>
+    A -> permutedims(A, (Lat, Lon)) |> 
+    A -> reorder(A, ForwardIndex) |>
+    A -> reorder(A, ForwardArray)
+plot(humanpop)
 savefig(joinpath(basedir, "build/assets/humanpop.png"));
 ```
 
@@ -124,7 +86,7 @@ savefig(joinpath(basedir, "build/assets/humanpop.png"));
 
 
 ```{julia; results="hidden"}
-@time humandisp = HumanDispersal(
+humandisp = HumanDispersal(
     human_pop=parent(humanpop),
     human_exponent=2.0,
     dist_exponent=2.0,
@@ -135,23 +97,87 @@ savefig(joinpath(basedir, "build/assets/humanpop.png"));
 );
 ```
 
+To obtain spatially and temporally heterogeneous growth rates for our growth model,
+we simplify the [examples tutorial](https://rafaqz.github.io/GrowthRates.jl/dev/example/index.html) 
+over at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl).
+
+```{julia; results="hidden"}
+# Generate a growth response curve
+p = 3.626804f-01
+ΔH_A = 3.586625f4cal/mol
+ΔH_H = 1.431237f5cal/mol
+Thalf_H = 2.988454f2K
+ΔH_L = -1.108988f5cal/mol
+Thalf_L = 2.459949f2K
+T_ref = K(25.0f0°C)
+growthresponse = Layer(:tavg, °C,
+    SchoolfieldIntrinsicGrowth(p, ΔH_A, ΔH_L, Thalf_L, ΔH_H, Thalf_H, T_ref)
+)
+# Add some lower and upper temperature bounds that cause mortality
+coldthresh = -10.0f0°C |> K
+coldmort = -log(1.23f0)K^-1
+heatthresh = 30.0f0°C |> K
+heatmort = -log(1.15f0)K^-1
+coldstress = Layer(:tavg, °C, LowerStress(coldthresh, coldmort))
+heatstress = Layer(:tavg, °C, UpperStress(heatthresh, heatmort))
+# Set a stressor based on precipitation - there are better data to use
+# for this, but this is easy to download for the example
+wetthresh = 40mm
+wetmort = -0.01f0mm^-1
+wetstress = Layer(:prec, mm, LowerStress(wetthresh, wetmort))
+# Define the whole model
+model = growthresponse, coldstress, heatstress, wetstress
+
+tspan = DateTime(2017,1):Month(1):DateTime(2017,12)
+# Download some climate data, and reseample to match the population data
+ser = map(series(WorldClim{Climate}, (:tavg, :prec); month=1:12)) do stack
+    map(A -> resample(A, humanpop), stack)
+end;
+growthrates = mapgrowth(model; series=ser, tspan=1:12)
+```
+
+Plot the growth layer:
+
+```{julia; results="hidden"}
+mode_ = Projected(; crs=crs(growthrates), mappedcrs=EPSG(4326))
+growthrates = set(growthrates[Band(1)], Lat=mode_, Lon=mode_) |>
+    A -> set(A, Ti(DateTime(2017, 1):Month(1):DateTime(2017, 12))) |>
+    A -> permutedims(A, (Lat, Lon, Ti)) |>
+    A -> reorder(A, ForwardIndex) |>
+    A -> reorder(A, ForwardArray)
+plot(growthrates[Ti(5)]; clims=(0, 0.1))
+heatmap(parent(growthrates[Ti(1)]))
+heatmap(parent(humanpop))
+
+Plots.savefig(joinpath(basedir, "build/assets/growthrates.png"));
+```
+
+Create a `ExactLogisticGrowthMap` rule from the layer, here we use
+unitful units for the layers' time dimension:
+
+```{julia; results="hidden"}
+carrycap = 1e9
+growth = LogisticGrowth(; rate=Aux(:growthrates), timestep=Day(1), carrycap=carrycap);
+```
+
 ### Define initialisation data
 
-Make a zeros array and populate the starting cells. We need to replace the `missing`
+Make a zeros `GeoArray` and populate the starting cells. We need to replace the `missing`
 values with something else Dispersal.jl init can't contain `missing` or it will spread everywhere:
 
 ```{julia; results="hidden"}
-init = replace_missing(growthrates[Ti(1)], NaN) |> zero
-incursion = [(36.9677, -122.0294),
-             (37.3226, -121.8921),
-             (37.6008, -120.9545),
-             (35.3453, -119.0586),
-             (38.7318, -121.9014),
-             (38.5249, -121.9708),
-             (37.2502, -119.751)]
-# Using `Contains` finds the interval that contains the coordinates
+init = replace_missing(humanpop, NaN) |> zero
+incursion = [
+    (-36.9677, 122.0294),
+    (-37.3226, 121.8921),
+    (-37.6008, 120.9545),
+    (-35.3453, 119.0586),
+    (-38.7318, 121.9014),
+    (-38.5249, 121.9708),
+    (-37.2502, 119.751),
+]
 for (lat, lon) in incursion
-    init[Lat(Contains(lat)), Lon(Contains(lon))] = 1e7
+    init[Lat(Near(lat)), Lon(Contains(lon))] = 1e7
 end
 ```
 
@@ -170,10 +196,7 @@ savefig(joinpath(basedir, "build/assets/mask.png"));
 ### Define a combined ruleset
 
 ```{julia; results="hidden"}
-ruleset = Ruleset(
-    humandisp, Chain(localdisp, allee, growth);
-    timestep=timestep,
-);
+ruleset = Ruleset(humandisp, localdisp, allee, growth; timestep=timestep)
 ```
 
 ---
@@ -189,8 +212,7 @@ output = ArrayOutput(init;
     tspan=tspan,
     mask=masklayer,
     aux=(growthrates=growthrates,),
-    minval=0.0,
-    maxval=carrycap,
+    minval=0.0, maxval=carrycap,
 );
 ```
 
@@ -213,22 +235,16 @@ You can use the built-in `Greyscale` scheme, or any scheme from
 [ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl).
 
 ```{julia; results="hidden"}
-using ColorSchemes, Colors
-scheme = ColorSchemes.Oranges_3
-#scheme = ColorSchemes.autumn1
-
-## Frame Processing Colors
-zerocolor = RGB24(0.7)
-maskcolor = RGB24(0.0)
-textconfig = TextConfig(font="arial")
-processor = ColorProcessor(scheme, zerocolor, maskcolor, textconfig);
+using ColorSchemes
 ```
 
 With a non-image output like ArrayOuput we need to pass in the image processor
 manually.
 
 ```{julia; results="hidden"}
-savegif(joinpath(basedir, "build/assets/sim.gif"), output; minval=0.0, maxval=1e7, processor=processor, fps=10);
+savegif(joinpath(basedir, "build/assets/sim.gif"), output; 
+    minval=0.0, maxval=1e7, scheme=ColorSchemes.Oranges_3, fps=10
+);
 ```
 
 ![Drosphila suzukii spread](assets/sim.gif)
@@ -236,10 +252,9 @@ savegif(joinpath(basedir, "build/assets/sim.gif"), output; minval=0.0, maxval=1e
 
 ## Live simulation outputs
 
-There are a number of live outputs provided in CelularAutomataBase.jl and
+There are a number of live outputs provided in DynamicGrids.jl and
 specific output packages DynamicGridsGtk and DynamicGridsInteract that keep
 heavy graphics and web dependencies separate form the rest of the framework.
-
 
 ### REPL output
 
@@ -250,18 +265,14 @@ easily reduce the font size.
 
 ```{julia; results="hidden"}
 using Crayons
-output = REPLOutput(init; tspan=tspan, style=Block(), fps=5, color=:white, store=false)
+output = REPLOutput(init; 
+    mask=masklayer, aux=(growthrates=growthrates,), tspan=tspan, 
+    style=Block(), fps=5, color=:white, store=false
+)
 sim!(output, ruleset);
 ```
 
-The `Braile()` style is half the dimensions of the `Block()` style, but doen't
-look as clear.
-
-```{julia; results="hidden"}
-output = REPLOutput(init; tspan=tspan, style=Braile(), fps=5, color=:white, store=false)
-sim!(output, ruleset);
-```
-
+The `Braile()` style uses half the space of the `Block()` style, but won't look as clear.
 
 ### Interactive web outputs
 
@@ -291,11 +302,10 @@ output = InteractOutput(init, ruleset;
     fps=10,
     store=true,
     processor=processor,
-    slider_throttle=1.0,
+    slider_throttle=0.5,
 )
 display(output)
 ```
-
 
 ### Wrap the IneractOutput in a standalone desktop (electron) app
 
