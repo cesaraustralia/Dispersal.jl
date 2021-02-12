@@ -14,7 +14,7 @@ abstract type Mortality{R,W} <: CellRule{R,W} end
     LoglogisticMortality{R}(; median, hillcoefficient, timestep)
     LoglogisticMortality{R,W}(; median, hillcoefficient, timestep)
 
-Loglogistic mortality based on median,  ``α`` and hill coefficient ``β``.
+Loglogistic mortality based on median, ``α`` and hill coefficient ``β``.
 
 Cumulative function of loglogistic: 
 ```math
