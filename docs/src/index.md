@@ -38,7 +38,7 @@ KernelFormulation
 ExponentialKernel
 GeometricKernel
 GaussianKernel
-BivariateStudentKernel
+WeibullKernel
 ```
 
 ### Distance methods
