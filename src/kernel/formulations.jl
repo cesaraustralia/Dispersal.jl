@@ -62,7 +62,7 @@ end
 Probability density function of distance ``d``.
 
 ```math
-y = \frac{(α+1)(α+2)}{2 π} (1+d)^α
+y = \frac{1}{π α^2} \exp\left( \frac{-d^2}{α^2}  \right) 
 ```
 
 where α is a positive parameter.
@@ -70,31 +70,24 @@ where α is a positive parameter.
 @Base.kwdef struct GaussianKernel{P} <: KernelFormulation
     α::P = Param(1.0, bounds=(0.0, 1000.0))
 end
-(f::GaussianKernel)(d) = 1/(π*f.α^2)*exp(-d^2/f.α^2)
+(f::GaussianKernel)(d) = 1 / (π * f.α^2) * exp(- d^2 / f.α^2)
 
 
 """
-    BivariateStudentKernel <: KernelFormulation
+    WeibullKernel <: KernelFormulation
 
-    BivariateStudentKernel(α, β, θ, c1, c2)
+    WeibullKernel(α,β)
 
 Probability density function of distance ``d``.
-The Bivariate Student kernel has a power-law decrease and is anisotropic.
-
-# Keyword Arguments
-- `α` and `β` are positive parameters.
-- `θ` is the angle made by the vector.
-- `c1` and `c2` are positive parameter with ``c2 ∈ [0, 2π)``
 
 ```math
-y = (β-1) / (π α^2) (1+ d^2/α^2) )^(-β) e^(c1 cos(θ-c_2))
+y = \frac{β}{2 π α^2} d^{β-2} \exp\left( \frac{-d^β}{α^β}  \right) 
 ```
+
+where α and β are positive parameters.
 """
-@Base.kwdef struct BivariateStudentKernel{P1,P2,P3,P4,P5} <: KernelFormulation
-    α::P1 = Param(1.0, bounds=(0.0, 1000.0))
-    β::P2 = Param(0.5, bounds=(0.0, 1.0))
-    θ::P3 = Param(0.5, bounds=(0.0, 10.0))
-    c1::P4 = Param(0.5, bounds=(0.0, 10.0))
-    c2::P5 = Param(0.5, bounds=(0.0, 2*π))
+@Base.kwdef struct WeibullKernel{A,B} <: KernelFormulation
+    α::A = Param(1.0, bounds=(0.0, 1000.0))
+    b::B = Param(1.0, bounds=(0.0, 1000.0))
 end
-(f::BivariateStudentKernel)(d) = (f.β-1)/(π*f.α^2)*(1+d^2/f.α^2)*exp(f.c1 * cos(f.θ-f.c2)) 
+(f::WeibullKernel)(d) = f.β / (2 * π * f.α^2) * d^(f.β - 2) * exp(- d^f.β / f.α^f.b)
