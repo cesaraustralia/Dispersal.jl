@@ -31,7 +31,7 @@ where λ is a shape parameter.
     "Parameter for adjusting spread of dispersal propability"
     λ::P = Param(1.0, bounds=(0.0, 2.0))
 end
-(f::ExponentialKernel)(distance) = exp(-distance / f.λ)
+(f::ExponentialKernel)(d) = exp(-d / f.λ)
 
 """
     GeometricKernel <: KernelFormulation
@@ -51,7 +51,7 @@ where α is a shape parameter.
 @Base.kwdef struct GeometricKernel{P} <: KernelFormulation
     α::P = Param(1.0, bounds=(-1000.0, 1000.0))
 end
-(f::GeometricKernel)(distance) = (1+distance)^f.α * ((f.α+1)*(f.α+2))/(2*π)
+(f::GeometricKernel)(d) = (1 + d)^f.α * ((f.α + 1)*(f.α + 2)) / (2 * π)
 
 
 """
