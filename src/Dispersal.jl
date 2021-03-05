@@ -20,7 +20,7 @@ using ModelParameters: params
 
 import DynamicGrids: applyrule, applyrule!, precalcrule, kernel
 
-export KernelFormulation, ExponentialKernel, GeometricKernel, GaussianKernel, BivariateStudentKernel
+export KernelFormulation, ExponentialKernel, GeometricKernel, GaussianKernel, WeibullKernel
 
 export DistanceMethod, CentroidToCentroid, AreaToArea, AreaToCentroid #, CentroidToArea, 
 

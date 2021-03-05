@@ -171,24 +171,26 @@ end
     @testset "ExponentialKernel" begin
         hood = DispersalKernel(; formulation=ExponentialKernel(0.5))
         @test DynamicGrids.radius(hood) == 1
-        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10e-10
     end
 
     @testset "GeometricKernel" begin
         hood = DispersalKernel(; formulation=GeometricKernel(0.5))
         @test DynamicGrids.radius(hood) == 1
-        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10e-10
     end
 
     @testset "GaussianKernel" begin
         hood = DispersalKernel(; formulation=GaussianKernel())
         @test DynamicGrids.radius(hood) == 1
-        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10e-10
     end
 
-    @testset "BivariateStudentKernel" begin
-        hood = DispersalKernel(; formulation=BivariateStudentKernel())
+    @testset "WeibullKernel" begin
+        hood = DispersalKernel(; formulation=WeibullKernel())
         @test DynamicGrids.radius(hood) == 1
-        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10^(-10)
+        @test sum(DynamicGrids.kernel(hood)) ≈ 1 atol=10e-10
     end
 end
+
+   
