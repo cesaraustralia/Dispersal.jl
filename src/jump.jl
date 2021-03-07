@@ -35,7 +35,7 @@ end
     # Randomly select spotting distance
     intspot = round(Int, rule.spotrange)
     rnge = -intspot:intspot
-    dest, is_inbounds = inbounds((rand(rnge), rand(rnge)) .+ I, data)
+    dest, is_inbounds = inbounds(data, (rand(rnge), rand(rnge)) .+ I)
 
     # Update spotted cell if it's on the grid
     is_inbounds && @inbounds add!(data[W], N, dest...)

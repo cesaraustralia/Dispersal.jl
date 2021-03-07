@@ -18,7 +18,7 @@ using ConstructionBase,
 
 using ModelParameters: params
 
-import DynamicGrids: applyrule, applyrule!, precalcrule, kernel
+import DynamicGrids: applyrule, applyrule!, modifyrule, kernel
 
 export KernelFormulation, ExponentialKernel, GeometricKernel, GaussianKernel, WeibullKernel
 

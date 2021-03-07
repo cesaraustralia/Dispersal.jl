@@ -356,7 +356,7 @@ function disperse2dest!(data::DG.WritableGridData, rule, shortlist, maybedispers
     dest_index = upsample .+ (rand(0:rule.scale-1), rand(0:rule.scale-1))
     # Skip dispsal to upsampled dest cells that are masked or out of bounds, and try again
     if !DynamicGrids.ismasked(data, dest_index...) &&
-        DynamicGrids.isinbounds(dest_index, data)
+        DynamicGrids.isinbounds(data, dest_index)
         # Disperse to the cell.
         add!(data, maybedispersing, dest_index...)
         return maybedispersing
