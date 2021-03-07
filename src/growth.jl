@@ -39,7 +39,7 @@ function ExponentialGrowth{R,W}(;
     ExponentialGrowth{R,W}(rate, timestep, nothing)
 end
 
-precalcrule(rule::ExponentialGrowth, data) = precalc_timestep(rule, data)
+modifyrule(rule::ExponentialGrowth, data) = precalc_timestep(rule, data)
 
 @inline function applyrule(data, rule::ExponentialGrowth, N, I)
     N > zero(N) || return zero(N)
@@ -83,7 +83,7 @@ function LogisticGrowth{R,W}(;
     LogisticGrowth{R,W}(rate, carrycap, timestep, nothing)
 end
 
-precalcrule(rule::LogisticGrowth, data) = precalc_timestep(rule, data)
+modifyrule(rule::LogisticGrowth, data) = precalc_timestep(rule, data)
 
 @inline function applyrule(data, rule::LogisticGrowth, N, I)
     N > zero(N) || return zero(N)
