@@ -4,7 +4,9 @@ const INTRINSICRATE_PARAM = Param(0.1,      bounds=(0.0, 10.0))
 const THRESHOLD_PARAM     = Param(0.5;      bounds=(0.0, 1.0))
 
 """
-Abstract supertype of `CellRule` for growth dynamics rules.
+    GrowthRule <: CellRule
+
+Abstract supertype for growth dynamics rules.
 """
 abstract type GrowthRule{R,W} <: CellRule{R,W} end
 
@@ -22,7 +24,7 @@ exact solution between timesteps ``t`` and ``t-1``:
 N_t = N_{t-1}e^{r t}
 ```
 
-# Keyword Arguments
+# Keywords
 
 - `rate`: Intrinsic growth rate. May be a `Number`, an `Aux` array or another `Grid`.
 - `timestep`: Time step for the growth rate calculation, in a type compatible with the simulation `tspan`.
@@ -51,6 +53,8 @@ modifyrule(rule::ExponentialGrowth, data) = precalc_timestep(rule, data)
 end
 
 """
+    LogisticGrowth <: GrowthRule
+
     LogisticGrowth(; rate, carrycap, timestep)
     LogisticGrowth{R}(; rate, carrycap, timestep)
     LogisticGrowth{R,W}(; rate, carrycap, timestep)

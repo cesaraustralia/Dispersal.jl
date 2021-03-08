@@ -3,13 +3,17 @@ const MEDIAN_LOGLOGISTIC = Param(0.1; bounds=(0.0, 100))
 const THRESHOLD_EXPOSURE = Param(0.0; bounds=(0.0, 1e9))
 
 """
-Extends CellRule for rules of survival effect
+    Mortality <: CellRule
+
+Abstract super type for rules of survival effect
 For best performance these should be chained with other
 CellRule or following an NeighborhoodRule.
 """
 abstract type Mortality{R,W} <: CellRule{R,W} end
 
 """
+    LoglogisticMortality <: Mortality
+
     LoglogisticMortality(; median, hillcoefficient, timestep)
     LoglogisticMortality{R}(; median, hillcoefficient, timestep)
     LoglogisticMortality{R,W}(; median, hillcoefficient, timestep)
@@ -22,10 +26,11 @@ F(x; α, β) =  x^β/(α^β + x^β)
 ```
 where ``α>0`` is the scale and ``β>0`` is the shape.
 
-# Keyword Arguments
+# Keywords
+
 - `median`: Median of the loglogistic function
 - `hillcoefficient`: Hill's coefficient, a measure of ultrasensitivity (i.e. how steep is the response curve).
-    May be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+    May be a `Number`, an `Aux` array or another `Grid`.
 - `timestep`: Time step for the mortality rate, in a type compatible with the simulation `tspan`.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
@@ -56,6 +61,8 @@ modifyrule(rule::LoglogisticMortality, data) = precalc_timestep(rule, data)
 end
 
 """
+    ExponentialMortality <: Mortality
+
     ExponentialMortality(; rate, threshold, timestep)
     ExponentialMortality{R}(; rate, threshold, timestep)
     ExponentialMortality{R,W}(; rate, threshold, timestep)
@@ -69,13 +76,13 @@ Exponential mortality based on exposure grid ``X``, an exposure threshold parame
 N_{t+1} = N_{t}e^{-r t(X-z)}
 ```
 
-# Keyword Arguments
+# Keywords
 
 - `rate`: Mortality rate.
 - `threshold`: Exposure threshold under which there is no effect.
 - `timestep`: Time step for the growth rate, in a type compatible with the simulation `tspan`.
 
-`rate` and `threshold` can be a `Number`, an [`Aux`](@ref) array or another [`Grid`](@ref).
+`rate` and `threshold` can be a `Number`, an `Aux` array or another Grid`.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 `R` is a 2 Grids `NamedTuple` like `Tuple{:population,:exposure}` and `W` return only the first grid `:population`.
