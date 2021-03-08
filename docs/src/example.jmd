@@ -5,17 +5,18 @@ author : Rafael Schouten
 
 # Dispersal simulations
 
-In this example we will run a simulation of the spread of the Spotted Winged
-Drosophila _D. suzukii_ accross the continental USA.
+In this example we will run a simulation of the spread of an invasive insect 
+accross Australia, after an incursion in Brisbane.
 
 ## Setup
 
-First, load the required packages. Dates is a core julia package that
-give us date/time handling, GeoData simplifies the loading of geospatial
+First, load the required packages. Dates is a core julia package that give us 
+date/time handling, GeoData and RasterDataSources simplify the loading of geospatial
 raster files. It requires also loading NCDatasets.jl and ArchGDAL.jl to load
 NetCDF and GeoTiff files, respectively.
 
 ```{julia; results="hidden"}
+using DynamicGrids
 using GeoData, NCDatasets, ArchGDAL, RasterDataSources
 using Dispersal, Dates, Plots, GrowthMaps, Unitful, Statistics
 using Unitful: °C, K, cal, mol, mm
@@ -28,9 +29,9 @@ We use `DateTime` of for the time dimension:
 
 ```{julia; results="hidden"}
 timestep = Month(1);
-tspan = DateTime(2016, 1):timestep:DateTime(2018, 12)
-aust = Lon(Between(113.338953078, 153.569469029)),
-       Lat(Between(-43.6345972634, -10.6681857235));
+tspan = DateTime(2022, 1):timestep:DateTime(2030, 12)
+aust = Lon(Between(113, 154)),
+       Lat(Between(-45, -10));
 ```
 
 ---
@@ -76,8 +77,7 @@ Tiff data always has bands, even when there is only one:
 humanpop = GDALarray(humanpop_filepath; mappedcrs=EPSG(4326))[Band(1), aust...] |>
     A -> replace_missing(A, missing) |>
     A -> permutedims(A, (Lat, Lon)) |> 
-    A -> reorder(A, ForwardIndex) |>
-    A -> reorder(A, ForwardArray)
+    A -> reorder(A, Lat=ReverseArray, Lon=ForwardArray)
 plot(humanpop)
 savefig(joinpath(basedir, "build/assets/humanpop.png"));
 ```
@@ -128,7 +128,6 @@ wetstress = Layer(:prec, mm, LowerStress(wetthresh, wetmort))
 # Define the whole model
 model = growthresponse, coldstress, heatstress, wetstress
 
-tspan = DateTime(2017,1):Month(1):DateTime(2017,12)
 # Download some climate data, and reseample to match the population data
 ser = map(series(WorldClim{Climate}, (:tavg, :prec); month=1:12)) do stack
     map(A -> resample(A, humanpop), stack)
@@ -143,14 +142,12 @@ mode_ = Projected(; crs=crs(growthrates), mappedcrs=EPSG(4326))
 growthrates = set(growthrates[Band(1)], Lat=mode_, Lon=mode_) |>
     A -> set(A, Ti(DateTime(2017, 1):Month(1):DateTime(2017, 12))) |>
     A -> permutedims(A, (Lat, Lon, Ti)) |>
-    A -> reorder(A, ForwardIndex) |>
-    A -> reorder(A, ForwardArray)
+    A -> reorder(A, Lat=ReverseArray, Lon=ForwardArray)
 plot(growthrates[Ti(5)]; clims=(0, 0.1))
-heatmap(parent(growthrates[Ti(1)]))
-heatmap(parent(humanpop))
-
 Plots.savefig(joinpath(basedir, "build/assets/growthrates.png"));
 ```
+
+![popgrowth](assets/growthrates.png)
 
 Create a `ExactLogisticGrowthMap` rule from the layer, here we use
 unitful units for the layers' time dimension:
@@ -162,23 +159,14 @@ growth = LogisticGrowth(; rate=Aux(:growthrates), timestep=Day(1), carrycap=carr
 
 ### Define initialisation data
 
-Make a zeros `GeoArray` and populate the starting cells. We need to replace the `missing`
-values with something else Dispersal.jl init can't contain `missing` or it will spread everywhere:
+Make a zeros `GeoArray`. We need to replace the `missing`
+values, as init can't contain `missing` or it will spread everywhere.
+We then initialise a population in Brisbane:
 
 ```{julia; results="hidden"}
 init = replace_missing(humanpop, NaN) |> zero
-incursion = [
-    (-36.9677, 122.0294),
-    (-37.3226, 121.8921),
-    (-37.6008, 120.9545),
-    (-35.3453, 119.0586),
-    (-38.7318, 121.9014),
-    (-38.5249, 121.9708),
-    (-37.2502, 119.751),
-]
-for (lat, lon) in incursion
-    init[Lat(Near(lat)), Lon(Contains(lon))] = 1e7
-end
+lat, lon = -27.5, 153 # Brisbane
+init[Lat(Contains(lat)), Lon(Contains(lon))] = carrycap
 ```
 
 ### Define a masking layer
@@ -203,48 +191,37 @@ ruleset = Ruleset(humandisp, localdisp, allee, growth; timestep=timestep)
 
 ## Output
 
-The simplest and oftern the most performant output for a simulation is an
-ArrayOutput, which simply writes the simulation to a preallocated array
-without visualising it.
+Outputs hold all spatial and temporal information about the simulation,
+as these match the size and length of the output, making the `Ruleset`
+independent of location and time. `init`, `tspan`, `aux` and `mask` are common
+to all outputs, here we use the masklayer for `mask` and growthrates for `aux`.
+
+Gif files are an easy way to share the visual dynamics of the simulation.
+`GifOutput` saves a gif when the simulation finishes.
+
+You can use the built-in `Greyscale` scheme or any scheme from
+[ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl). 
 
 ```{julia; results="hidden"}
-output = ArrayOutput(init;
+using ColorSchemes
+output = GifOutput(init;
+    # Core keywords
     tspan=tspan,
     mask=masklayer,
     aux=(growthrates=growthrates,),
-    minval=0.0, maxval=carrycap,
+    # Visualisation keywords
+    scheme=ColorSchemes.tokyo, fps=10,
+    minval=0.0, maxval=carrycap, 
+    filename=joinpath(basedir, "build/assets/sim.gif"),
 );
 ```
 
-### Run a simulation
+### Run a simulation and save a gif
 
 To run a simulation, we pass in the output and rulset.
 
 ```{julia; results="hidden"}
 sim!(output, ruleset);
-```
-
-### Save a gif of your simulation
-
-Gif files are an easy way to share the visual dynamics of the simulation. First
-we need to define a color processor to turn the simulation into images for the
-frames of the the gif. This processor can also be used later in web or gtk
-outputs.
-
-You can use the built-in `Greyscale` scheme, or any scheme from
-[ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl).
-
-```{julia; results="hidden"}
-using ColorSchemes
-```
-
-With a non-image output like ArrayOuput we need to pass in the image processor
-manually.
-
-```{julia; results="hidden"}
-savegif(joinpath(basedir, "build/assets/sim.gif"), output; 
-    minval=0.0, maxval=1e7, scheme=ColorSchemes.Oranges_3, fps=10
-);
 ```
 
 ![Drosphila suzukii spread](assets/sim.gif)
@@ -263,10 +240,12 @@ included `REPLOutput`. It doesn't work so well in Atom/Juno, so we only recommen
 using it in a real terminal. It also works better in a terminal where you can
 easily reduce the font size.
 
-```{julia; results="hidden"}
+```{julia; eval=false, results="hidden"}
 using Crayons
 output = REPLOutput(init; 
-    mask=masklayer, aux=(growthrates=growthrates,), tspan=tspan, 
+    mask=masklayer, 
+    aux=(growthrates=growthrates,), 
+    tspan=tspan, 
     style=Block(), fps=5, color=:white, store=false
 )
 sim!(output, ruleset);
@@ -296,12 +275,11 @@ case set `store` to false.
 
 ```{julia; eval=false}
 using DynamicGridsInteract
-output = InteractOutput(init, ruleset;
+output = InteractOutput(init;
     ruleset=ruleset,
-    tspan=tspan,
-    fps=10,
-    store=true,
-    processor=processor,
+    tspan=tspan, mask=masklayer, aux=(growthrates=growthrates,),
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
     slider_throttle=0.5,
 )
 display(output)
@@ -315,10 +293,9 @@ the compile and load time for electron can take quite a while.
 ```{julia; eval=false}
 output = ElectronOutput(init;
     ruleset=ruleset,
-    tspan=tspan,
-    fps=10,
-    store=true,
-    processor=processor,
+    tspan=tspan, mask=masklayer, aux=(growthrates=growthrates,),
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
     slider_throttle=1.0,
 )
 ```
@@ -329,20 +306,19 @@ The `InteractOutput` can be served locally or over the web. You may need to do s
 port or firewall configuration on your server, but otherwise this is all you
 need to do to serve a simulation. Unlike other outputs, `ServerOutput` makes a
 copy of the internal `InteractOutput` for each new connection. Changes in one
-connection will not effect anything in the others.
+connection will not effect anything in the others. It tends to flash in Firefox,
+Chrome may be a better option.
 
 ```{julia; eval=false}
 output = ServerOutput(init;
     ruleset=ruleset,
-    tspan=tspan,
-    fps=10,
-    processor=processor,
+    tspan=tspan, mask=masklayer, aux=(growthrates=growthrates,),
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
     slider_throttle=1.0,
     port=8080,
 )
 ```
-
-If run locally, the interface should be served at the address "localhost:8080" in your web browser.
 
 ### Run in a GTK window
 
@@ -354,12 +330,10 @@ screenspace to viewing the simulation.
 
 ```{julia; eval=false}
 using DynamicGridsGtk
-output = GtkOutput(init .* 0;
-    mask=masklayer,
-    tspan=tspan,
-    fps=10,
-    store=true,
-    processor=processor
+output = GtkOutput(init;
+    mask=masklayer, aux=(growthrates=growthrates,), tspan=tspan,
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
 )
 sim!(output, ruleset)
 ```
