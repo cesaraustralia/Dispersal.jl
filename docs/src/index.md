@@ -66,6 +66,14 @@ LogisticGrowth
 ThresholdGrowth
 ```
 
+### Mortality
+
+```@docs
+Mortality
+ExponentialMortality
+LoglogisticMortality
+```
+
 ### Allee effects
 
 ```@docs
@@ -89,11 +97,4 @@ JumpDispersal
 HumanDispersal
 populate!
 populate
-```
-
-### Mortality
-
-```@docs
-ExponentialMortality
-LoglogisticMortality
 ```
