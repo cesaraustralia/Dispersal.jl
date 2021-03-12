@@ -1,0 +1,339 @@
+---
+title : Dispersal.jl example
+author : Rafael Schouten
+---
+
+# Dispersal simulations
+
+In this example we will run a simulation of the spread of an invasive insect 
+accross Australia, after an incursion in Brisbane.
+
+## Setup
+
+First, load the required packages. Dates is a core julia package that give us 
+date/time handling, GeoData and RasterDataSources simplify the loading of geospatial
+raster files. It requires also loading NCDatasets.jl and ArchGDAL.jl to load
+NetCDF and GeoTiff files, respectively.
+
+```{julia; results="hidden"}
+using DynamicGrids
+using GeoData, NCDatasets, ArchGDAL, RasterDataSources
+using Dispersal, Dates, Plots, GrowthMaps, Unitful, Statistics
+using Unitful: °C, K, cal, mol, mm
+basedir = realpath(joinpath(dirname(Base.pathof(Dispersal)), "../docs"))
+```
+
+### Define simulation extent in space and time:
+
+We use `DateTime` of for the time dimension:
+
+```{julia; results="hidden"}
+timestep = Month(1);
+tspan = DateTime(2022, 1):timestep:DateTime(2030, 12)
+aust = Lon(Between(113, 154)),
+       Lat(Between(-45, -10));
+```
+
+---
+
+### Define a `RuleSet`: climate driven population growth
+
+This will involve combining multiple dispersal components into a single
+`RuleSet` object: population growth, local dispersal, Allee effects, and human
+dispersal.
+
+### Local dispersal
+
+```{julia; results="hidden"}
+localdisp = InwardsDispersal(;
+    radius=1,
+    formulation=ExponentialKernel(; λ = 0.0125),
+    distancemethod=AreaToArea(30),
+)
+```
+
+### Allee effects
+
+```{julia; results="hidden"}
+allee = AlleeExtinction(; minfounders=10.0);
+```
+
+### Human dispersal
+
+The human dispersal component is generated from an array or population data.
+First we'll open an input tiff, and move it to a memory backed `GeoArray`.
+
+```{julia; results="hidden"}
+humanpop_url = "https://github.com/cesaraustralia/DSuzukiiInvasionPaper/blob/master/data/population_density.tif?raw=true"
+humanpop_filename = "population_density.tif"
+humanpop_filepath = joinpath(basedir, humanpop_filename)
+isfile(humanpop_filepath) || download(humanpop_url, humanpop_filepath);
+```
+
+Again select the Australian bounds. This time we also select the first Band.
+Tiff data always has bands, even when there is only one:
+
+```{julia; results="hidden"}
+humanpop = GDALarray(humanpop_filepath; mappedcrs=EPSG(4326))[Band(1), aust...] |>
+    A -> replace_missing(A, missing) |>
+    A -> permutedims(A, (Lat, Lon)) |> 
+    A -> reorder(A, Lat=ReverseArray, Lon=ForwardArray)
+plot(humanpop)
+savefig(joinpath(basedir, "build/assets/humanpop.png"));
+```
+
+![popgrowth](assets/humanpop.png)
+
+
+```{julia; results="hidden"}
+humandisp = HumanDispersal(
+    human_pop=parent(humanpop),
+    human_exponent=2.0,
+    dist_exponent=2.0,
+    dispersalperpop=1e-9,
+    max_dispersers=500.0,
+    nshortlisted=50,
+    scale=8,
+);
+```
+
+To obtain spatially and temporally heterogeneous growth rates for our growth model,
+we simplify the [examples tutorial](https://rafaqz.github.io/GrowthRates.jl/dev/example/index.html) 
+over at [GrowthRates.jl](https://github.com/rafaqz/GrowthRates.jl).
+
+```{julia; results="hidden"}
+# Generate a growth response curve
+p = 3.626804f-01
+ΔH_A = 3.586625f4cal/mol
+ΔH_H = 1.431237f5cal/mol
+Thalf_H = 2.988454f2K
+ΔH_L = -1.108988f5cal/mol
+Thalf_L = 2.459949f2K
+T_ref = K(25.0f0°C)
+growthresponse = Layer(:tavg, °C,
+    SchoolfieldIntrinsicGrowth(p, ΔH_A, ΔH_L, Thalf_L, ΔH_H, Thalf_H, T_ref)
+)
+# Add some lower and upper temperature bounds that cause mortality
+coldthresh = -10.0f0°C |> K
+coldmort = -log(1.23f0)K^-1
+heatthresh = 30.0f0°C |> K
+heatmort = -log(1.15f0)K^-1
+coldstress = Layer(:tavg, °C, LowerStress(coldthresh, coldmort))
+heatstress = Layer(:tavg, °C, UpperStress(heatthresh, heatmort))
+# Set a stressor based on precipitation - there are better data to use
+# for this, but this is easy to download for the example
+wetthresh = 40mm
+wetmort = -0.01f0mm^-1
+wetstress = Layer(:prec, mm, LowerStress(wetthresh, wetmort))
+# Define the whole model
+model = growthresponse, coldstress, heatstress, wetstress
+
+# Download some climate data, and reseample to match the population data
+ser = map(series(WorldClim{Climate}, (:tavg, :prec); month=1:12)) do stack
+    map(A -> resample(A, humanpop), stack)
+end;
+growthrates = mapgrowth(model; series=ser, tspan=1:12)
+```
+
+Plot the growth layer:
+
+```{julia; results="hidden"}
+mode_ = Projected(; crs=crs(growthrates), mappedcrs=EPSG(4326))
+growthrates = set(growthrates[Band(1)], Lat=mode_, Lon=mode_) |>
+    A -> set(A, Ti(DateTime(2017, 1):Month(1):DateTime(2017, 12))) |>
+    A -> permutedims(A, (Lat, Lon, Ti)) |>
+    A -> reorder(A, Lat=ReverseArray, Lon=ForwardArray)
+plot(growthrates[Ti(5)]; clims=(0, 0.1))
+Plots.savefig(joinpath(basedir, "build/assets/growthrates.png"));
+```
+
+![popgrowth](assets/growthrates.png)
+
+Create a `ExactLogisticGrowthMap` rule from the layer, here we use
+unitful units for the layers' time dimension:
+
+```{julia; results="hidden"}
+carrycap = 1e9
+growth = LogisticGrowth(; rate=Aux(:growthrates), timestep=Day(1), carrycap=carrycap);
+```
+
+### Define initialisation data
+
+Make a zeros `GeoArray`. We need to replace the `missing`
+values, as init can't contain `missing` or it will spread everywhere.
+We then initialise a population in Brisbane:
+
+```{julia; results="hidden"}
+init = replace_missing(humanpop, NaN) |> zero
+lat, lon = -27.5, 153 # Brisbane
+init[Lat(Contains(lat)), Lon(Contains(lon))] = carrycap
+```
+
+### Define a masking layer
+
+This layer lets the simulation know which cells should be ignored.
+
+```{julia; results="hidden"}
+masklayer = boolmask(growthrates[Ti(1)])
+plot(masklayer)
+savefig(joinpath(basedir, "build/assets/mask.png"));
+```
+
+![mask](assets/mask.png)
+
+### Define a combined ruleset
+
+```{julia; results="hidden"}
+ruleset = Ruleset(humandisp, localdisp, allee, growth; timestep=timestep)
+```
+
+---
+
+## Output
+
+Outputs hold all spatial and temporal information about the simulation,
+as these match the size and length of the output, making the `Ruleset`
+independent of location and time. `init`, `tspan`, `aux` and `mask` are common
+to all outputs, here we use the masklayer for `mask` and growthrates for `aux`.
+
+Gif files are an easy way to share the visual dynamics of the simulation.
+`GifOutput` saves a gif when the simulation finishes.
+
+You can use the built-in `Greyscale` scheme or any scheme from
+[ColorSchemes.jl](https://github.com/JuliaGraphics/ColorSchemes.jl). 
+
+```{julia; results="hidden"}
+using ColorSchemes
+output = GifOutput(init;
+    # Core keywords
+    tspan=tspan,
+    mask=masklayer,
+    aux=(growthrates=growthrates,),
+    # Visualisation keywords
+    scheme=ColorSchemes.tokyo, fps=10,
+    minval=0.0, maxval=carrycap, 
+    filename=joinpath(basedir, "build/assets/sim.gif"),
+);
+```
+
+### Run a simulation and save a gif
+
+To run a simulation, we pass in the output and rulset.
+
+```{julia; results="hidden"}
+sim!(output, ruleset);
+```
+
+![Drosphila suzukii spread](assets/sim.gif)
+
+
+## Live simulation outputs
+
+There are a number of live outputs provided in DynamicGrids.jl and
+specific output packages DynamicGridsGtk and DynamicGridsInteract that keep
+heavy graphics and web dependencies separate form the rest of the framework.
+
+### REPL output
+
+You can view a simulation over SSH or just in your local console using the
+included `REPLOutput`. It doesn't work so well in Atom/Juno, so we only recommend
+using it in a real terminal. It also works better in a terminal where you can
+easily reduce the font size.
+
+```{julia; eval=false, results="hidden"}
+using Crayons
+output = REPLOutput(init; 
+    mask=masklayer, 
+    aux=(growthrates=growthrates,), 
+    tspan=tspan, 
+    style=Block(), fps=5, color=:white, store=false
+)
+sim!(output, ruleset);
+```
+
+The `Braile()` style uses half the space of the `Block()` style, but won't look as clear.
+
+### Interactive web outputs
+
+[DynamicGridsInteract.jl](http://gihub.com/rafaqz/DynamicGridsInteract.jl)
+produces interactive web page outputs for a simulation. It uses Interact.jl for
+live control, providing a control console and sliders for model parameters, even
+for your own custom models.
+
+The simple `InteractOutput()` is the core output that can run on its own inside Juno
+or a Jupyter notebook. It can also be served to a browser locally or over the
+web using `ServerOutput()`, or run in a standalone desktop app using
+`ElectronOutput()`.
+
+### Juno or jupyter notebooks
+
+Building a `InteractOutput()` and running `display()` will open an output in a plot
+pane in Juno. See the example above to define an image processor. Setting
+`store` to true will save the last simulation to the output array to be saved or
+converted to a gif. Really long simulations may use your avilable ram, in which
+case set `store` to false.
+
+```{julia; eval=false}
+using DynamicGridsInteract
+output = InteractOutput(init;
+    ruleset=ruleset,
+    tspan=tspan, mask=masklayer, aux=(growthrates=growthrates,),
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
+    slider_throttle=0.5,
+)
+display(output)
+```
+
+### Wrap the IneractOutput in a standalone desktop (electron) app
+
+This will create a standalone desktop app wrapping the InteractOutput. Unfortunately
+the compile and load time for electron can take quite a while.
+
+```{julia; eval=false}
+output = ElectronOutput(init;
+    ruleset=ruleset,
+    tspan=tspan, mask=masklayer, aux=(growthrates=growthrates,),
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
+    slider_throttle=1.0,
+)
+```
+
+### Serving web pages
+
+The `InteractOutput` can be served locally or over the web. You may need to do some
+port or firewall configuration on your server, but otherwise this is all you
+need to do to serve a simulation. Unlike other outputs, `ServerOutput` makes a
+copy of the internal `InteractOutput` for each new connection. Changes in one
+connection will not effect anything in the others. It tends to flash in Firefox,
+Chrome may be a better option.
+
+```{julia; eval=false}
+output = ServerOutput(init;
+    ruleset=ruleset,
+    tspan=tspan, mask=masklayer, aux=(growthrates=growthrates,),
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
+    slider_throttle=1.0,
+    port=8080,
+)
+```
+
+### Run in a GTK window
+
+The `GTKOutput` in
+[DynamicGridsGtk.jl](http://gihub.com/rafaqz/DynamicGridsGtk.jl) is a
+simple desktop output that just shows the simulation without controls. It can be
+useful for faster load-time than `ElectronOutput`, and also dedicates all
+screenspace to viewing the simulation.
+
+```{julia; eval=false}
+using DynamicGridsGtk
+output = GtkOutput(init;
+    mask=masklayer, aux=(growthrates=growthrates,), tspan=tspan,
+    fps=10, store=true, scheme=ColorSchemes.tokyo, 
+    minval=0.0, maxval=carrycap,
+)
+sim!(output, ruleset)
+```
