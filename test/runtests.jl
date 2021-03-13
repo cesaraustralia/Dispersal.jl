@@ -17,4 +17,5 @@ end
 @time @safetestset "kernels" begin include("kernels.jl") end
 @time @safetestset "allee effects" begin include("allee.jl") end
 @time @safetestset "growth" begin include("growth.jl") end
+@time @safetestset "mortality" begin include("mortality.jl") end
 @time @safetestset "integration" begin include("integration.jl") end

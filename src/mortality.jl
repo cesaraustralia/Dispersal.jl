@@ -46,11 +46,12 @@ function LoglogisticMortality{R,W}(;
     median=MEDIAN_LOGLOGISTIC,
     hillcoefficient=HILLCOEFFICIENT,
     timestep,
+    nsteps_type=Float64,
 ) where {R,W}
-    LoglogisticMortality{R,W}(median, hillcoefficient, timestep, nothing)
+    LoglogisticMortality{R,W}(median, hillcoefficient, timestep, zero(nsteps_type))
 end
 
-modifyrule(rule::LoglogisticMortality, data) = precalc_timestep(rule, data)
+modifyrule(rule::LoglogisticMortality, data) = precalc_nsteps(rule, data)
 
 @inline function applyrule(data, rule::LoglogisticMortality, (N, X), I)
     N > zero(N) || return zero(N)
@@ -99,8 +100,9 @@ function ExponentialMortality{R,W}(;
     rate=INTRINSICRATE_PARAM,
     threshold=THRESHOLD_EXPOSURE,
     timestep, 
+    nsteps_type=Float64,
 ) where {R,W}
-    ExponentialMortality{R,W}(rate, threshold, timestep, nothing)
+    ExponentialMortality{R,W}(rate, threshold, timestep, zero(nsteps_type))
 end
 
 modifyrule(rule::ExponentialMortality, data) = precalc_nsteps(rule, data)
