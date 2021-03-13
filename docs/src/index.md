@@ -8,27 +8,37 @@ CurrentModule = Dispersal
 Dispersal
 ```
 
-## Neighborhood Rules
+## Growth rules
 
-Rules that consider the neighborhood of cells surrounding the current cell.
-These disperse population inwards to the current cell when populations exist 
-in the surrounding cells.
+```@docs
+GrowthRule
+ExponentialGrowth
+LogisticGrowth
+ThresholdGrowth
+```
+
+## Mortality
+
+```@docs
+Mortality
+ExponentialMortality
+LoglogisticMortality
+```
+
+## Allee effects
+
+```@docs
+AlleeExtinction
+```
+
+## Local dispersal rules
 
 ```@docs
 InwardsDispersal
-```
-
-## Partial Neighborhood Rules
-
-Partial neighborhood rules that disperse outwards to the neighborhood 
-when a local population exists in the current cell. These methods
-are harder to optimise and will generally have worse performance.
-
-```@docs
 OutwardsDispersal
 ```
 
-## Dispersal kernels 
+### Dispersal kernels 
 
 Kernels extend `DynamicGrids.Neighborhood`, and use `neighbors()` methods.
 
@@ -54,44 +64,13 @@ AreaToCentroid
 AreaToArea
 ```
 
-## Cell rules
-Rules that simply transform the state of a single cell, ignoring the rest of the grid.
-
-### Growth rules
-
-```@docs
-GrowthRule
-ExponentialGrowth
-LogisticGrowth
-ThresholdGrowth
-```
-
-### Mortality
-
-```@docs
-Mortality
-ExponentialMortality
-LoglogisticMortality
-```
-
-### Allee effects
-
-```@docs
-AlleeExtinction
-```
-
-## Partial Rules
-
-These rules only partially update the grid. They often operate only on cells that
-are currently occupied.
-
-### Jump dispersal
+## Jump dispersal
 
 ```@docs
 JumpDispersal
 ```
 
-### Human driven dispersal
+## Human driven dispersal
 
 ```@docs
 HumanDispersal
