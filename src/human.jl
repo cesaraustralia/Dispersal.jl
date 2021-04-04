@@ -230,7 +230,7 @@ function precalc_cell!(
     assign_gravities!(gravities, human, distances, i, j)
     gravity_vector .= vec(gravities)
     # Sort the top nshortlisted gravities in-place, highest first.
-    partialsort!(gravity_vector, nshortlisted, rev=true)
+    partialsort!(gravity_vector, 1:nshortlisted, rev=true)
     # Select the top nshortlisted gravities, low to high
     gravity_shortlist = view(gravity_vector, 1:nshortlisted)
     # Convert shortlies gravities to intervals

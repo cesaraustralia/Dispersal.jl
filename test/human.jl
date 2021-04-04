@@ -80,7 +80,7 @@ end
          (2, 1) (2, 2) (2, 3)
          (3, 1) (3, 2) (3, 3)]
     gravity_vector .= vec(gravities)
-    partialsort!(gravity_vector, nshortlisted, rev=true)
+    partialsort!(gravity_vector, 1:nshortlisted, rev=true)
     gravity_shortlist = view(gravity_vector, 1:nshortlisted)
     dest = dest_shortlists[2, 2]
     Dispersal.gravity2inverval!(dest, gravity_shortlist)
@@ -126,15 +126,15 @@ end
     dest_shortlists = humandisp.dest_shortlists
 
     @testset "the highest value is the cell itself" begin
-        @test_broken (x->x[end].index).(humandisp.dest_shortlists) == Tuple.(collect(CartesianIndices(human_pop)))
+        @test (x->x[end].index).(humandisp.dest_shortlists) == Tuple.(collect(CartesianIndices(human_pop)))
     end
 
     @testset "precalc is simmetrical with simmetrical inputs" begin
         a = zeros(5, 5)
         b = zeros(5, 5)
         # There is a bug in julia 1.6.0 partialsort! 
-        @test_broken (x->x.cumprop).(dest_shortlists[5, 5]) == (x->x.cumprop).(dest_shortlists[1, 1])
-        @test_broken (x->x.cumprop).(dest_shortlists[2, 2]) == (x->x.cumprop).(dest_shortlists[4, 4])
+        @test (x->x.cumprop).(dest_shortlists[5, 5]) == (x->x.cumprop).(dest_shortlists[1, 1])
+        @test (x->x.cumprop).(dest_shortlists[2, 2]) == (x->x.cumprop).(dest_shortlists[4, 4])
         @test a == reverse(reverse(b, dims=2), dims=1)
     end
 
