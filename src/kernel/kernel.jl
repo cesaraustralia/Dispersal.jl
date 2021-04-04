@@ -31,11 +31,15 @@ struct DispersalKernel{R,L,N<:Neighborhood{R,L},K,F,C,D<:DistanceMethod} <: Abst
     function DispersalKernel(
         hood::N, kernel, formulation::F, cellsize::C, distancemethod::D
     ) where {N<:Neighborhood{R,L},F,C,D<:DistanceMethod} where {R,L}
-        # Build the kernel matrix
-        newkernel = scale(buildkernel(hood, formulation, distancemethod, cellsize))
-        new{R,L,N,typeof(newkernel),F,C,D}(
-            hood, newkernel, formulation, cellsize, distancemethod
-        )
+        if hood isa DispersalKernel
+            hood
+        else
+            # Build the kernel matrix
+            newkernel = scale(buildkernel(hood, formulation, distancemethod, cellsize))
+            new{R,L,N,typeof(newkernel),F,C,D}(
+                hood, newkernel, formulation, cellsize, distancemethod
+            )
+        end
     end
     function DispersalKernel{R,L,N,K,F,C,D}(
         hood::N, kernel::K, formulation::F, cellsize::C, distancemethod::D
