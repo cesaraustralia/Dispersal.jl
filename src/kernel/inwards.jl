@@ -28,11 +28,11 @@ grid.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """
-struct InwardsDispersal{R,W,N<:AbstractKernel} <: NeighborhoodRule{R,W}
+struct InwardsDispersal{R,W,N<:AbstractKernelNeighborhood} <: NeighborhoodRule{R,W}
     neighborhood::N
 end
 function InwardsDispersal{R,W}(; kw...) where {R,W}
     InwardsDispersal{R,W}(DispersalKernel(; kw...))
 end
 
-@inline applyrule(data, rule::InwardsDispersal, N, I) = dot(neighborhood(rule))
+@inline applyrule(data, rule::InwardsDispersal, N, I) = kernelproduct(rule)

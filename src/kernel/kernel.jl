@@ -1,5 +1,5 @@
 """
-    DispersalKernel <: AbstractKernel
+    DispersalKernel <: AbstractKernelNeighborhood
 
     DispersalKernel(; kw...)
 
@@ -22,7 +22,7 @@ and `distancemethod`.
 - `distancemethod`: [`DistanceMethod`](@ref) object for calculating distance between cells.
     The default is [`CentroidToCentroid`](@ref).
 """
-struct DispersalKernel{R,L,N<:Neighborhood{R,L},K,F,C,D<:DistanceMethod} <: AbstractKernel{R,L}
+struct DispersalKernel{R,L,N<:Neighborhood{R,L},K,F,C,D<:DistanceMethod} <: AbstractKernelNeighborhood{R,L}
     neighborhood::N
     kernel::K
     formulation::F
@@ -31,15 +31,11 @@ struct DispersalKernel{R,L,N<:Neighborhood{R,L},K,F,C,D<:DistanceMethod} <: Abst
     function DispersalKernel(
         hood::N, kernel, formulation::F, cellsize::C, distancemethod::D
     ) where {N<:Neighborhood{R,L},F,C,D<:DistanceMethod} where {R,L}
-        if hood isa AbstractKernel
-            hood
-        else
-            # Build the kernel matrix
-            newkernel = scale(buildkernel(hood, formulation, distancemethod, cellsize))
-            new{R,L,N,typeof(newkernel),F,C,D}(
-                hood, newkernel, formulation, cellsize, distancemethod
-            )
-        end
+        # Build the kernel matrix
+        newkernel = scale(buildkernel(hood, formulation, distancemethod, cellsize))
+        new{R,L,N,typeof(newkernel),F,C,D}(
+            hood, newkernel, formulation, cellsize, distancemethod
+        )
     end
     function DispersalKernel{R,L,N,K,F,C,D}(
         hood::N, kernel::K, formulation::F, cellsize::C, distancemethod::D

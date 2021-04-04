@@ -32,7 +32,7 @@ is occupied.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
-struct OutwardsDispersal{R,W,N<:AbstractKernel} <: SetNeighborhoodRule{R,W}
+struct OutwardsDispersal{R,W,N<:AbstractKernelNeighborhood} <: SetNeighborhoodRule{R,W}
     neighborhood::N
 end
 function OutwardsDispersal{R,W}(; kw...) where {R,W}
@@ -42,8 +42,8 @@ end
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
     sum = zero(N)
-    for (i, offset) in enumerate(offsets(rule))
-        @inbounds propagules = N * kernel(rule)[i]
+    for (offset, k) in zip(offsets(rule), kernel(rule))
+        @inbounds propagules = N * k
         @inbounds add!(data[W], propagules, I .+ offset...)
         sum += propagules
     end
