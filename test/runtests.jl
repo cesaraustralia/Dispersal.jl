@@ -11,6 +11,7 @@ if VERSION >= v"1.5.0"
     Aqua.test_project_toml_formatting(Dispersal)
 end
 
+@time @safetestset "integration" begin include("integration.jl") end
 @time @safetestset "downsampling" begin include("downsampling.jl") end
 @time @safetestset "human dispersal" begin include("human.jl") end
 @time @safetestset "jump dispersal" begin include("jump.jl") end
@@ -18,4 +19,4 @@ end
 @time @safetestset "allee effects" begin include("allee.jl") end
 @time @safetestset "growth" begin include("growth.jl") end
 @time @safetestset "mortality" begin include("mortality.jl") end
-@time @safetestset "integration" begin include("integration.jl") end
+@time @safetestset "chain" begin include("chain.jl") end
