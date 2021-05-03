@@ -18,6 +18,7 @@ end
     radius = 1
     hood = DispersalKernel{radius}(; formulation=ExponentialKernel(2.0))
 
+
     # time sequence for auxillary input
     a = cat([0.1 0.2; 0.3 0.4], [0.5 0.6; 0.7 0.8], dims=3)
     dimz = Y(1:2), X(1:2), Ti(1d:10d:11d)
@@ -133,10 +134,10 @@ end
 
     # Dispersal in radius 1 neighborhood
     mask = ThresholdGrowth(rate=Aux(:suit))
-    radius = 2
+    rad = 2
 
     @testset "inwards population dispersal fills the grid where reachable and suitable" begin
-        hood = DispersalKernel{radius}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
+        hood = DispersalKernel{rad}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
         inwards = InwardsDispersal(neighborhood=hood)
         rules = Ruleset(inwards, mask; timestep=1d)
         output = ArrayOutput(init; tspan=4d:1d:6d, aux=(suit=suit,))
@@ -155,7 +156,7 @@ end
     end
 
     @testset "outwards population dispersal fills the grid where reachable and suitable" begin
-        hood = DispersalKernel{radius}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
+        hood = DispersalKernel{rad}(; formulation=TestFormulation(), distancemethod=CentroidToCentroid())
         outwards = OutwardsDispersal(neighborhood=hood)
         rules = Ruleset(outwards, mask; timestep=Month(1))
         output = ArrayOutput(init; tspan=Date(2001, 1):Month(1):Date(2001, 3), aux=(suit=suit,))
