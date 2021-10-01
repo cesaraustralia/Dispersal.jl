@@ -2,21 +2,21 @@ module Dispersal
 # Use the README as the module docs
 @doc read(joinpath(dirname(@__DIR__), "README.md"), String) Dispersal
 
-using ConstructionBase,
-      Dates,
-      DimensionalData,
+using Dates,
       Distributions,
       DocStringExtensions,
       LinearAlgebra,
-      ModelParameters,
-      Reexport,
-      Setfield,
-      StaticArrays
+      Reexport
 
-@reexport using DynamicGrids, 
-                ModelParameters
+@reexport using DynamicGrids 
 
-using ModelParameters: params
+using DynamicGrids.ConstructionBase
+using DynamicGrids.DimensionalData
+using DynamicGrids.ModelParameters
+using DynamicGrids.Setfield
+using DynamicGrids.StaticArrays
+
+using DynamicGrids.ModelParameters: params
 
 import DynamicGrids: applyrule, applyrule!, modifyrule, kernel
 
