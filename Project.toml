@@ -1,7 +1,7 @@
 name = "Dispersal"
 uuid = "8797f018-3445-11e9-3969-c13eb94a0661"
 authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
-version = "0.5"
+version = "0.6.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
