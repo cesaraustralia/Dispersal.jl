@@ -22,29 +22,29 @@ and `distancemethod`.
 - `distancemethod`: [`DistanceMethod`](@ref) object for calculating distance between cells.
     The default is [`CentroidToCentroid`](@ref).
 """
-struct DispersalKernel{R,L,N<:Neighborhood{R,L},K,F,C,D<:DistanceMethod} <: AbstractKernelNeighborhood{R,L}
-    neighborhood::N
+struct DispersalKernel{R,N,L,H<:Neighborhood{R,N,L},K,F,C,D<:DistanceMethod} <: AbstractKernelNeighborhood{R,N,L}
+    neighborhood::H
     kernel::K
     formulation::F
     cellsize::C
     distancemethod::D
     function DispersalKernel(
-        hood::N, kernel, formulation::F, cellsize::C, distancemethod::D
-    ) where {N<:Neighborhood{R,L},F,C,D<:DistanceMethod} where {R,L}
+        hood::H, kernel, formulation::F, cellsize::C, distancemethod::D
+    ) where {H<:Neighborhood{R,N,L},F,C,D<:DistanceMethod} where {R,N,L}
         if hood isa DispersalKernel
             hood
         else
             # Build the kernel matrix
             newkernel = scale(buildkernel(hood, formulation, distancemethod, cellsize))
-            new{R,L,N,typeof(newkernel),F,C,D}(
+            new{R,N,L,H,typeof(newkernel),F,C,D}(
                 hood, newkernel, formulation, cellsize, distancemethod
             )
         end
     end
-    function DispersalKernel{R,L,N,K,F,C,D}(
-        hood::N, kernel::K, formulation::F, cellsize::C, distancemethod::D
-    ) where {R,L,N,K,F,C,D}
-        new{R,L,N,K,F,C,D}(hood, kernel, formulation, cellsize, distancemethod)
+    function DispersalKernel{R,N,L,H,K,F,C,D}(
+        hood::H, kernel::K, formulation::F, cellsize::C, distancemethod::D
+    ) where {R,N,L,H,K,F,C,D}
+        new{R,N,L,H,K,F,C,D}(hood, kernel, formulation, cellsize, distancemethod)
     end
 end
 function DispersalKernel(;
@@ -60,9 +60,9 @@ DispersalKernel{R}(; radius=R, kw...) where R = DispersalKernel(; radius=radius,
 
 ConstructionBase.constructorof(::Type{<:DispersalKernel}) = DispersalKernel
 
-function DG._setbuffer(n::DispersalKernel{R,L,<:Any,K,F,C,D}, buffer) where {R,L,K,F,C,D}
+function DG._setbuffer(n::DispersalKernel{R,N,L,<:Any,K,F,C,D}, buffer) where {R,N,L,K,F,C,D}
     newhood = DG._setbuffer(neighborhood(n), buffer)
-    DispersalKernel{R,L,typeof(newhood),K,F,C,D}(
+    DispersalKernel{R,N,L,typeof(newhood),K,F,C,D}(
         newhood, kernel(n), formulation(n), cellsize(n), distancemethod(n)
     )
 end
@@ -88,7 +88,7 @@ function buildkernel(window::Window{R}, formulation, distancemethod, cellsize) w
     end
     SMatrix{S,S}(kernel)
 end
-function buildkernel(window::Neighborhood{<:Any,L}, f, dm, cellsize) where L
+function buildkernel(window::Neighborhood{<:Any,<:Any,L}, f, dm, cellsize) where L
     SVector{L}(Tuple(dispersalprob(f, dm, x, y, cellsize) for (x, y) in offsets(window)))
 end
 
