@@ -1,7 +1,7 @@
 name = "Dispersal"
 uuid = "8797f018-3445-11e9-3969-c13eb94a0661"
 authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
-version = "0.6.0"
+version = "0.7.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -15,7 +15,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 [compat]
 Distributions = "0.21, 0.22, 0.23, 0.24, 0.25"
 DocStringExtensions = "0.8"
-DynamicGrids = "0.20"
+DynamicGrids = "0.21"
 Reexport = "0.2, 1.0"
 julia = "1"
 
