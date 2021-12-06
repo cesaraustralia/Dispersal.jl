@@ -5,14 +5,20 @@
 ![CI](https://github.com/cesaraustralia/Dispersal.jl/workflows/CI/badge.svg)
 [![codecov.io](http://codecov.io/github/cesaraustralia/Dispersal.jl/coverage.svg?branch=master)](http://codecov.io/github/cesaraustralia/Dispersal.jl?branch=master)
 
+
+[Dispersal.jl](https://github.com/cesaraustralia/Dispersal.jl) is a collection
+of rules for organism growth and dispersal that can be used for modelling a wide
+range of ecological problems, and easily extended and combined with custom rules
+and other packages. Dispersal.jl extends
+[DynamicGrids.jl](https://github.com/cesaraustralia/DynamicGrids.jl), a
+high-performance grid-based modelling framework with clean syntax.
+
+
+
 ![Spotted wing drosophola dispersal](https://raw.githubusercontent.com/cesaraustralia/packagegifs/master/SWD_USA.gif)
 
 *A simulation of the spotted-wing drosophola invasion of the continental United 
 States as detailed in [Maino, Schouten, and Umina (2021)](https://besjournals.onlinelibrary.wiley.com/doi/abs/10.1111/1365-2664.13812)*
-
-[Dispersal.jl](https://github.com/cesaraustralia/Dispersal.jl) extends
-[DynamicGrids.jl](https://github.com/cesaraustralia/DynamicGrids.jl) to provide
-model components and tools for grid-based simulations of organism dispersal.
 
 Growth rates, dispersal kernels, Allee effects, and randomised jump and human
 assisted dispersal rules are provided. These components can be combined into
