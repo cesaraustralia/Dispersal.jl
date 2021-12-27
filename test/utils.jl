@@ -28,7 +28,7 @@ end
 
 a = cat([0.1 0.2; 0.3 0.4], [1.5 1.6; 1.7 1.8]; dims=3)
 dimz = X(1:2), Y(1:2), Ti(0d:10d:10d)
-suitseq = DimensionalArray(a, dimz)
+suitseq = DimArray(a, dimz)
 init = zero(suitseq)
 
 @testset "sequence of layers" begin
@@ -83,7 +83,7 @@ end
     @test Dispersal.timestep(A) == 1
     @test Dispersal.starttime(A) == 1
     @test Dispersal.stoptime(A) == 10
-    A = DimensionalArray(rand(4, 5, 10), (X, Y, Ti(20:10:110)))
+    A = DimArray(rand(4, 5, 10), (X, Y, Ti(20:10:110)))
     @test Dispersal.timestep(A) == 10
     @test Dispersal.starttime(A) == 20
     @test Dispersal.stoptime(A) == 110
