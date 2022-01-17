@@ -22,7 +22,7 @@ and `distancemethod`.
 - `distancemethod`: [`DistanceMethod`](@ref) object for calculating distance between cells.
     The default is [`CentroidToCentroid`](@ref).
 """
-struct DispersalKernel{R,N,L,H<:Neighborhood{R,N,L},K,F,C,D<:DistanceMethod} <: AbstractKernelNeighborhood{R,N,L}
+struct DispersalKernel{R,N,L,H<:Neighborhood{R,N,L},K,F,C,D<:DistanceMethod} <: AbstractKernelNeighborhood{R,N,L,H}
     neighborhood::H
     kernel::K
     formulation::F
@@ -60,8 +60,8 @@ DispersalKernel{R}(; radius=R, kw...) where R = DispersalKernel(; radius=radius,
 
 ConstructionBase.constructorof(::Type{<:DispersalKernel}) = DispersalKernel
 
-function DG._setbuffer(n::DispersalKernel{R,N,L,<:Any,K,F,C,D}, buffer) where {R,N,L,K,F,C,D}
-    newhood = DG._setbuffer(neighborhood(n), buffer)
+function DG.setwindow(n::DispersalKernel{R,N,L,<:Any,K,F,C,D}, buffer) where {R,N,L,K,F,C,D}
+    newhood = DG.setwindow(neighborhood(n), buffer)
     DispersalKernel{R,N,L,typeof(newhood),K,F,C,D}(
         newhood, kernel(n), formulation(n), cellsize(n), distancemethod(n)
     )
