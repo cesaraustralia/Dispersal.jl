@@ -306,7 +306,7 @@ Base.@kwdef struct HeirarchicalGroups{S} <: TransportMode
 end
 
 @inline function disperse!(
-    data::DG.WritableGridData, mode::HeirarchicalGroups, rule::HumanDispersal,
+    data::DG.GridData, mode::HeirarchicalGroups, rule::HumanDispersal,
     shortlist, dispersalprob, N, I
 )
     dispersed = zero(N)
@@ -320,7 +320,7 @@ end
     return dispersed
 end
 @inline function disperse!(
-    data::DG.WritableGridData, mode::BatchGroups, rule::HumanDispersal,
+    data::DG.GridData, mode::BatchGroups, rule::HumanDispersal,
     shortlist, dispersalprob, N, I
 )
     # Find the expected number of dispersers given N and dispersal prob
@@ -345,7 +345,7 @@ end
 unless it falls outside the grid or is masked, in which case we
 say the event just never happened.
 =#
-function disperse2dest!(data::DG.WritableGridData, rule, shortlist, maybedispersing)
+function disperse2dest!(data::DG.GridData, rule, shortlist, maybedispersing)
     dest_id = min(length(shortlist), searchsortedfirst(shortlist, rand()))
     # Randomise cell destination within upsampled destination cells
     upsample = upsample_index(shortlist[dest_id].index, rule.scale)

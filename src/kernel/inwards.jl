@@ -28,8 +28,8 @@ grid.
 
 Pass grid `Symbol`s to `R` or both `R` and `W` type parameters to use to specific grids.
 """
-struct InwardsDispersal{R,W,N<:AbstractKernelNeighborhood} <: NeighborhoodRule{R,W}
-    neighborhood::N
+struct InwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: NeighborhoodRule{R,W}
+    stencil::S
 end
 function InwardsDispersal{R,W}(; kw...) where {R,W}
     InwardsDispersal{R,W}(DispersalKernel(; kw...))

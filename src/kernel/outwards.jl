@@ -32,8 +32,8 @@ is occupied.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
-struct OutwardsDispersal{R,W,N<:AbstractKernelNeighborhood} <: SetNeighborhoodRule{R,W}
-    neighborhood::N
+struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
+    stencil::S
 end
 function OutwardsDispersal{R,W}(; kw...) where {R,W}
     OutwardsDispersal{R,W}(DispersalKernel(; kw...))

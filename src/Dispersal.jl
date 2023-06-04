@@ -14,6 +14,7 @@ using DynamicGrids.ConstructionBase
 using DynamicGrids.DimensionalData
 using DynamicGrids.ModelParameters
 using DynamicGrids.Setfield
+using DynamicGrids.Stencils
 using DynamicGrids.StaticArrays
 
 using DynamicGrids.ModelParameters: params
