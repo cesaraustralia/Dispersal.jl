@@ -32,26 +32,29 @@ is occupied.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
-# Updated the OutwardsDispersal rule to include an optional mask
+struct _Mask end
+const NoMask = nothing
+
 struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
     stencil::S
+    mask_flag::Union{_Mask, Nothing}
 end
 
 # Constructor for OutwardsDispersal
-function OutwardsDispersal{R,W}(stencil::S) where {R,W,S<:Stencils.AbstractKernelStencil}
-    OutwardsDispersal{R,W,S}(stencil)
+function OutwardsDispersal{R,W}(stencil::S; mask_flag::Union{_Mask, Nothing}=NoMask) where {R,W,S<:Stencils.AbstractKernelStencil}
+    OutwardsDispersal{R,W,S}(stencil, mask_flag)
 end
 
 function OutwardsDispersal{R,W}(; kw...) where {R,W}
     OutwardsDispersal{R,W}(DispersalKernel(; kw...))
 end
 
-# Apply rule function
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
     
     # Check if the current cell is masked, skip if it is
-    if !mask(data)[I...]
+    mask_data = if rule.mask_flag === NoMask nothing else mask(data) end
+    if !isnothing(mask_data) && !mask_data[I...]
         return nothing
     end
     
@@ -59,7 +62,7 @@ end
     for (offset, k) in zip(offsets(rule), kernel(rule))
         target = I .+ offset
         (target_mod, inbounds) = inbounds(data, target)
-        if inbounds && mask(data)[target_mod...]
+        if inbounds && (isnothing(mask_data) || mask_data[target_mod...])
             @inbounds propagules = N * k  
             @inbounds add!(data[W], propagules, target_mod...)  
             sum += propagules
@@ -68,4 +71,3 @@ end
     @inbounds sub!(data[W], sum, I...)
     return nothing
 end
-
