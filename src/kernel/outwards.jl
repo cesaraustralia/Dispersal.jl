@@ -49,20 +49,19 @@ end
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
     # Check if the current cell is masked, skip if it is
-    !isnothing(rule.mask) && !rule.mask[I...]
+    if isnothing(rule.mask) || rule.mask[I...]
         return nothing
     end
     sum = zero(N)
     for (offset, k) in zip(offsets(rule), kernel(rule))
         target = I .+ offset
-        # Check if the target cell is within bounds and not masked
         (target_mod, inbounds) = _inbounds(Reflect(), size(data[1]), target...)
-        if inbounds && (rule.mask === nothing || rule.mask[target_mod...])
+        if inbounds && (isnothing(rule.mask) || mask(data)[target_mod...])
             @inbounds propagules = N * k  
             @inbounds add!(data[W], propagules, target_mod...)  
             sum += propagules
         end
-    end
+    end 
     @inbounds sub!(data[W], sum, I...)
     return nothing
 end
