@@ -6,7 +6,7 @@
     OutwardsPopulationDispersal{R,W}(; kw...)
 
 Implements deterministic dispersal from the current cell to populations in neighboring
-cells. Hey there
+cells.
 
 This will make sense ecologically where cell populations are large,
 otherwise a randomised kernel may be more suitable.
@@ -32,7 +32,7 @@ is occupied.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
-# Update the OutwardsDispersal rule to include an optional mask
+# Updated the OutwardsDispersal rule to include an optional mask
 struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
     stencil::S
     mask::Union{Nothing, Array{Bool}}  # Add an optional mask parameter
@@ -44,13 +44,6 @@ end
 
 function OutwardsDispersal{R,W}(; kw...) where {R,W}
     OutwardsDispersal{R,W}(DispersalKernel(; kw...))
-end
-
-# Utility function to check if a target is within bounds considering boundary conditions
-@inline function _inbounds(boundary::BoundaryCondition, size::Tuple, i1, i2)
-    a, inbounds_a = _inbounds(boundary, size[1], i1)
-    b, inbounds_b = _inbounds(boundary, size[2], i2)
-    (a, b), inbounds_a & inbounds_b
 end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
@@ -65,11 +58,11 @@ end
         # Check if the target cell is within bounds and not masked
         (target_mod, inbounds) = _inbounds(Reflect(), size(data[1]), target...)
         if inbounds && (rule.mask === nothing || rule.mask[target_mod...])
-            @inbounds propagules = N * k  # Safe to use @inbounds after checks
-            @inbounds add!(data[W], propagules, target_mod...)  # Safe to use @inbounds after checks
+            @inbounds propagules = N * k  
+            @inbounds add!(data[W], propagules, target_mod...)  
             sum += propagules
         end
     end
-    @inbounds sub!(data[W], sum, I...)  # Safe to use @inbounds after checks
+    @inbounds sub!(data[W], sum, I...)
     return nothing
 end
