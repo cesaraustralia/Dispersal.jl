@@ -39,14 +39,35 @@ function OutwardsDispersal{R,W}(; kw...) where {R,W}
     OutwardsDispersal{R,W}(DispersalKernel(; kw...))
 end
 
-@inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
+# @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
+#     N == zero(N) && return nothing
+#     sum = zero(N)
+#     for (offset, k) in zip(offsets(rule), kernel(rule))
+#         @inbounds propagules = N * k
+#         @inbounds add!(data[W], propagules, I .+ offset...)
+#         sum += propagules
+#     end
+#     @inbounds sub!(data[W], sum, I...)
+#     return nothing
+# end
+
+@inline function applyrule!(data, rule::OutwardsDispersalWithMask{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
+    # Check if the current cell is masked, skip if it is
+    if !mask(data)[I...]
+        return nothing
+    end
     sum = zero(N)
     for (offset, k) in zip(offsets(rule), kernel(rule))
-        @inbounds propagules = N * k
-        @inbounds add!(data[W], propagules, I .+ offset...)
-        sum += propagules
+        target = I .+ offset
+        # Check if the target cell is within bounds and not masked
+        (target_mod, inbounds) = _inbounds(Reflect(), size(data[1]), target...)
+        if inbounds && mask(data)[target_mod...]
+            @inbounds propagules = N * k  # Safe to use @inbounds after checks
+            @inbounds add!(data[W], propagules, target_mod...)  # Safe to use @inbounds after checks
+            sum += propagules
+        end
     end
-    @inbounds sub!(data[W], sum, I...)
+    @inbounds sub!(data[W], sum, I...)  # Safe to use @inbounds after checks
     return nothing
 end
