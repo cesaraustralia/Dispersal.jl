@@ -35,7 +35,7 @@ Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 # Updated the OutwardsDispersal rule to include an optional mask
 struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
     stencil::S
-    mask::Union{Nothing, Array{Bool}}  # Add an optional mask parameter
+    mask::M
 end
 
 function OutwardsDispersal{R,W}(stencil::S; mask=nothing) where {R,W,S<:Stencils.AbstractKernelStencil}
