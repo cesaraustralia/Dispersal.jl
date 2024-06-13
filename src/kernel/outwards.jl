@@ -6,7 +6,7 @@
     OutwardsPopulationDispersal{R,W}(; kw...)
 
 Implements deterministic dispersal from the current cell to populations in neighboring
-cells. yup
+cells. hello
 
 This will make sense ecologically where cell populations are large,
 otherwise a randomised kernel may be more suitable.
@@ -33,40 +33,39 @@ is occupied.
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
 # Updated the OutwardsDispersal rule to include an optional mask
-# Updated struct definition with generic type M for mask
-struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil, M} <: SetNeighborhoodRule{R,W}
+struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
     stencil::S
-    mask::M
 end
 
-# Constructor function with the mask parameter
-function OutwardsDispersal{R,W,M}(stencil::S; mask::M=nothing) where {R,W,S<:Stencils.AbstractKernelStencil}
-    OutwardsDispersal{R,W,S,M}(stencil, mask)
+# Constructor for OutwardsDispersal
+function OutwardsDispersal{R,W}(stencil::S) where {R,W,S<:Stencils.AbstractKernelStencil}
+    OutwardsDispersal{R,W,S}(stencil)
 end
 
-# Constructor function without specifying stencil
 function OutwardsDispersal{R,W}(; kw...) where {R,W}
-    stencil = DispersalKernel(; kw...)
-    mask = get(kw, :mask, nothing)
-    OutwardsDispersal{R,W,typeof(stencil),typeof(mask)}(stencil, mask)
+    OutwardsDispersal{R,W}(DispersalKernel(; kw...))
 end
 
+# Apply rule function
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
+    
     # Check if the current cell is masked, skip if it is
-    if isnothing(rule.mask) || rule.mask[I...]
+    if !mask(data)[I...]
         return nothing
     end
+    
     sum = zero(N)
     for (offset, k) in zip(offsets(rule), kernel(rule))
         target = I .+ offset
-        (target_mod, inbounds) = _inbounds(Reflect(), size(data[1]), target...)
-        if inbounds && (isnothing(rule.mask) || mask(data)[target_mod...])
+        (target_mod, inbounds) = inbounds(data, target)
+        if inbounds && mask(data)[target_mod...]
             @inbounds propagules = N * k  
             @inbounds add!(data[W], propagules, target_mod...)  
             sum += propagules
         end
-    end 
+    end
     @inbounds sub!(data[W], sum, I...)
     return nothing
 end
+
