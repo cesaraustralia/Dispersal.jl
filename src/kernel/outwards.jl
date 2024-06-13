@@ -6,7 +6,7 @@
     OutwardsPopulationDispersal{R,W}(; kw...)
 
 Implements deterministic dispersal from the current cell to populations in neighboring
-cells. Trying something
+cells. yup
 
 This will make sense ecologically where cell populations are large,
 otherwise a randomised kernel may be more suitable.
@@ -33,17 +33,22 @@ is occupied.
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
 # Updated the OutwardsDispersal rule to include an optional mask
-struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
+# Updated struct definition with generic type M for mask
+struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil, M} <: SetNeighborhoodRule{R,W}
     stencil::S
     mask::M
 end
 
-function OutwardsDispersal{R,W}(stencil::S; mask=nothing) where {R,W,S<:Stencils.AbstractKernelStencil}
-    OutwardsDispersal{R,W,S}(stencil, mask)
+# Constructor function with the mask parameter
+function OutwardsDispersal{R,W,M}(stencil::S; mask::M=nothing) where {R,W,S<:Stencils.AbstractKernelStencil}
+    OutwardsDispersal{R,W,S,M}(stencil, mask)
 end
 
+# Constructor function without specifying stencil
 function OutwardsDispersal{R,W}(; kw...) where {R,W}
-    OutwardsDispersal{R,W}(DispersalKernel(; kw...))
+    stencil = DispersalKernel(; kw...)
+    mask = get(kw, :mask, nothing)
+    OutwardsDispersal{R,W,typeof(stencil),typeof(mask)}(stencil, mask)
 end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
