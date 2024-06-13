@@ -39,17 +39,26 @@ function OutwardsDispersal{R,W}(; kw...) where {R,W}
     OutwardsDispersal{R,W}(DispersalKernel(; kw...))
 end
 
-# @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
-#     N == zero(N) && return nothing
-#     sum = zero(N)
-#     for (offset, k) in zip(offsets(rule), kernel(rule))
-#         @inbounds propagules = N * k
-#         @inbounds add!(data[W], propagules, I .+ offset...)
-#         sum += propagules
-#     end
-#     @inbounds sub!(data[W], sum, I...)
-#     return nothing
-# end
+@inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
+    N == zero(N) && return nothing
+    sum = zero(N)
+    for (offset, k) in zip(offsets(rule), kernel(rule))
+        @inbounds propagules = N * k
+        @inbounds add!(data[W], propagules, I .+ offset...)
+        sum += propagules
+    end
+    @inbounds sub!(data[W], sum, I...)
+    return nothing
+end
+
+# Define the custom OutwardsDispersalWithMask rule
+struct OutwardsDispersalWithMask{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
+    stencil::S
+end
+
+function OutwardsDispersalWithMask{R,W}(; kw...) where {R,W}
+    OutwardsDispersalWithMask{R,W}(DispersalKernel(; kw...))
+end
 
 @inline function applyrule!(data, rule::OutwardsDispersalWithMask{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
