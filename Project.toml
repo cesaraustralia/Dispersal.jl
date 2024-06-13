@@ -11,6 +11,7 @@ DynamicGrids = "a5dba43e-3abc-5203-bfc5-584ca68d3f5b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+Stencils = "264155e8-78a8-466a-aa59-c9b28c34d21a"
 
 [compat]
 Distributions = "0.21, 0.22, 0.23, 0.24, 0.25"
