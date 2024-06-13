@@ -32,26 +32,26 @@ is occupied.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
+# Update the OutwardsDispersal rule to include an optional mask
 struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil} <: SetNeighborhoodRule{R,W}
     stencil::S
     mask::Union{Nothing, Array{Bool}}  # Add an optional mask parameter
 end
 
-function OutwardsDispersal{R,W}(; kw...) where {R,W}
-    OutwardsDispersal{R,W}(DispersalKernel(; kw...), nothing)
+function OutwardsDispersal{R,W}(stencil::S; mask=nothing) where {R,W,S<:Stencils.AbstractKernelStencil}
+    OutwardsDispersal{R,W,S}(stencil, mask)
 end
 
-# @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
-#     N == zero(N) && return nothing
-#     sum = zero(N)
-#     for (offset, k) in zip(offsets(rule), kernel(rule))
-#         @inbounds propagules = N * k
-#         @inbounds add!(data[W], propagules, I .+ offset...)
-#         sum += propagules
-#     end
-#     @inbounds sub!(data[W], sum, I...)
-#     return nothing
-# end
+function OutwardsDispersal{R,W}(; kw...) where {R,W}
+    OutwardsDispersal{R,W}(DispersalKernel(; kw...))
+end
+
+# Utility function to check if a target is within bounds considering boundary conditions
+@inline function _inbounds(boundary::BoundaryCondition, size::Tuple, i1, i2)
+    a, inbounds_a = _inbounds(boundary, size[1], i1)
+    b, inbounds_b = _inbounds(boundary, size[2], i2)
+    (a, b), inbounds_a & inbounds_b
+end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
