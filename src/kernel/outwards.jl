@@ -49,7 +49,7 @@ end
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
     # Check if the current cell is masked, skip if it is
-    if rule.mask !== nothing && !rule.mask[I...]
+    !isnothing(rule.mask) && !rule.mask[I...]
         return nothing
     end
     sum = zero(N)
