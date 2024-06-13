@@ -6,7 +6,7 @@
     OutwardsPopulationDispersal{R,W}(; kw...)
 
 Implements deterministic dispersal from the current cell to populations in neighboring
-cells.
+cells. Trying something
 
 This will make sense ecologically where cell populations are large,
 otherwise a randomised kernel may be more suitable.
