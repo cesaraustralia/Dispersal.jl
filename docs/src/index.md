@@ -36,7 +36,6 @@ AlleeExtinction
 ```@docs
 InwardsDispersal
 OutwardsDispersal
-OutwardsDispersalWithMask
 ```
 
 ### Dispersal kernels 
