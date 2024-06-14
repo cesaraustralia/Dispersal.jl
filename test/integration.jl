@@ -169,3 +169,47 @@ end
     end
 
 end
+
+@testset "OutwardsDispersal Test" begin
+    # Define a mask
+    mask_data = [i == 1 || i == 10 || j == 1 || j == 10 ? false : true for i in 1:10, j in 1:10]
+
+    # Create OutwardsDispersal with a mask
+    outdisp_with_mask = OutwardsDispersal(
+        formulation=ExponentialKernel(λ=0.0125),
+        distancemethod=AreaToArea(30),
+        mask_flag=Mask()
+    )
+
+    # Create OutwardsDispersal without a mask, NoMask is default
+    outdisp_without_mask = OutwardsDispersal(
+        formulation=ExponentialKernel(λ=0.0125),
+        distancemethod=AreaToArea(30)
+    )
+
+    # Create a grid with empty borders matching the mask
+    init = map(x -> x ? 100.0 : 0.0, mask_data)
+
+    # Create ruleset and outputs
+    rule_with_mask = Ruleset(outdisp_with_mask; boundary=Reflect())
+    rule_without_mask = Ruleset(outdisp_without_mask; boundary=Reflect())
+
+    # Run the simulation with a mask
+    output_with_mask = ArrayOutput(init; tspan=1:1000, mask=mask_data)
+    a = sim!(output_with_mask, rule_with_mask)
+    
+    @test sum(a[1]) ≈ sum(a[1000]) # Floating error should be smaller than 1.0
+
+    # Run the simulation without a mask to check default works fine
+    output_without_mask = ArrayOutput(init; tspan=1:1000)
+    b = sim!(output_without_mask, rule_without_mask)
+
+    @test sum(b[1]) ≈ sum(b[1000]) # Floating error should be smaller than 1.0
+
+    # Run the simulation with a mask but outdisp_without_mask
+    output_without_mask = ArrayOutput(init; tspan=1:1000, mask=mask_data)
+    b = sim!(output_without_mask, rule_without_mask)
+
+    @test sum(b[1]) !≈ sum(b[1000]) #= Floating error should be larger than 1.0
+    because this does not identify the mask properly =#
+end

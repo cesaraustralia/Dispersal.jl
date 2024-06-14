@@ -16,6 +16,7 @@ using DynamicGrids.ModelParameters
 using DynamicGrids.Setfield
 using DynamicGrids.Stencils
 using DynamicGrids.StaticArrays
+using Stencils
 
 using DynamicGrids.ModelParameters: params
 
