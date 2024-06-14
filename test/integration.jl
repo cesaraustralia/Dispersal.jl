@@ -210,6 +210,6 @@ end
     output_without_mask = ArrayOutput(init; tspan=1:1000, mask=mask_data)
     b = sim!(output_without_mask, rule_without_mask)
 
-    @test sum(b[1]) !≈ sum(b[1000]) #= Floating error should be larger than 1.0
+    @test sum(b[1]) > sum(b[1000]) #= Floating error should be larger than 1.0
     because this does not identify the mask properly =#
 end
