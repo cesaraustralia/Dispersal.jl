@@ -34,20 +34,72 @@ is occupied.
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
 
-struct OutwardsDispersal{R,W,N<:AbstractKernelNeighborhood} <: SetNeighborhoodRule{R,W}
-    neighborhood::N
+struct Mask end
+struct NoMask end
+
+struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil, M} <: SetNeighborhoodRule{R,W}
+    stencil::S
+    mask_flag::M
 end
-function OutwardsDispersal{R,W}(; kw...) where {R,W}
-    OutwardsDispersal{R,W}(DispersalKernel(; kw...))
+
+# Constructors for OutwardsDispersal
+function OutwardsDispersal{R,W}(stencil::S; mask_flag::Union{Mask, NoMask}=NoMask()) where {R,W,S<:Stencils.AbstractKernelStencil}
+    OutwardsDispersal{R,W,S,typeof(mask_flag)}(stencil, mask_flag)
 end
+
+function OutwardsDispersal{R,W}(; mask_flag::Union{Mask, NoMask}=NoMask(), kw...) where {R,W}
+    stencil = DispersalKernel(; kw...)
+    OutwardsDispersal{R,W,typeof(stencil),typeof(mask_flag)}(stencil, mask_flag)
+end
+
+# @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
+#     N == zero(N) && return nothing
+#     mask_data = rule.mask_flag === NoMask() ? nothing : DynamicGrids.mask(data)
+#     sum = zero(N)
+
+#     if isnothing(mask_data)
+#         # If there is no mask
+#         for (offset, k) in zip(offsets(rule), kernel(rule))
+#             @inbounds propagules = N * k
+#             @inbounds add!(data[W], propagules, I .+ offset...)
+#             sum += propagules
+#         end
+#     elseif !mask_data[I...]
+#         # If there is a mask and the source cell is masked
+#         return nothing
+#     else
+#         for (offset, k) in zip(offsets(rule), kernel(rule))
+#             (target_mod, inbounds) = inbounds(data, I .+ offset)
+#             if inbounds && mask_data[target_mod...]
+#                 @inbounds propagules = N * k  
+#                 @inbounds add!(data[W], propagules, target_mod...)  
+#                 sum += propagules
+#             end
+#         end
+#     end
+
+#     @inbounds sub!(data[W], sum, I...)
+#     return nothing
+# end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
+
+    # Check if the current cell is masked, skip if it is
+    mask_data = if rule.mask_flag === NoMask() nothing else DynamicGrids.mask(data) end
+    if !isnothing(mask_data) && !mask_data[I...]
+        return nothing
+    end
+
     sum = zero(N)
     for (offset, k) in zip(offsets(rule), kernel(rule))
-        @inbounds propagules = N * k
-        @inbounds add!(data[W], propagules, I .+ offset...)
-        sum += propagules
+        target = I .+ offset
+        (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
+        if inbounds && (isnothing(mask_data) || mask_data[target_mod...])
+            @inbounds propagules = N * k  
+            @inbounds add!(data[W], propagules, target_mod...)  
+            sum += propagules
+        end
     end
     @inbounds sub!(data[W], sum, I...)
     return nothing
