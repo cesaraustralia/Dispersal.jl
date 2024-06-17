@@ -101,7 +101,7 @@ end
             mask_data[target_mod...]
         end
         if inbounds
-            propagules = N * k  
+            @inbounds propagules = N * k  
             @inbounds add!(data[W], propagules, target...)  
             sum += propagules
         end
