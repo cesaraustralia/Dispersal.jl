@@ -52,32 +52,55 @@ function OutwardsDispersal{R,W}(; mask_flag::Union{Mask, NoMask}=NoMask(), kw...
     OutwardsDispersal{R,W,typeof(stencil),typeof(mask_flag)}(stencil, mask_flag)
 end
 
+# @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
+#     N == zero(N) && return nothing
+#     mask_data = rule.mask_flag === NoMask() ? nothing : DynamicGrids.mask(data)
+#     sum = zero(N)
+
+#     if isnothing(mask_data)
+#         # If there is no mask
+#         for (offset, k) in zip(offsets(rule), kernel(rule))
+#             @inbounds propagules = N * k
+#             @inbounds add!(data[W], propagules, I .+ offset...)
+#             sum += propagules
+#         end
+#     elseif !mask_data[I...]
+#         # If there is a mask and the source cell is masked
+#         return nothing
+#     else
+#         for (offset, k) in zip(offsets(rule), kernel(rule))
+#             (target_mod, inbounds) = inbounds(data, I .+ offset)
+#             if inbounds && mask_data[target_mod...]
+#                 @inbounds propagules = N * k  
+#                 @inbounds add!(data[W], propagules, target_mod...)  
+#                 sum += propagules
+#             end
+#         end
+#     end
+
+#     @inbounds sub!(data[W], sum, I...)
+#     return nothing
+# end
+
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
-    mask_data = rule.mask_flag === NoMask() ? nothing : DynamicGrids.mask(data)
-    sum = zero(N)
 
-    if isnothing(mask_data)
-        # If there is no mask
-        for (offset, k) in zip(offsets(rule), kernel(rule))
-            @inbounds propagules = N * k
-            @inbounds add!(data[W], propagules, I .+ offset...)
-            sum += propagules
-        end
-    elseif !mask_data[I...]
-        # If there is a mask and the source cell is masked
+    # Check if the current cell is masked, skip if it is
+    mask_data = if rule.mask_flag === NoMask() nothing else mask(data) end
+    if !isnothing(mask_data) && !mask_data[I...]
         return nothing
-    else
-        for (offset, k) in zip(offsets(rule), kernel(rule))
-            (target_mod, inbounds) = inbounds(data, I .+ offset)
-            if inbounds && mask_data[target_mod...]
-                @inbounds propagules = N * k  
-                @inbounds add!(data[W], propagules, target_mod...)  
-                sum += propagules
-            end
-        end
     end
 
+    sum = zero(N)
+    for (offset, k) in zip(offsets(rule), kernel(rule))
+        target = I .+ offset
+        (target_mod, inbounds) = inbounds(data, target)
+        if inbounds && (isnothing(mask_data) || mask_data[target_mod...])
+            @inbounds propagules = N * k  
+            @inbounds add!(data[W], propagules, target_mod...)  
+            sum += propagules
+        end
+    end
     @inbounds sub!(data[W], sum, I...)
     return nothing
 end
