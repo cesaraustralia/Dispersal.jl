@@ -86,7 +86,7 @@ end
     N == zero(N) && return nothing
 
     # Check if the current cell is masked, skip if it is
-    mask_data = if rule.mask_flag === NoMask() nothing else mask(data) end
+    mask_data = if rule.mask_flag === NoMask() nothing else DynamicGrids.mask(data) end
     if !isnothing(mask_data) && !mask_data[I...]
         return nothing
     end
