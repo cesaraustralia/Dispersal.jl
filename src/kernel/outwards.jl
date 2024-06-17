@@ -29,7 +29,8 @@ is occupied.
     Default is 1.0.
 - `distancemethod`: [`DistanceMethod`](@ref) object for calculating distance between cells.
     The default is [`CentroidToCentroid`](@ref).
-- `mask_flag`: Use `Mask()` to apply masking or `NoMask()` to ignore masking. Default is `NoMask`.
+- `mask_flag`: Use `Mask()` to apply masking. Default is `NoMask()`. Using Mask() will cause
+    a drop in performance.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
@@ -51,36 +52,6 @@ function OutwardsDispersal{R,W}(; mask_flag::Union{Mask, NoMask}=NoMask(), kw...
     stencil = DispersalKernel(; kw...)
     OutwardsDispersal{R,W,typeof(stencil),typeof(mask_flag)}(stencil, mask_flag)
 end
-
-# @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
-#     N == zero(N) && return nothing
-#     mask_data = rule.mask_flag === NoMask() ? nothing : DynamicGrids.mask(data)
-#     sum = zero(N)
-
-#     if isnothing(mask_data)
-#         # If there is no mask
-#         for (offset, k) in zip(offsets(rule), kernel(rule))
-#             @inbounds propagules = N * k
-#             @inbounds add!(data[W], propagules, I .+ offset...)
-#             sum += propagules
-#         end
-#     elseif !mask_data[I...]
-#         # If there is a mask and the source cell is masked
-#         return nothing
-#     else
-#         for (offset, k) in zip(offsets(rule), kernel(rule))
-#             (target_mod, inbounds) = inbounds(data, I .+ offset)
-#             if inbounds && mask_data[target_mod...]
-#                 @inbounds propagules = N * k  
-#                 @inbounds add!(data[W], propagules, target_mod...)  
-#                 sum += propagules
-#             end
-#         end
-#     end
-
-#     @inbounds sub!(data[W], sum, I...)
-#     return nothing
-# end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
