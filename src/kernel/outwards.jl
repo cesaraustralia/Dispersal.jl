@@ -54,13 +54,7 @@ end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
-    
-    # Check if the current cell is masked, skip if it is
     mask_data = rule.mask_flag === NoMask() ? nothing : DynamicGrids.mask(data)
-    if !isnothing(mask_data) && !mask_data[I...]
-        return nothing
-    end
-    
     sum = zero(N)
 
     if isnothing(mask_data)
@@ -70,10 +64,12 @@ end
             @inbounds add!(data[W], propagules, I .+ offset...)
             sum += propagules
         end
+    elseif !mask_data[I...]
+        # If there is a mask and the source cell is masked
+        return nothing
     else
-        # If there is a mask
         for (offset, k) in zip(offsets(rule), kernel(rule))
-            (target_mod, inbounds) = DynamicGrids.inbounds(data, I .+ offset)
+            (target_mod, inbounds) = inbounds(data, I .+ offset)
             if inbounds && mask_data[target_mod...]
                 @inbounds propagules = N * k  
                 @inbounds add!(data[W], propagules, target_mod...)  
