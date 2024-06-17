@@ -66,13 +66,9 @@ end
     if isnothing(mask_data)
         # If there is no mask
         for (offset, k) in zip(offsets(rule), kernel(rule))
-            target = I .+ offset
-            (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
-            if inbounds
-                @inbounds propagules = N * k  
-                @inbounds add!(data[W], propagules, target_mod...)  
-                sum += propagules
-            end
+            @inbounds propagules = N * k
+            @inbounds add!(data[W], propagules, I .+ offset...)
+            sum += propagules
         end
     else
         # If there is a mask
