@@ -87,18 +87,15 @@ end
 
     # Check if the current cell is masked, skip if it is
     mask_data = if rule.mask_flag === NoMask() nothing else DynamicGrids.mask(data) end
-    if !isnothing(mask_data) && !mask_data[I...]
-        return nothing
-    end
-
+    
     sum = zero(N)
     for (offset, k) in zip(offsets(rule), kernel(rule))
         target = I .+ offset
-        inbounds = if isnothing(mask_data)    
-            true
-        else        
-            (target_mod, inbounds) = inbounds(data, target)
-            mask_data[target_mod...]
+        if isnothing(mask_data)
+            (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
+        else
+            (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
+            inbounds = inbounds && mask_data[target_mod...]
         end
         if inbounds
             propagules = N * k  
