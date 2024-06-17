@@ -54,6 +54,33 @@ function OutwardsDispersal{R,W}(; mask_flag::Union{Mask, NoMask}=NoMask(), kw...
 end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
+    if typeof(init(data)[1]) == Matrix{MyStructs256{Float64}} 
+        N == zero(MyStructs256{Float64}) && return nothing
+
+    # Check if the current cell is masked, skip if it is
+    mask_data = if rule.mask_flag === NoMask() nothing else DynamicGrids.mask(data) end
+    if !isnothing(mask_data) && !mask_data[I...]
+        return nothing
+    end
+    
+    sum = zero(N)
+    for (offset, k) in zip(offsets(rule), kernel(rule))
+        target = I .+ offset
+        inbounds = if isnothing(mask_data)    
+            true
+        else        
+            (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
+            mask_data[target_mod...]
+        end
+        if inbounds
+            @inbounds propagules = N * k  
+            @inbounds add!(data[W], propagules, target...)  
+            sum += propagules
+        end
+    end
+    @inbounds sub!(data[W], sum, I...)
+    return nothing
+    else    
     N == zero(N) && return nothing
 
     # Check if the current cell is masked, skip if it is
@@ -79,4 +106,5 @@ end
     end
     @inbounds sub!(data[W], sum, I...)
     return nothing
+    end
 end
