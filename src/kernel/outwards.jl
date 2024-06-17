@@ -73,8 +73,7 @@ end
     else
         # If there is a mask
         for (offset, k) in zip(offsets(rule), kernel(rule))
-            target = I .+ offset
-            (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
+            (target_mod, inbounds) = DynamicGrids.inbounds(data, I .+ offset)
             if inbounds && mask_data[target_mod...]
                 @inbounds propagules = N * k  
                 @inbounds add!(data[W], propagules, target_mod...)  
