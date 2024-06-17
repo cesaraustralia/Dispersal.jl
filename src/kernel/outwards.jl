@@ -94,7 +94,7 @@ end
     sum = zero(N)
     for (offset, k) in zip(offsets(rule), kernel(rule))
         target = I .+ offset
-        (target_mod, inbounds) = inbounds(data, target)
+        (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
         if inbounds && (isnothing(mask_data) || mask_data[target_mod...])
             @inbounds propagules = N * k  
             @inbounds add!(data[W], propagules, target_mod...)  
