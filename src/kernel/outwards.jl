@@ -29,8 +29,10 @@ is occupied.
     Default is 1.0.
 - `distancemethod`: [`DistanceMethod`](@ref) object for calculating distance between cells.
     The default is [`CentroidToCentroid`](@ref).
-- `mask_flag`: Use `Mask()` to apply masking. Default is `NoMask()`. Using Mask() will cause
-    a drop in performance.
+- `mask_flag`: The default setting is `NoMask()`. Use `Mask()` to indicate that the grid is 
+    masked, enabling the rule to perform boundary checking at mask edges. Not using 
+    `Mask()` on a masked grid may result in the loss of individuals at the edges, but it comes
+    at a performance cost.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
