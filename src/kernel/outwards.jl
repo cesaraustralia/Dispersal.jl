@@ -29,37 +29,37 @@ is occupied.
     Default is 1.0.
 - `distancemethod`: [`DistanceMethod`](@ref) object for calculating distance between cells.
     The default is [`CentroidToCentroid`](@ref).
-- `mask_flag`: The default setting is `NoMask()`. Use `Mask()` to indicate that the grid is 
+- `maskbehavior`: The default setting is `IgnoreMaskEdges()`. Use `CheckMaskEdges()` to indicate that the grid is 
     masked, enabling the rule to perform boundary checking at mask edges. Not using 
-    `Mask()` on a masked grid may result in the loss of individuals at the edges, but it comes
+    `CheckMaskEdges()` on a masked grid may result in the loss of individuals at the edges, but it comes
     at a performance cost.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
 
-struct Mask end
-struct NoMask end
+struct CheckMaskEdges end
+struct IgnoreMaskEdges end
 
 struct OutwardsDispersal{R,W,S<:Stencils.AbstractKernelStencil, M} <: SetNeighborhoodRule{R,W}
     stencil::S
-    mask_flag::M
+    maskbehavior::M
 end
 
 # Constructors for OutwardsDispersal
-function OutwardsDispersal{R,W}(stencil::S; mask_flag::Union{Mask, NoMask}=NoMask()) where {R,W,S<:Stencils.AbstractKernelStencil}
-    OutwardsDispersal{R,W,S,typeof(mask_flag)}(stencil, mask_flag)
+function OutwardsDispersal{R,W}(stencil::S; maskbehavior::Union{CheckMaskEdges, IgnoreMaskEdges}=IgnoreMaskEdges()) where {R,W,S<:Stencils.AbstractKernelStencil}
+    OutwardsDispersal{R,W,S,typeof(maskbehavior)}(stencil, maskbehavior)
 end
 
-function OutwardsDispersal{R,W}(; mask_flag::Union{Mask, NoMask}=NoMask(), kw...) where {R,W}
+function OutwardsDispersal{R,W}(; maskbehavior::Union{CheckMaskEdges, IgnoreMaskEdges}=IgnoreMaskEdges(), kw...) where {R,W}
     stencil = DispersalKernel(; kw...)
-    OutwardsDispersal{R,W,typeof(stencil),typeof(mask_flag)}(stencil, mask_flag)
+    OutwardsDispersal{R,W,typeof(stencil),typeof(maskbehavior)}(stencil, maskbehavior)
 end
 
 @inline function applyrule!(data, rule::OutwardsDispersal{R,W}, N, I) where {R,W}
     N == zero(N) && return nothing
 
     # Check if the current cell is masked, skip if it is
-    mask_data = if rule.mask_flag === NoMask() nothing else DynamicGrids.mask(data) end
+    mask_data = if rule.maskbehavior === IgnoreMaskEdges() nothing else DynamicGrids.mask(data) end
     if !isnothing(mask_data) && !mask_data[I...]
         return nothing
     end

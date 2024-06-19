@@ -198,13 +198,13 @@ end
     output_with_mask = ArrayOutput(init; tspan=1:1000, mask=mask_data)
     a = sim!(output_with_mask, rule_with_mask)
     
-    @test sum(a[1]) ≈ sum(a[1000]) # Floating error should be smaller than 1.0
+    @test sum(a[1]) ≈ sum(a[1000]) # Floating error should be close to zero
 
     # Run the simulation without a mask to check default works fine
     output_without_mask = ArrayOutput(init; tspan=1:1000)
     b = sim!(output_without_mask, rule_without_mask)
 
-    @test sum(b[1]) ≈ sum(b[1000]) # Floating error should be smaller than 1.0
+    @test sum(b[1]) ≈ sum(b[1000]) # Floating error should be close to zero
 
     # Run the simulation with a mask but outdisp_without_mask
     output_without_mask = ArrayOutput(init; tspan=1:1000, mask=mask_data)
