@@ -1,9 +1,9 @@
 """
-    InwardsPopulationDispersal <: NeighborhoodRule
+    InwardsDispersal <: NeighborhoodRule
 
-    InwardsPopulationDispersal(; kw...)
-    InwardsPopulationDispersal{R}(; kw...)
-    InwardsPopulationDispersal{R,W}(; kw...)
+    InwardsDispersal(; kw...)
+    InwardsDispersal{R}(; kw...)
+    InwardsDispersal{R,W}(; kw...)
 
 Implements deterministic dispersal from populations in neighboring cells to the current 
 cell.

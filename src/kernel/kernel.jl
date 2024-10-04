@@ -33,7 +33,7 @@ struct DispersalKernel{R,N,L,T,H<:Stencil{R,N,L,T},K,F,C,D<:DistanceMethod} <: S
             stencil
         else
             # Build the kernel matrix
-            newkernel = scale(buildkernel(stencil, formulation, distancemethod, cellsize))
+            newkernel = buildkernel(stencil, formulation, distancemethod, cellsize) |> scale
             new{R,N,L,T,H,typeof(newkernel),F,C,D}(
                 stencil, newkernel, formulation, cellsize, distancemethod
             )
@@ -88,7 +88,15 @@ formulation(stencil::DispersalKernel) = stencil.formulation
 #     SMatrix{S,S}(kernel)
 # end
 function buildkernel(stencil::Stencil{<:Any,<:Any,L}, f, dm, cellsize) where L
-    SVector{L}(Tuple(dispersalprob(f, dm, x, y, cellsize) for (x, y) in offsets(stencil)))
+    probs = map(offsets(stencil)) do (x, y)
+        dispersalprob(f, dm, x, y, cellsize)
+    end
+    return SVector{L}(probs)
 end
 
-scale(x) = x ./ sum(x)
+function scale(xs)
+    s = sum(xs)
+    map(xs) do x 
+        x ./ s
+    end
+end

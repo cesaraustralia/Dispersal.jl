@@ -1,9 +1,9 @@
 """
-    OutwardsPopulationDispersal <: SetNeighborhoodRule
+    OutwardsDispersal <: SetNeighborhoodRule
 
-    OutwardsPopulationDispersal(; kw...)
-    OutwardsPopulationDispersal{R}(; kw...)
-    OutwardsPopulationDispersal{R,W}(; kw...)
+    OutwardsDispersal(; kw...)
+    OutwardsDispersal{R}(; kw...)
+    OutwardsDispersal{R,W}(; kw...)
 
 Implements deterministic dispersal from the current cell to populations in neighboring
 cells.
@@ -29,10 +29,10 @@ is occupied.
     Default is 1.0.
 - `distancemethod`: [`DistanceMethod`](@ref) object for calculating distance between cells.
     The default is [`CentroidToCentroid`](@ref).
-- `maskbehavior`: The default setting is `IgnoreMaskEdges()`. Use `CheckMaskEdges()` to indicate that the grid is 
-    masked, enabling the rule to perform boundary checking at mask edges. Not using 
-    `CheckMaskEdges()` on a masked grid may result in the loss of individuals at the edges, but it comes
-    at a performance cost.
+- `maskbehavior`: The default is `IgnoreMaskEdges()`. Use `CheckMaskEdges()` 
+    to enabling the rule to perform boundary checking at mask edges. 
+    Using `IgnoreMaskEdges()` on a masked grid may result in the loss of individuals at the edges, 
+    while using `CheckMaskEdges()` should not. However, this comes at a performance cost.
 
 Pass grid name `Symbol`s to `R` and `W` type parameters to use specific grids.
 """
@@ -69,7 +69,7 @@ end
         target = I .+ offset
         (target_mod, inbounds) = DynamicGrids.inbounds(data, target)
         if inbounds && (isnothing(mask_data) || mask_data[target_mod...])
-            @inbounds propagules = N * k  
+            @inbounds propagules = N .* k
             @inbounds add!(data[W], propagules, target_mod...)  
             sum += propagules
         end

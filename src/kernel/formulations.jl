@@ -30,7 +30,7 @@ where λ is a shape parameter.
 Base.@kwdef struct ExponentialKernel{P} <: KernelFormulation
     λ::P = Param(1.0, bounds=(0.0, 2.0))
 end
-(f::ExponentialKernel)(d) = exp(-d / f.λ)
+(f::ExponentialKernel)(d) = exp.(-d ./ f.λ)
 
 """
     GeometricKernel <: KernelFormulation
@@ -50,7 +50,7 @@ where α is a shape parameter.
 Base.@kwdef struct GeometricKernel{P} <: KernelFormulation
     α::P = Param(1.0, bounds=(-1000.0, 1000.0))
 end
-(f::GeometricKernel)(d) = (1 + d)^f.α * ((f.α + 1)*(f.α + 2)) / (2 * π)
+(f::GeometricKernel)(d) = (1 + d) .^ f.α .* ((f.α .+ 1) .* (f.α .+ 2)) ./ (2 * π)
 
 """
     GaussianKernel <: KernelFormulation
@@ -68,12 +68,12 @@ where α is a positive parameter.
 Base.@kwdef struct GaussianKernel{P} <: KernelFormulation
     α::P = Param(1.0, bounds=(0.0, 1000.0))
 end
-(f::GaussianKernel)(d) = 1 / (π * f.α^2) * exp(- d^2 / f.α^2)
+(f::GaussianKernel)(d) = 1 ./ (π * f.α .^ 2) .* exp.(-d ^ 2 ./ f.α .^ 2)
 
 """
     WeibullKernel <: KernelFormulation
 
-    WeibullKernel(α,β)
+    WeibullKernel(α, β)
 
 Probability density function of distance ``d``.
 
@@ -87,4 +87,4 @@ Base.@kwdef struct WeibullKernel{A,B} <: KernelFormulation
     α::A = Param(1.0, bounds=(0.0, 1000.0))
     β::B = Param(2.0, bounds=(0.0, 1000.0))
 end
-(f::WeibullKernel)(d) = f.β / (2 * π * f.α^2) * d^(f.β - 2) * exp(- d^f.β / f.α^f.β)
+(f::WeibullKernel)(d) = f.β ./ (2 * π .* f.α .^ 2) .* d .^ (f.β .- 2) * exp.(-d .^ f.β ./ f.α .^ f.β)
